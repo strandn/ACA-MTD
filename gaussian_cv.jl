@@ -36,7 +36,6 @@ rho_total = 0.0
 for i in 1:nbins-1
 	Threads.@threads for j in 1:nbins-1
 		(x, y) = ((i - 1) * dx + domain_cv[1][1], (j - 1) * dy + domain_cv[2][1])
-		# f(x1, x2, x3, x4) = if dot([x1, x2, x3, x4] - large1, v12) >= x && dot([x1, x2, x3, x4] - large1, v12) < x + dx && dot([x1, x2, x3, x4] - large1, v13) >= y && dot([x1, x2, x3, x4] - large1, v13) < y + dy
 		f(x1, x2, x3, x4) = if 0.82 - 0.82 * x1 - 0.41 * x2 + 0.41 * x3 >= x && 0.82 - 0.82 * x1 - 0.41 * x2 + 0.41 * x3 < x + dx && 0.98 - 0.25 * x1 - 0.12 * x2 - 0.62 * x3 + 0.74 * x4 >= y && 0.98 - 0.25 * x1 - 0.12 * x2 - 0.62 * x3 + 0.74 * x4 < y + dy
 			P(x1, x2, x3, x4)
 		else
