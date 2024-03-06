@@ -15,9 +15,9 @@ v13 = v13 - dot(v13, v12) / norm(v12)^2 * v12
 v13 = v13 / norm(v13)
 function V(x1, x2, x3, x4)
 	r = [x1, x2, x3, x4]
-	return 25 * exp(-5 * norm(r - max1) ^ 2) + 30 * exp(-5 * norm(r - max2) ^ 2) + 35 * exp(-5 * norm(r - max3) ^ 2) +
-		40 * exp(-5 * norm(r - max4) ^ 2) -
-		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
+	return 30 * exp(-5 * norm(r - max1) ^ 2) + 35 * exp(-5 * norm(r - max2) ^ 2) + 40 * exp(-5 * norm(r - max3) ^ 2) +
+		45 * exp(-5 * norm(r - max4) ^ 2) -
+		20 * exp(-2 * norm(r - large1) ^ 2) - 25 * exp(-2 * norm(r - large2) ^ 2) - 30 * exp(-2 * norm(r - large3) ^ 2) +
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
