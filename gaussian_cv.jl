@@ -4,10 +4,10 @@ using LinearAlgebra
 large1 = [1.0, 0.0, 0.0, -1.0]
 large2 = [-1.0, -1.0, 1.0, -1.0]
 large3 = [-1.0, -1.0, -1.0, 1.0]
-max1 = [1/3, -2/3, 2/3, -1.0]
-max2 = [-1/3, -2/3, -2/3, 1/3]
-max3 = [-1.0, -1.0, 1/3, -1/3]
-max4 = [-1/3, -2/3, 0, -1/3]
+max1 = [0.0, -0.5, 0.5, -1.0]
+max2 = [0.0, -0.5, -0.5, 0.0]
+max3 = [-1.0, -1.0, 0.0, -0.0]
+max4 = [-1/3, -2/3, 0.0, -1/3]
 v12 = large2 - large1
 v12 = v12 / norm(v12)
 v13 = large3 - large1
@@ -15,8 +15,8 @@ v13 = v13 - dot(v13, v12) / norm(v12)^2 * v12
 v13 = v13 / norm(v13)
 function V(x1, x2, x3, x4)
 	r = [x1, x2, x3, x4]
-	return 10 * exp(-norm(r - max1) ^ 2) + 10 * exp(-norm(r - max2) ^ 2) + 10 * exp(-norm(r - max3) ^ 2) +
-		15 * exp(-norm(r - max4) ^ 2) -
+	return 25 * exp(-5 * norm(r - max1) ^ 2) + 30 * exp(-5 * norm(r - max2) ^ 2) + 35 * exp(-5 * norm(r - max3) ^ 2) +
+		40 * exp(-5 * norm(r - max4) ^ 2) -
 		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
