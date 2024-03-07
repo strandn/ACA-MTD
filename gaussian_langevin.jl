@@ -20,7 +20,7 @@ function V(r)
 	x1, x2, x3, x4 = r
 	return 30 * exp(-5 * norm(r - max1) ^ 2) + 35 * exp(-5 * norm(r - max2) ^ 2) + 40 * exp(-5 * norm(r - max3) ^ 2) +
 		45 * exp(-5 * norm(r - max4) ^ 2) -
-		20 * exp(-norm(r - large1) ^ 2) - 25 * exp(-norm(r - large2) ^ 2) - 30 * exp(-norm(r - large3) ^ 2) +
+		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
@@ -29,9 +29,9 @@ grad_V(x1, x2, x3, x4) = ForwardDiff.gradient(V, [x1, x2, x3, x4])
 domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
 T = 1.0
-gamma = 0.1
+gamma = 1.0
 # mass = 1.0
-dt = 1.0e-7
+dt = 1.0e-5
 steps = 1e7
 
 x1 = rand(Normal(-1.0, 0.1))
@@ -43,12 +43,12 @@ v1 = v2 = v3 = v4 = 0.0
 kb = 1.0
 # sigma = sqrt(2 * kb * T * gamma / mass)
 sigma = sqrt(2 * kb * T / (gamma * dt))
-normal_dist = Normal(0, sigma)
+normal_dist = Normal(0.0, sigma)
 
 stride = 100
 t = 0.0
 
-rm("colvar.out")
+rm("colvar.out", force = true)
 
 for i in 1:steps
 	grad = grad_V(x1, x2, x3, x4)
@@ -59,9 +59,9 @@ for i in 1:steps
 	# global v4 -= (gamma * v4 + grad[4]) / mass * dt + rand(normal_dist) * sqrt(dt)
 
 	global v1 = -(grad[1] / gamma) + rand(normal_dist)
-	global v2 = -(grad[1] / gamma) + rand(normal_dist)
-	global v3 = -(grad[1] / gamma) + rand(normal_dist)
-	global v4 = -(grad[1] / gamma) + rand(normal_dist)
+	global v2 = -(grad[2] / gamma) + rand(normal_dist)
+	global v3 = -(grad[3] / gamma) + rand(normal_dist)
+	global v4 = -(grad[4] / gamma) + rand(normal_dist)
 
 	global x1 += v1 * dt
 	global x2 += v2 * dt
