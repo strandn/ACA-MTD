@@ -31,7 +31,7 @@ domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
 T = 1.0
 gamma = 1.0
 # mass = 1.0
-dt = 1.0e-5
+dt = 1.0e-4
 steps = 1e7
 
 x1 = rand(Normal(-1.0, 0.1))
@@ -48,8 +48,7 @@ normal_dist = Normal(0.0, sigma)
 stride = 100
 t = 0.0
 
-rm("colvar.out", force = true)
-
+traj = []
 for i in 1:steps
 	grad = grad_V(x1, x2, x3, x4)
 	
@@ -78,8 +77,11 @@ for i in 1:steps
 	global t += dt
 
 	if i % stride == 0
-		open("colvar.out", "a") do file
-			write(file, "$t $x $y\n")
-		end
+		push!(traj, (t, x, y))
+	end
+end
+open("colvar.out", "w") do file
+	for step in traj
+		write(file, "$(step[1]) $(step[2]) $(step[3])\n")
 	end
 end
