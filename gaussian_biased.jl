@@ -2,6 +2,10 @@ using KernelDensity
 using DelimitedFiles
 using Plots
 using MPI
+using Random
+using Distributions
+using ForwardDiff
+using LinearAlgebra
 
 include("tt_aca.jl")
 
@@ -10,16 +14,9 @@ mpi_comm = MPI.COMM_WORLD
 
 data = readdlm("colvar.out", ' ', Float64)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (256, 256))
+# kde_result = kde(data[:,2:3])
+kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
 println("$(kde_result.x) $(kde_result.y)")
-# open("kde.out", "w") do file
-# 	for i in 1:256
-# 		for j in 1:256
-# 			write(file, "$(kde_result.density[i, j]) ")
-# 		end
-# 		write(file, "\n")
-# 	end
-# end
 p = contour(kde_result.x, kde_result.y, kde_result.density)
 savefig(p, "plot.png")
 
@@ -40,11 +37,7 @@ n_samples = 1000
 jump_width = 0.01
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)
-# r = 5
-# println("Target rank $r")
-# IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
-# println(IJ)
-for r in 1:5
+for r in 1:1
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
     println(IJ)
@@ -55,5 +48,83 @@ for r in 1:5
 			end
 			write(file, "\n")
 		end
+	end
+end
+
+large1 = [1.0, 0.0, 0.0, -1.0]
+large2 = [-1.0, -1.0, 1.0, -1.0]
+large3 = [-1.0, -1.0, -1.0, 1.0]
+max1 = [0.0, -0.5, 0.5, -1.0]
+max2 = [0.0, -0.5, -0.5, 0.0]
+max3 = [-1.0, -1.0, 0.0, -0.0]
+max4 = [-1/3, -2/3, 0.0, -1/3]
+v12 = large2 - large1
+v12 = v12 / norm(v12)
+v13 = large3 - large1
+v13 = v13 - dot(v13, v12) / norm(v12)^2 * v12
+v13 = v13 / norm(v13)
+
+function V(r)
+	x1, x2, x3, x4 = r
+	Vbias(x, y) = -log(F(x, y)) - 10
+	return 30 * exp(-5 * norm(r - max1) ^ 2) + 35 * exp(-5 * norm(r - max2) ^ 2) + 40 * exp(-5 * norm(r - max3) ^ 2) +
+		45 * exp(-5 * norm(r - max4) ^ 2) -
+		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
+		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5 + Vbias(x(r...), y(r...))
+end
+
+grad_V(x1, x2, x3, x4) = ForwardDiff.gradient(V, [x1, x2, x3, x4])
+
+x(x1, x2, x3, x4) = 0.82 - 0.82 * x1 - 0.41 * x2 + 0.41 * x3
+y(x1, x2, x3, x4) = 0.98 - 0.25 * x1 - 0.12 * x2 - 0.62 * x3 + 0.74 * x4
+
+domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
+domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
+T = 1.0
+gamma = 1.0
+dt = 1.0e-4
+steps = 1e7
+
+x1 = rand(Normal(-1.0, 0.1))
+x2 = rand(Normal(-1.0, 0.1))
+x3 = rand(Normal(-1.0, 0.1))
+x4 = rand(Normal(1.0, 0.1))
+v1 = v2 = v3 = v4 = 0.0
+
+kb = 1.0
+sigma = sqrt(2 * kb * T / (gamma * dt))
+normal_dist = Normal(0.0, sigma)
+
+stride = 100
+t = 0.0
+
+traj = []
+for i in 1:steps
+	grad = grad_V(x1, x2, x3, x4)
+
+	global v1 = -(grad[1] / gamma) + rand(normal_dist)
+	global v2 = -(grad[2] / gamma) + rand(normal_dist)
+	global v3 = -(grad[3] / gamma) + rand(normal_dist)
+	global v4 = -(grad[4] / gamma) + rand(normal_dist)
+
+	global x1 += v1 * dt
+	global x2 += v2 * dt
+	global x3 += v3 * dt
+	global x4 += v4 * dt
+	
+	x1 = clamp(x1, domain[1][1], domain[1][2])
+	x2 = clamp(x2, domain[2][1], domain[2][2])
+	x3 = clamp(x3, domain[3][1], domain[3][2])
+	x4 = clamp(x4, domain[4][1], domain[4][2])
+
+	global t += dt
+
+	if i % stride == 0
+		push!(traj, (t, x(x1, x2, x3, x4), y(x1, x2, x3, x4)))
+	end
+end
+open("colvar_bias1.out", "w") do file
+	for step in traj
+		write(file, "$(step[1]) $(step[2]) $(step[3])\n")
 	end
 end
