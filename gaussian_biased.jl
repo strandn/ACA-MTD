@@ -80,7 +80,7 @@ function grad_Vbias(r)
 	dRdx2 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
 	dRdx3 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
 	dRdx4 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
-	return dVbiasdR * (dRdx1, dRdx2, dRdx3, dRdx4)
+	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
 end
 
 function V(r)
