@@ -22,6 +22,9 @@ savefig(p, "plot.png")
 
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
+# function rhohat(x::T, y::T) where T <: Real
+#     pdf(ik, x, y)
+# end
 open("kde.out", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
@@ -64,19 +67,31 @@ v13 = large3 - large1
 v13 = v13 - dot(v13, v12) / norm(v12)^2 * v12
 v13 = v13 / norm(v13)
 
+x(z) = 0.82 - 0.82 * z[1] - 0.41 * z[2] + 0.41 * z[3]
+y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
+
+function grad_Vbias(r)
+	# Vbias = -log(F(x(r), y(r))) - 10
+	dVbiasdR = -1 / F(x(r), y(r))
+	h = (step(kde_result.x), step(kde_result.y))
+	dx = ForwardDiff.gradient(x, r)
+	dy = ForwardDiff.gradient(y, r)
+	dRdx1 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
+	dRdx2 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
+	dRdx3 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
+	dRdx4 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
+	return dVbiasdR * (dRdx1, dRdx2, dRdx3, dRdx4)
+end
+
 function V(r)
 	x1, x2, x3, x4 = r
-	Vbias(x, y) = -log(F(x, y)) - 10
 	return 30 * exp(-5 * norm(r - max1) ^ 2) + 35 * exp(-5 * norm(r - max2) ^ 2) + 40 * exp(-5 * norm(r - max3) ^ 2) +
 		45 * exp(-5 * norm(r - max4) ^ 2) -
 		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
-		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5 + Vbias(x(r...), y(r...))
+		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
-grad_V(x1, x2, x3, x4) = ForwardDiff.gradient(V, [x1, x2, x3, x4])
-
-x(x1, x2, x3, x4) = 0.82 - 0.82 * x1 - 0.41 * x2 + 0.41 * x3
-y(x1, x2, x3, x4) = 0.98 - 0.25 * x1 - 0.12 * x2 - 0.62 * x3 + 0.74 * x4
+grad_V(x1, x2, x3, x4) = ForwardDiff.gradient(V, [x1, x2, x3, x4]) + grad_Vbias([x1, x2, x3, x4])
 
 domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
@@ -120,7 +135,7 @@ for i in 1:steps
 	global t += dt
 
 	if i % stride == 0
-		push!(traj, (t, x(x1, x2, x3, x4), y(x1, x2, x3, x4)))
+		push!(traj, (t, x([x1, x2, x3, x4]), y([x1, x2, x3, x4])))
 	end
 end
 open("colvar_bias1.out", "w") do file
