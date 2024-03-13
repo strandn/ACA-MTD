@@ -15,7 +15,8 @@ mpi_comm = MPI.COMM_WORLD
 data = readdlm("colvar.out", ' ', Float64)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3])
-kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
+kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (256, 256))
+# kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (256, 256))
 println("$(kde_result.x) $(kde_result.y)")
 p = contour(kde_result.x, kde_result.y, kde_result.density)
 savefig(p, "plot.png")
@@ -68,7 +69,7 @@ x(z) = 0.82 - 0.82 * z[1] - 0.41 * z[2] + 0.41 * z[3]
 y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
 
 function grad_Vbias(r)
-	# Vbias = -log(F(x(r), y(r))) - 10
+	# Vbias = -log(abs(F(x(r), y(r)))) - 10
 	dVbiasdR = -1 / F(x(r), y(r))
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
@@ -77,6 +78,7 @@ function grad_Vbias(r)
 	dRdx2 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
 	dRdx3 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
 	dRdx4 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
+	# println("$r $(x(r)) $(y(r)) $(F(x(r), y(r))) $(-log(abs(F(x(r), y(r)))) - 10) $dVbiasdR $dRdx1 $dRdx2 $dRdx3 $dRdx4")
 	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
 end
 
@@ -119,10 +121,20 @@ for i in 1:steps
 	global v3 = -(grad[3] / gamma) + rand(normal_dist)
 	global v4 = -(grad[4] / gamma) + rand(normal_dist)
 
+	old = [x1, x2, x3, x4]
+	x0 = x([x1, x2, x3, x4])
+	y0 = y([x1, x2, x3, x4])
+	grad = grad_Vbias([x1, x2, x3, x4])
+
 	global x1 += v1 * dt
 	global x2 += v2 * dt
 	global x3 += v3 * dt
 	global x4 += v4 * dt
+
+	if isnan(x1) || isnan(x2) || isnan(x3) || isnan(x4)
+		println("$old $([x0, y0]) $grad")
+		exit(1)
+	end
 	
 	x1 = clamp(x1, domain[1][1], domain[1][2])
 	x2 = clamp(x2, domain[2][1], domain[2][2])
