@@ -22,9 +22,6 @@ savefig(p, "plot.png")
 
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
-# function rhohat(x::T, y::T) where T <: Real
-#     pdf(ik, x, y)
-# end
 open("kde.out", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
