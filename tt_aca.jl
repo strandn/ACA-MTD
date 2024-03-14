@@ -37,7 +37,7 @@ end
 
 
 function res_smooth(F::ResFunc{T, N}, elements::T...) where {T, N}
-    return F(elements...) + 1.0e-5
+    return abs(F(elements...)) + 1.0e-7
     # function S(x, y, x_k, y_k, ax, ay)
     #     # exp(-a * (norm(x - x_k) ^ 2 + norm(y - y_k) ^ 2))
     #     max(exp(-ax * norm(x - x_k) ^ 2), exp(-ay * norm(y - y_k) ^ 2))
