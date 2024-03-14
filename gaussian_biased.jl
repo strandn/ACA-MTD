@@ -24,7 +24,7 @@ savefig(p, "plot.png")
 
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
-open("kde.out", "w") do file
+open("kde.txt", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
 			write(file, "$(rhohat(x, y)) ")
@@ -47,7 +47,7 @@ for r in 1:1
     println(IJ)
 	println(F(IJ[1][2][1][1], 0.0))
 	println(res_smooth(F, IJ[1][2][1][1], 0.0))
-	open("res$r.out", "w") do file
+	open("res$r.txt", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
 				# write(file, "$(abs(F(x, y))) ")
@@ -169,7 +169,7 @@ for i in 1:steps
 		push!(traj, (t, x([x1, x2, x3, x4]), y([x1, x2, x3, x4])))
 	end
 end
-open("colvar_bias1.out", "w") do file
+open("colvar_bias1.txt", "w") do file
 	for step in traj
 		write(file, "$(step[1]) $(step[2]) $(step[3])\n")
 	end
