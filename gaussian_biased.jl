@@ -93,10 +93,10 @@ function grad_Vbias(r)
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dRdx1 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
-	dRdx2 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
-	dRdx3 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
-	dRdx4 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
+	dRdx1 = (abs(res_smooth(F, x(r) + h[1], y(r))) - abs(res_smooth(F, x(r) - h[1], y(r)))) / (2 * h[1]) * dx[1] + (abs(res_smooth(F, x(r), y(r) + h[2])) - abs(res_smooth(F, x(r), y(r) - h[2]))) / (2 * h[2]) * dy[1]
+	dRdx2 = (abs(res_smooth(F, x(r) + h[1], y(r))) - abs(res_smooth(F, x(r) - h[1], y(r)))) / (2 * h[1]) * dx[2] + (abs(res_smooth(F, x(r), y(r) + h[2])) - abs(res_smooth(F, x(r), y(r) - h[2]))) / (2 * h[2]) * dy[2]
+	dRdx3 = (abs(res_smooth(F, x(r) + h[1], y(r))) - abs(res_smooth(F, x(r) - h[1], y(r)))) / (2 * h[1]) * dx[3] + (abs(res_smooth(F, x(r), y(r) + h[2])) - abs(res_smooth(F, x(r), y(r) - h[2]))) / (2 * h[2]) * dy[3]
+	dRdx4 = (abs(res_smooth(F, x(r) + h[1], y(r))) - abs(res_smooth(F, x(r) - h[1], y(r)))) / (2 * h[1]) * dx[4] + (abs(res_smooth(F, x(r), y(r) + h[2])) - abs(res_smooth(F, x(r), y(r) - h[2]))) / (2 * h[2]) * dy[4]
 	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
 end
 
