@@ -23,4 +23,4 @@ echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
 # julia gaussian_cv.jl
-julia gaussian_biased.jl
+mpiexecjl -n 1 julia gaussian_biased.jl
