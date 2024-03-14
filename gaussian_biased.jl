@@ -12,7 +12,7 @@ include("tt_aca.jl")
 MPI.Init()
 mpi_comm = MPI.COMM_WORLD
 
-data = readdlm("colvar.out", ' ', Float64)
+data = readdlm("colvar.txt", ' ', Float64)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3])
 # kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
