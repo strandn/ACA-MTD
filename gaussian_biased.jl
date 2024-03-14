@@ -36,6 +36,8 @@ println()
 
 n_chains = 100
 n_samples = 1000
+# n_chains = 10
+# n_samples = 100
 jump_width = 0.01
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)
@@ -43,6 +45,8 @@ for r in 1:1
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
     println(IJ)
+	println(F(IJ[1][2][1][1], 0.0))
+	println(res_smooth(F, IJ[1][2][1][1], 0.0))
 	open("res$r.out", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
@@ -70,17 +74,29 @@ v13 = v13 / norm(v13)
 x(z) = 0.82 - 0.82 * z[1] - 0.41 * z[2] + 0.41 * z[3]
 y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
 
+# function grad_Vbias(r)
+# 	# Vbias = -log(abs(F(x(r), y(r)))) - 10
+# 	dVbiasdR = -1 / F(x(r), y(r))
+# 	h = (step(kde_result.x), step(kde_result.y))
+# 	dx = ForwardDiff.gradient(x, r)
+# 	dy = ForwardDiff.gradient(y, r)
+# 	dRdx1 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
+# 	dRdx2 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
+# 	dRdx3 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
+# 	dRdx4 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
+# 	# println("$r $(x(r)) $(y(r)) $(F(x(r), y(r))) $(-log(abs(F(x(r), y(r)))) - 10) $dVbiasdR $dRdx1 $dRdx2 $dRdx3 $dRdx4")
+# 	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
+# end
+
 function grad_Vbias(r)
-	# Vbias = -log(abs(F(x(r), y(r)))) - 10
-	dVbiasdR = -1 / F(x(r), y(r))
+	dVbiasdR = -1 / res_smooth(F, x(r), y(r))
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dRdx1 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
-	dRdx2 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
-	dRdx3 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
-	dRdx4 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
-	# println("$r $(x(r)) $(y(r)) $(F(x(r), y(r))) $(-log(abs(F(x(r), y(r)))) - 10) $dVbiasdR $dRdx1 $dRdx2 $dRdx3 $dRdx4")
+	dRdx1 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
+	dRdx2 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
+	dRdx3 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
+	dRdx4 = (res_smooth(F, x(r) + h[1], y(r)) - res_smooth(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (res_smooth(F, x(r), y(r) + h[2]) - res_smooth(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
 	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
 end
 

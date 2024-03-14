@@ -37,30 +37,32 @@ end
 
 
 function res_smooth(F::ResFunc{T, N}, elements::T...) where {T, N}
-    function S(x, y, x_k, y_k, a)
-        exp(-a * (norm(x - x_k) ^ 2 + norm(y - y_k) ^ 2))
-    end
-    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    k = length(F.I[F.pos + 1])
-    old = new = zeros(1, 1)
-    for iter in 0:k
-        new = zeros(k - iter + 1, k - iter + 1)
-        for idx in CartesianIndices(new)
-            if iter == 0
-                row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-                col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-                new[idx] = F.f((row..., col...)...)
-            else
-                row = idx[1] == k - iter + 1 ? x : F.I[F.pos + 1][idx[1] + iter]
-                col = idx[2] == k - iter + 1 ? y : F.J[F.pos + 1][idx[2] + iter]
-                x_k = F.I[F.pos + 1][iter]
-                y_k = F.J[F.pos + 1][iter]
-                new[idx] = old[idx[1] + 1, idx[2] + 1] - S(row, col, x_k, y_k, 1.0) * old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-            end
-        end
-        old = deepcopy(new)
-    end
-    return new[]
+    return F(elements...) + 1.0e-5
+    # function S(x, y, x_k, y_k, ax, ay)
+    #     # exp(-a * (norm(x - x_k) ^ 2 + norm(y - y_k) ^ 2))
+    #     max(exp(-ax * norm(x - x_k) ^ 2), exp(-ay * norm(y - y_k) ^ 2))
+    # end
+    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    # k = length(F.I[F.pos + 1])
+    # old = new = zeros(1, 1)
+    # for iter in 0:k
+    #     new = zeros(k - iter + 1, k - iter + 1)
+    #     for idx in CartesianIndices(new)
+    #         if iter == 0
+    #             row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
+    #             col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
+    #             new[idx] = F.f((row..., col...)...)
+    #         else
+    #             row = idx[1] == k - iter + 1 ? x : F.I[F.pos + 1][idx[1] + iter]
+    #             col = idx[2] == k - iter + 1 ? y : F.J[F.pos + 1][idx[2] + iter]
+    #             x_k = F.I[F.pos + 1][iter]
+    #             y_k = F.J[F.pos + 1][iter]
+    #             new[idx] = old[idx[1] + 1, idx[2] + 1] - S(row, col, x_k, y_k, 1.0, 1.0) * old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
+    #         end
+    #     end
+    #     old = deepcopy(new)
+    # end
+    # return new[] + 1.0e-5
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
