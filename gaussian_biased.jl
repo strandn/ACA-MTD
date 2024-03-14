@@ -15,6 +15,7 @@ mpi_comm = MPI.COMM_WORLD
 data = readdlm("colvar.out", ' ', Float64)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3])
+# kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
 kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (256, 256))
 # kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (256, 256))
 println("$(kde_result.x) $(kde_result.y)")
@@ -45,7 +46,8 @@ for r in 1:1
 	open("res$r.out", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
-				write(file, "$(abs(F(x, y))) ")
+				# write(file, "$(abs(F(x, y))) ")
+				write(file, "$(abs(res_smooth(F, x, y))) ")
 			end
 			write(file, "\n")
 		end
@@ -140,6 +142,10 @@ for i in 1:steps
 	x2 = clamp(x2, domain[2][1], domain[2][2])
 	x3 = clamp(x3, domain[3][1], domain[3][2])
 	x4 = clamp(x4, domain[4][1], domain[4][2])
+
+	if x1 == domain[1][1] || x1 == domain[1][2] || x2 == domain[1][1] || x2 == domain[1][2] || x3 == domain[1][1] || x3 == domain[1][2] || x4 == domain[1][1] || x4 == domain[1][2]
+		println("$t $old $([x0, y0]) $([x1, x2, x3, x4]) $grad")
+	end
 
 	global t += dt
 
