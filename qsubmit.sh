@@ -22,7 +22,5 @@ export JULIA_NUM_THREADS=32
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-#julia main.jl
-#mpiexecjl -n 192 julia h2o2.jl 50 1000 1000 0.001
-#julia mullerbrown_cv.jl
-julia gaussian_cv.jl
+# julia gaussian_cv.jl
+julia gaussian_biased.jl
