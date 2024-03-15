@@ -89,7 +89,7 @@ y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
 # end
 
 function grad_Vbias(r)
-	dVbiasdR = -10 / Radj(F, x(r), y(r))
+	dVbiasdR = -5 / Radj(F, x(r), y(r))
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
