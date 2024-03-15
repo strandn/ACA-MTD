@@ -45,13 +45,18 @@ for r in 1:1
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
     println(IJ)
-	# println(F(IJ[1][2][1][1], 0.0))
-	# println(Radj(F, IJ[1][2][1][1], 0.0))
 	open("res$r.txt", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
-				# write(file, "$(abs(F(x, y))) ")
-				write(file, "$(Radj(F, x, y)) ")
+				write(file, "$(abs(F(x, y))) ")
+			end
+			write(file, "\n")
+		end
+	end
+	open("vbias$r.txt", "w") do file
+		for x in kde_result.x
+			for y in kde_result.y
+				write(file, "$(Vbias(F, x, y)) ")
 			end
 			write(file, "\n")
 		end
@@ -74,33 +79,19 @@ v13 = v13 / norm(v13)
 x(z) = 0.82 - 0.82 * z[1] - 0.41 * z[2] + 0.41 * z[3]
 y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
 
-# function grad_Vbias(r)
-# 	# Radj = -log(abs(F(x(r), y(r)))) - 10
-# 	dVbiasdR = -1 / F(x(r), y(r))
-# 	h = (step(kde_result.x), step(kde_result.y))
-# 	dx = ForwardDiff.gradient(x, r)
-# 	dy = ForwardDiff.gradient(y, r)
-# 	dRdx1 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
-# 	dRdx2 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
-# 	dRdx3 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
-# 	dRdx4 = (F(x(r) + h[1], y(r)) - F(x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (F(x(r), y(r) + h[2]) - F(x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
-# 	# println("$r $(x(r)) $(y(r)) $(F(x(r), y(r))) $(-log(abs(F(x(r), y(r)))) - 10) $dVbiasdR $dRdx1 $dRdx2 $dRdx3 $dRdx4")
-# 	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
-# end
-
 function grad_Vbias(r)
-	dVbiasdR = -10 / Radj(F, x(r), y(r))
+	# dVbiasdR = -10 / Vbias(F, x(r), y(r))
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dRdx = (Radj(F, x(r) + h[1], y(r)) - Radj(F, x(r) - h[1], y(r))) / (2 * h[1])
-	dRdy = (Radj(F, x(r), y(r) + h[2]) - Radj(F, x(r), y(r) - h[2])) / (2 * h[2])
-	dRdx1 = dRdx * dx[1] + dRdy * dy[1]
-	dRdx2 = dRdx * dx[2] + dRdy * dy[2]
-	dRdx3 = dRdx * dx[3] + dRdy * dy[3]
-	dRdx4 = dRdx * dx[4] + dRdy * dy[4]
-	# println("$(Radj(F, x(r), y(r))) $(dVbiasdR * dRdx) $(dVbiasdR * dRdy)")
-	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
+	dVdx = (Vbias(F, x(r) + h[1], y(r)) - Vbias(F, x(r) - h[1], y(r))) / (2 * h[1])
+	dVdy = (Vbias(F, x(r), y(r) + h[2]) - Vbias(F, x(r), y(r) - h[2])) / (2 * h[2])
+	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
+	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
+	dVdx3 = dVdx * dx[3] + dVdy * dy[3]
+	dVdx4 = dVdx * dx[4] + dVdy * dy[4]
+	# println("$(Vbias(F, x(r), y(r))) $(dVbiasdR * dRdx) $(dVbiasdR * dRdy)")
+	return [dVdx1, dVdx2, dVdx3, dVdx4]
 end
 
 function V(r)

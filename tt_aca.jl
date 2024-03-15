@@ -36,8 +36,7 @@ function (F::ResFunc{T, N})(elements::T...) where {T, N}
 end
 
 
-function Radj(F::ResFunc{T, N}, elements::T...) where {T, N}
-    return abs(F(elements...)) + 1.0e-6
+function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # function S(x, y, x_k, y_k, ax, ay)
     #     # exp(-a * (norm(x - x_k) ^ 2 + norm(y - y_k) ^ 2))
     #     max(exp(-ax * norm(x - x_k) ^ 2), exp(-ay * norm(y - y_k) ^ 2))
@@ -63,6 +62,8 @@ function Radj(F::ResFunc{T, N}, elements::T...) where {T, N}
     #     old = deepcopy(new)
     # end
     # return new[] + 1.0e-5
+    # return abs(F(elements...)) + 1.0e-6
+    return -10 * log(abs(F(elements...)) + 1.0e-6)
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
