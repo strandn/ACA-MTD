@@ -93,10 +93,13 @@ function grad_Vbias(r)
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dRdx1 = (Radj(F, x(r) + h[1], y(r)) - Radj(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[1] + (Radj(F, x(r), y(r) + h[2]) - Radj(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[1]
-	dRdx2 = (Radj(F, x(r) + h[1], y(r)) - Radj(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[2] + (Radj(F, x(r), y(r) + h[2]) - Radj(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[2]
-	dRdx3 = (Radj(F, x(r) + h[1], y(r)) - Radj(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[3] + (Radj(F, x(r), y(r) + h[2]) - Radj(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[3]
-	dRdx4 = (Radj(F, x(r) + h[1], y(r)) - Radj(F, x(r) - h[1], y(r))) / (2 * h[1]) * dx[4] + (Radj(F, x(r), y(r) + h[2]) - Radj(F, x(r), y(r) - h[2])) / (2 * h[2]) * dy[4]
+	dRdx = (Radj(F, x(r) + h[1], y(r)) - Radj(F, x(r) - h[1], y(r))) / (2 * h[1])
+	dRdy = (Radj(F, x(r), y(r) + h[2]) - Radj(F, x(r), y(r) - h[2])) / (2 * h[2])
+	dRdx1 = dRdx * dx[1] + dRdy * dy[1]
+	dRdx2 = dRdx * dx[2] + dRdy * dy[2]
+	dRdx3 = dRdx * dx[3] + dRdy * dy[3]
+	dRdx4 = dRdx * dx[4] + dRdy * dy[4]
+	# println("$(Radj(F, x(r), y(r))) $(dVbiasdR * dRdx) $(dVbiasdR * dRdy)")
 	return dVbiasdR .* [dRdx1, dRdx2, dRdx3, dRdx4]
 end
 
@@ -142,7 +145,6 @@ for i in 1:steps
 	old = [x1, x2, x3, x4]
 	x0 = x([x1, x2, x3, x4])
 	y0 = y([x1, x2, x3, x4])
-	grad = grad_Vbias([x1, x2, x3, x4])
 
 	global x1 += v1 * dt
 	global x2 += v2 * dt
