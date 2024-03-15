@@ -49,14 +49,15 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
                 row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
                 col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
                 # new[idx] = log(F.f((row..., col...)...)) - log(0.1 * F.minp[F.pos])
-                new[idx] = log(F.f((row..., col...)...)) - 25
+                eps = 1.0e-12
+                new[idx] = log(max(abs(F.f((row..., col...)...)), eps)) - log(eps)
             else
                 new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
             end
         end
         old = deepcopy(new)
     end
-    return new[]
+    return -abs(new[])
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
