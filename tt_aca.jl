@@ -9,9 +9,10 @@ mutable struct ResFunc{T, N}
     I::Vector{Vector{Vector{T}}}
     J::Vector{Vector{Vector{T}}}
     resfirst::Vector{T}
+    minp::Vector{T}
 
     function ResFunc(f, domain::NTuple{N, Tuple{T, T}}) where {T, N}
-        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[])
+        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], fill(Inf, N - 1))
     end
 end
 
@@ -37,33 +38,25 @@ end
 
 
 function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
-    # function S(x, y, x_k, y_k, ax, ay)
-    #     # exp(-a * (norm(x - x_k) ^ 2 + norm(y - y_k) ^ 2))
-    #     max(exp(-ax * norm(x - x_k) ^ 2), exp(-ay * norm(y - y_k) ^ 2))
-    # end
-    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    # k = length(F.I[F.pos + 1])
-    # old = new = zeros(1, 1)
-    # for iter in 0:k
-    #     new = zeros(k - iter + 1, k - iter + 1)
-    #     for idx in CartesianIndices(new)
-    #         if iter == 0
-    #             row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-    #             col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-    #             new[idx] = F.f((row..., col...)...)
-    #         else
-    #             row = idx[1] == k - iter + 1 ? x : F.I[F.pos + 1][idx[1] + iter]
-    #             col = idx[2] == k - iter + 1 ? y : F.J[F.pos + 1][idx[2] + iter]
-    #             x_k = F.I[F.pos + 1][iter]
-    #             y_k = F.J[F.pos + 1][iter]
-    #             new[idx] = old[idx[1] + 1, idx[2] + 1] - S(row, col, x_k, y_k, 1.0, 1.0) * old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-    #         end
-    #     end
-    #     old = deepcopy(new)
-    # end
-    # return new[] + 1.0e-5
-    # return abs(F(elements...)) + 1.0e-6
-    return -10 * log(abs(F(elements...)) + 1.0e-6)
+    # return -10 * log(abs(F(elements...)) + 1.0e-6)
+    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    k = length(F.I[F.pos + 1])
+    old = new = zeros(1, 1)
+    for iter in 0:k
+        new = zeros(k - iter + 1, k - iter + 1)
+        for idx in CartesianIndices(new)
+            if iter == 0
+                row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
+                col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
+                # new[idx] = log(F.f((row..., col...)...)) - log(0.1 * F.minp[F.pos])
+                new[idx] = log(F.f((row..., col...)...)) - 25
+            else
+                new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
+            end
+        end
+        old = deepcopy(new)
+    end
+    return new[]
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
@@ -95,31 +88,36 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, 
         n_chains_total = n_pivots * n_chains_reduced
         xylist = fill(Tuple(fill(0.0, order)), n_chains_total)
         reslist = fill(0.0, n_chains_total)
+        resminlist = fill(0.0, n_chains_total)
         res_new = 0.0
         for r in length(F.I[i + 1])+1:rank[i]
             elements_per_task = floor(Int64, n_chains_total / mpi_size)
             remainder = n_chains_total % mpi_size
             local_xy = fill(Tuple(fill(0.0, order)), elements_per_task)
             local_res = fill(0.0, elements_per_task)
+            local_resmin = fill(0.0, elements_per_task)
             for k in 1:elements_per_task
                 global_idx = mpi_rank * elements_per_task + k
                 pidx = floor(Int64, (global_idx - 1) / n_chains_reduced) + 1
-                local_xy[k], local_res[k] = max_metropolis(F, F.I[i][pidx], n_samples, jump_width)
+                local_xy[k], local_res[k], local_resmin[k] = max_metropolis(F, F.I[i][pidx], n_samples, jump_width)
             end
             xydata = MPI.Gather(local_xy, 0, mpi_comm)
             resdata = MPI.Gather(local_res, 0, mpi_comm)
+            resmindata = MPI.Gather(local_resmin, 0, mpi_comm)
             if mpi_rank == 0
                 xylist[1:mpi_size*elements_per_task] .= xydata
                 reslist[1:mpi_size*elements_per_task] .= resdata
+                resminlist[1:mpi_size*elements_per_task] .= resmindata
             end
             if mpi_rank == 0 && remainder > 0
                 for k in mpi_size*elements_per_task+1:n_chains_total
                     pidx = floor(Int64, (k - 1) / n_chains_reduced) + 1
-                    xylist[k], reslist[k] = max_metropolis(F, F.I[i][pidx], n_samples, jump_width)
+                    xylist[k], reslist[k], resminlist[k] = max_metropolis(F, F.I[i][pidx], n_samples, jump_width)
                 end
             end
             xylist = reshape(xylist, (n_pivots, n_chains_reduced))
             reslist = reshape(reslist, (n_pivots, n_chains_reduced))
+            resminlist = reshape(resminlist, (n_pivots, n_chains_reduced))
             idx = argmax(reslist)
             xy = [xylist[idx]]
             MPI.Bcast!(xy, 0, mpi_comm)
@@ -136,6 +134,9 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, 
             if mpi_rank == 0
                 println("rank = $r res = $(res_new[]) xy = $(xy[])")
                 flush(stdout)
+                if minimum(resmindata) < F.minp[i]
+                    F.minp[i] = minimum(resmindata)
+                end
             end
         end
     end
@@ -152,6 +153,7 @@ function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, ju
     chain = zeros(n_samples, order)
 
     max_res = 0.0
+    min_res = Inf
     max_xy = zeros(F.ndims)
 
     for k in 1:order
@@ -187,12 +189,15 @@ function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, ju
                 max_res = f_new
                 max_xy = arg_new
             end
+            if f_new < min_res
+                min_res = f_new
+            end
         else
             chain[i, :] = chain[i - 1, :]
         end
     end
 
-    return Tuple(max_xy), max_res
+    return Tuple(max_xy), max_res, min_res
 end
 
 function compute_norm(F::ResFunc{T, N}) where {T, N}

@@ -34,10 +34,10 @@ open("kde.txt", "w") do file
 end
 println()
 
-n_chains = 100
-n_samples = 1000
-# n_chains = 10
-# n_samples = 100
+# n_chains = 100
+# n_samples = 1000
+n_chains = 10
+n_samples = 100
 jump_width = 0.01
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)
@@ -45,6 +45,7 @@ for r in 1:1
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
     println(IJ)
+	# println(F.minp)
 	open("res$r.txt", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
