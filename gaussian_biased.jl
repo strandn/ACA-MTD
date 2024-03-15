@@ -14,10 +14,10 @@ mpi_comm = MPI.COMM_WORLD
 
 data = readdlm("colvar.txt", ' ', Float64)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-kde_result = kde(data[:,2:3])
+# kde_result = kde(data[:,2:3])
 # kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (256, 256))
 # kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
-# kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (256, 256))
+kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (256, 256))
 # kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (256, 256))
 println("$(kde_result.x) $(kde_result.y)")
 p = contour(kde_result.x, kde_result.y, kde_result.density)
@@ -35,10 +35,10 @@ open("kde.txt", "w") do file
 end
 println()
 
-# n_chains = 100
-# n_samples = 1000
-n_chains = 10
-n_samples = 100
+n_chains = 100
+n_samples = 1000
+# n_chains = 10
+# n_samples = 100
 jump_width = 0.01
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)

@@ -38,26 +38,26 @@ end
 
 
 function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
-    # return -10 * log(abs(F(elements...)) + 1.0e-6)
-    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    k = length(F.I[F.pos + 1])
-    old = new = zeros(1, 1)
-    for iter in 0:k
-        new = zeros(k - iter + 1, k - iter + 1)
-        for idx in CartesianIndices(new)
-            if iter == 0
-                row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-                col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-                # new[idx] = log(F.f((row..., col...)...)) - log(0.1 * F.minp[F.pos])
-                eps = 1.0e-12
-                new[idx] = log(max(abs(F.f((row..., col...)...)), eps)) - log(eps)
-            else
-                new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-            end
-        end
-        old = deepcopy(new)
-    end
-    return -abs(new[])
+    return -10 * log(abs(F(elements...)) + 1.0e-6)
+    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    # k = length(F.I[F.pos + 1])
+    # old = new = zeros(1, 1)
+    # for iter in 0:k
+    #     new = zeros(k - iter + 1, k - iter + 1)
+    #     for idx in CartesianIndices(new)
+    #         if iter == 0
+    #             row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
+    #             col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
+    #             # new[idx] = log(F.f((row..., col...)...)) - log(0.1 * F.minp[F.pos])
+    #             eps = 1.0e-12
+    #             new[idx] = log(max(abs(F.f((row..., col...)...)), eps)) - log(eps)
+    #         else
+    #             new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
+    #         end
+    #     end
+    #     old = deepcopy(new)
+    # end
+    # return -abs(new[])
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
