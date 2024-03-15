@@ -36,7 +36,7 @@ function (F::ResFunc{T, N})(elements::T...) where {T, N}
 end
 
 
-function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
+function Radj(F::ResFunc{T, N}, elements::T...) where {T, N}
     return abs(F(elements...)) + 1.0e-8
     # function S(x, y, x_k, y_k, ax, ay)
     #     # exp(-a * (norm(x - x_k) ^ 2 + norm(y - y_k) ^ 2))
