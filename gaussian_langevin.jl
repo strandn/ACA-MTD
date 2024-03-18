@@ -49,8 +49,15 @@ stride = 100
 t = 0.0
 
 traj = []
+Vmax, Vmin = -Inf, Inf
 for i in 1:steps
 	grad = grad_V(x1, x2, x3, x4)
+	if V([x1, x2, x3, x4]) > Vmax
+		global Vmax = V([x1, x2, x3, x4])
+	end
+	if V([x1, x2, x3, x4]) < Vmin
+		global Vmin = V([x1, x2, x3, x4])
+	end
 	
 	# global v1 -= (gamma * v1 + grad[1]) / mass * dt + rand(normal_dist) * sqrt(dt)
 	# global v2 -= (gamma * v2 + grad[2]) / mass * dt + rand(normal_dist) * sqrt(dt)
@@ -85,3 +92,5 @@ open("colvar.out", "w") do file
 		write(file, "$(step[1]) $(step[2]) $(step[3])\n")
 	end
 end
+println("Vmax = $Vmax")
+println("Vmin = $Vmin")

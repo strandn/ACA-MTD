@@ -12,12 +12,16 @@ include("tt_aca.jl")
 MPI.Init()
 mpi_comm = MPI.COMM_WORLD
 
+domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
+domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
+nbins = 256
+
 data = readdlm("colvar.txt", ' ', Float64)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3])
-# kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (256, 256))
+kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (256, 256))
 # kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
-kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (256, 256))
+# kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (256, 256))
 # kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (256, 256))
 println("$(kde_result.x) $(kde_result.y)")
 p = contour(kde_result.x, kde_result.y, kde_result.density)
@@ -40,6 +44,8 @@ n_samples = 1000
 # n_chains = 10
 # n_samples = 100
 jump_width = 0.01
+x_full = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/(nbins-1):domain_cv[1][2]
+y_full = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/(nbins-1):domain_cv[2][2]
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)
 for r in 1:1
@@ -58,6 +64,14 @@ for r in 1:1
 	open("vbias$r.txt", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
+				write(file, "$(Vbias(F, x, y)) ")
+			end
+			write(file, "\n")
+		end
+	end
+	open("vbiasfull$r.txt", "w") do file
+		for x in x_full
+			for y in y_full
 				write(file, "$(Vbias(F, x, y)) ")
 			end
 			write(file, "\n")
@@ -106,8 +120,6 @@ end
 
 grad_V(x1, x2, x3, x4) = ForwardDiff.gradient(V, [x1, x2, x3, x4]) + grad_Vbias([x1, x2, x3, x4])
 
-domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
-domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
 T = 1.0
 gamma = 1.0
 dt = 1.0e-4

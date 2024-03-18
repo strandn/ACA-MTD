@@ -38,7 +38,7 @@ end
 
 
 function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
-    return -10 * log(abs(F(elements...)) + 1.0e-6)
+    # return -10 * log(abs(F(elements...)) + 1.0e-6)
     # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     # k = length(F.I[F.pos + 1])
     # old = new = zeros(1, 1)
@@ -58,6 +58,12 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     #     old = deepcopy(new)
     # end
     # return -abs(new[])
+    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    (xk, yk) = (F.I[F.pos + 1][1], F.J[F.pos + 1][1])
+    (kde1, kde2) = (F.f((x..., yk...)...), F.f((xk..., y...)...))
+    eps = 1.0e-7
+    (kde1, kde2) = (max(abs(kde1), eps), max(abs(kde2), eps))
+    return 0.05 * (-log(kde1) + log(eps)) * (-log(kde2) + log(eps))
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
