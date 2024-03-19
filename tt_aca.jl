@@ -62,7 +62,7 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     (xk, yk) = (F.I[F.pos + 1][1], F.J[F.pos + 1][1])
     (kde1, kde2) = (F.f((x..., yk...)...), F.f((xk..., y...)...))
     eps = 1.0e-7
-    (kde1, kde2) = (max(abs(kde1), eps), max(abs(kde2), eps))
+    (kde1, kde2) = (max(kde1, eps), max(kde2, eps))
     return 0.05 * (-log(kde1) + log(eps)) * (-log(kde2) + log(eps))
 end
 
