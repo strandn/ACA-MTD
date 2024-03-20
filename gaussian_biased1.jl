@@ -12,13 +12,30 @@ include("tt_aca.jl")
 MPI.Init()
 mpi_comm = MPI.COMM_WORLD
 
-data = readdlm("colvar_bias1.txt", ' ', Float64)
+domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
+domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
+nbins = 256
+
+data = readdlm("colvar.txt", ' ', Float64)
+len = length(data[:, 1])
+kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
+ik = InterpKDE(kde_result)
+rhohat(x, y) = pdf(ik, x, y)
+domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
+F = ResFunc(rhohat, domain_cv_small)
+fp = open("pivots.txt")
+F.I, F.J = eval(Meta.parse(readline(fp)))
+close(fp)
+
+append!(data, readdlm("colvar_bias1.txt", ' ', Float64))
+weights = ones(length(data[:, 1]))
+for i in len+1:length(data[:, 1])
+	weights[i] = exp(-Vbias(F, data[i, 2], data[i, 3]))
+end
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-kde_result = kde(data[:,2:3])
-# kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (256, 256))
+# kde_result = kde(data[:,2:3])
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.9, 0.9), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
-p = contour(kde_result.x, kde_result.y, kde_result.density)
-savefig(p, "plot.png")
 
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
