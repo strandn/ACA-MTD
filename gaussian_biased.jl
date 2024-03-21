@@ -52,7 +52,7 @@ for r in 1:1
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
 	open("pivots.txt", "w") do file
-		write(file, IJ)
+		println(file, IJ)
 	end
     println(IJ)
 	# println(F.minp)
