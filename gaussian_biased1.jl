@@ -26,15 +26,17 @@ F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots.txt")
 F.I, F.J = eval(Meta.parse(readline(fp)))
 close(fp)
+F.pos += 1
 
-append!(data, readdlm("colvar_bias1.txt", ' ', Float64))
+data = vcat(data, readdlm("colvar_bias1.txt", ' ', Float64))
 weights = ones(length(data[:, 1]))
 for i in len+1:length(data[:, 1])
 	weights[i] = exp(-Vbias(F, data[i, 2], data[i, 3]))
 end
+weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3])
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.9, 0.9), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.7, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
