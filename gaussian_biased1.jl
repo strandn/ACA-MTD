@@ -31,7 +31,7 @@ F.pos += 1
 data = vcat(data, readdlm("colvar_bias1.txt", ' ', Float64))
 weights = ones(length(data[:, 1]))
 for i in len+1:length(data[:, 1])
-	weights[i] = exp(-Vbias(F, data[i, 2], data[i, 3]))
+	weights[i] = exp(Vbias(F, data[i, 2], data[i, 3]))
 end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
@@ -51,22 +51,36 @@ open("kde.txt", "w") do file
 end
 println()
 
-# n_chains = 100
-# n_samples = 1000
-# jump_width = 0.01
-# domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
-# F = ResFunc(rhohat, domain_cv_small)
-# F.I, F.J = ([[Float64[]], [[1.64347034774359]]], [[Float64[]], [[2.6683299694004967]]])
-# for r in 2:2
-#     println("Target rank $r")
-#     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
-#     println(IJ)
-# 	open("res$r.txt", "w") do file
-# 		for x in kde_result.x
-# 			for y in kde_result.y
-# 				write(file, "$(abs(F(x, y))) ")
-# 			end
-# 			write(file, "\n")
-# 		end
-# 	end
-# end
+n_chains = 100
+n_samples = 1000
+jump_width = 0.01
+domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
+F = ResFunc(rhohat, domain_cv_small)
+fp = open("pivots.txt")
+F.I, F.J = eval(Meta.parse(readline(fp)))
+close(fp)
+F.pos += 1
+for r in 2:2
+    println("Target rank $r")
+    IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
+	open("pivots1.txt", "w") do file
+		write(file, IJ)
+	end
+    println(IJ)
+	open("res$r.txt", "w") do file
+		for x in kde_result.x
+			for y in kde_result.y
+				write(file, "$(abs(F(x, y))) ")
+			end
+			write(file, "\n")
+		end
+	end
+	open("vbias$r.txt", "w") do file
+		for x in kde_result.x
+			for y in kde_result.y
+				write(file, "$(Vbias(F, x, y)) ")
+			end
+			write(file, "\n")
+		end
+	end
+end
