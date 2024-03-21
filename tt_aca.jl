@@ -66,6 +66,15 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     return 0.05 * (-log(kde1) + log(eps)) * (-log(kde2) + log(eps))
 end
 
+function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
+    order = F.ndims
+    (F.I, F.J) = IJ
+    F.pos += 1
+    for i in 1:order-1
+        push!(F.resfirst, F.f((F.I[i + 1][1]..., F.J[i + 1][1]...)...))
+    end
+end
+
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
     push!(F.I[F.pos + 1], [ij[j] for j in 1:F.pos])
     push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])

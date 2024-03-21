@@ -24,9 +24,8 @@ rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots.txt")
-F.I, F.J = eval(Meta.parse(readline(fp)))
+initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
-F.pos += 1
 
 data = vcat(data, readdlm("colvar_bias1.txt", ' ', Float64))
 weights = ones(length(data[:, 1]))
@@ -35,7 +34,7 @@ for i in len+1:length(data[:, 1])
 end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-# kde_result = kde(data[:,2:3])
+# kde_result = kde(data[:,2:3], weights = weights)
 kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.7, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
@@ -57,9 +56,8 @@ jump_width = 0.01
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots.txt")
-F.I, F.J = eval(Meta.parse(readline(fp)))
+initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
-F.pos += 1
 for r in 2:2
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
