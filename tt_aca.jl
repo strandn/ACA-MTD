@@ -41,7 +41,7 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     if length(F.I[F.pos + 1]) == 1
         return -10 * log(abs(F(elements...)) + 1.0e-6)
     elseif length(F.I[F.pos + 1]) == 2
-        return -10 * log(abs(F(elements...)))
+        return -30 * log(abs(F(elements...)) + 1.0e-5)
     end
     # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     # k = length(F.I[F.pos + 1])
