@@ -35,8 +35,8 @@ for i in len+1:len1
 end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-kde_result = kde(data[:,2:3], weights = weights)
-# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights)
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
