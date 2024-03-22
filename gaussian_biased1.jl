@@ -28,14 +28,15 @@ initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
 
 data = vcat(data, readdlm("colvar_bias1.txt", ' ', Float64))
-weights = ones(length(data[:, 1]))
-for i in len+1:length(data[:, 1])
+len1 = length(data[:, 1])
+weights = ones(len1)
+for i in len+1:len1
 	weights[i] = exp(Vbias(F, data[i, 2], data[i, 3]))
 end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-# kde_result = kde(data[:,2:3], weights = weights)
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.7, 0.6), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights)
+# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
@@ -127,10 +128,7 @@ gamma = 1.0
 dt = 1.0e-4
 steps = 1e7
 
-x1 = rand(Normal(-1.0, 0.1))
-x2 = rand(Normal(-1.0, 0.1))
-x3 = rand(Normal(-1.0, 0.1))
-x4 = rand(Normal(1.0, 0.1))
+x1, x2, x3, x4 = data[len1, 4:7]
 v1 = v2 = v3 = v4 = 0.0
 
 kb = 1.0
@@ -175,11 +173,11 @@ for i in 1:steps
 	global t += dt
 
 	if i % stride == 0
-		push!(traj, (t, x([x1, x2, x3, x4]), y([x1, x2, x3, x4])))
+		push!(traj, (t, x([x1, x2, x3, x4]), y([x1, x2, x3, x4]), x1, x2, x3, x4))
 	end
 end
 open("colvar_bias2.txt", "w") do file
 	for step in traj
-		write(file, "$(step[1]) $(step[2]) $(step[3])\n")
+		write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4]) $(step[5]) $(step[6]) $(step[7])\n")
 	end
 end

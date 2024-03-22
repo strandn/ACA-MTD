@@ -84,12 +84,12 @@ for i in 1:steps
 	global t += dt
 
 	if i % stride == 0
-		push!(traj, (t, x, y))
+		push!(traj, (t, x, y, x1, x2, x3, x4))
 	end
 end
-open("colvar.out", "w") do file
+open("colvar.txt", "w") do file
 	for step in traj
-		write(file, "$(step[1]) $(step[2]) $(step[3])\n")
+		write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4]) $(step[5]) $(step[6]) $(step[7])\n")
 	end
 end
 println("Vmax = $Vmax")
