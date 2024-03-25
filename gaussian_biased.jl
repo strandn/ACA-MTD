@@ -20,7 +20,7 @@ data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3])
-kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (nbins, nbins))
@@ -129,7 +129,11 @@ gamma = 1.0
 dt = 1.0e-4
 steps = 1e7
 
-x1, x2, x3, x4 = data[len, 4:7]
+x1 = rand(Normal(-1.0, 0.1))
+x2 = rand(Normal(-1.0, 0.1))
+x3 = rand(Normal(-1.0, 0.1))
+x4 = rand(Normal(1.0, 0.1))
+# x1, x2, x3, x4 = data[len, 4:7]
 v1 = v2 = v3 = v4 = 0.0
 
 kb = 1.0

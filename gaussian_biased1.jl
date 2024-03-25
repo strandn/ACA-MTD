@@ -18,7 +18,8 @@ nbins = 256
 
 data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
-kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -36,7 +37,8 @@ end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], weights = weights)
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.05, 0.05), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
@@ -128,7 +130,11 @@ gamma = 1.0
 dt = 1.0e-4
 steps = 1e7
 
-x1, x2, x3, x4 = data[len1, 4:7]
+x1 = rand(Normal(-1.0, 0.1))
+x2 = rand(Normal(-1.0, 0.1))
+x3 = rand(Normal(-1.0, 0.1))
+x4 = rand(Normal(1.0, 0.1))
+# x1, x2, x3, x4 = data[len1, 4:7]
 v1 = v2 = v3 = v4 = 0.0
 
 kb = 1.0
