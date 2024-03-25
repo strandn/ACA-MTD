@@ -129,11 +129,11 @@ gamma = 1.0
 dt = 1.0e-4
 steps = 1e7
 
-x1 = rand(Normal(-1.0, 0.1))
-x2 = rand(Normal(-1.0, 0.1))
-x3 = rand(Normal(-1.0, 0.1))
-x4 = rand(Normal(1.0, 0.1))
-# x1, x2, x3, x4 = data[len, 4:7]
+# x1 = rand(Normal(-1.0, 0.1))
+# x2 = rand(Normal(-1.0, 0.1))
+# x3 = rand(Normal(-1.0, 0.1))
+# x4 = rand(Normal(1.0, 0.1))
+x1, x2, x3, x4 = data[len, 4:7]
 v1 = v2 = v3 = v4 = 0.0
 
 kb = 1.0

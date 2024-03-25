@@ -64,7 +64,7 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # return -abs(new[])
     
     eps = [1.0e-6, 1.0e-6]
-    alpha = [0.5, 1.0]
+    alpha = [1.0, 0.05]
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])

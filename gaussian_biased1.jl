@@ -37,7 +37,7 @@ end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], weights = weights)
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.05, 0.05), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
@@ -85,6 +85,10 @@ for r in 2:2
 		end
 	end
 end
+for r in 1:2
+	row, col = F.I[F.pos + 1][r], F.J[F.pos + 1][r]
+	println("$(row) $(col) $(F.f(row..., col...)...)")
+end
 
 large1 = [1.0, 0.0, 0.0, -1.0]
 large2 = [-1.0, -1.0, 1.0, -1.0]
@@ -130,11 +134,11 @@ gamma = 1.0
 dt = 1.0e-4
 steps = 1e7
 
-x1 = rand(Normal(-1.0, 0.1))
-x2 = rand(Normal(-1.0, 0.1))
-x3 = rand(Normal(-1.0, 0.1))
-x4 = rand(Normal(1.0, 0.1))
-# x1, x2, x3, x4 = data[len1, 4:7]
+# x1 = rand(Normal(-1.0, 0.1))
+# x2 = rand(Normal(-1.0, 0.1))
+# x3 = rand(Normal(-1.0, 0.1))
+# x4 = rand(Normal(1.0, 0.1))
+x1, x2, x3, x4 = data[len1, 4:7]
 v1 = v2 = v3 = v4 = 0.0
 
 kb = 1.0
