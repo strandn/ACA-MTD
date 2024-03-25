@@ -68,7 +68,9 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     eps, alpha = if length(F.I[F.pos + 1]) == 1
         [1.0e-6], [1.0]
     elseif length(F.I[F.pos + 1]) == 2
-        [1.0e-6, 1.0e-6], [1.0, 0.05]
+        [1.0e-6, 1.0e-6], [1.0, 0.08]
+    elseif length(F.I[F.pos + 1]) == 3
+        [1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03]
     end
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
