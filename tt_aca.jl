@@ -38,11 +38,11 @@ end
 
 
 function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
-    if length(F.I[F.pos + 1]) == 1
-        return -10 * log(abs(F(elements...)) + 1.0e-6)
-    elseif length(F.I[F.pos + 1]) == 2
-        return -30 * log(abs(F(elements...)) + 1.0e-5)
-    end
+    # if length(F.I[F.pos + 1]) == 1
+    #     return -10 * log(abs(F(elements...)) + 1.0e-6)
+    # elseif length(F.I[F.pos + 1]) == 2
+    #     return -30 * log(abs(F(elements...)) + 1.0e-5)
+    # end
     # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     # k = length(F.I[F.pos + 1])
     # old = new = zeros(1, 1)
@@ -62,12 +62,19 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     #     old = deepcopy(new)
     # end
     # return -abs(new[])
+    
+    eps = [1.0e-6]
+    alpha = [1.0]
+    rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    (xk, yk) = (F.I[F.pos + 1][1], F.J[F.pos + 1][1])
-    (kde1, kde2) = (F.f((x..., yk...)...), F.f((xk..., y...)...))
-    eps = 1.0e-7
-    (kde1, kde2) = (max(kde1, eps), max(kde2, eps))
-    return 0.05 * (-log(kde1) + log(eps)) * (-log(kde2) + log(eps))
+    (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
+    kde1 = [F.f((x..., yk...)...) for yk in ylist]
+    kde2 = [F.f((xk..., y...)...) for xk in xlist]
+    kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
+    f1 = [-log(max(kde1[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    f2 = [-log(max(kde2[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    return -sum(alpha .* f1 .* f2 ./ f12)
 end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
