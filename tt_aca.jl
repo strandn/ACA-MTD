@@ -81,6 +81,10 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     f1 = [-log(max(kde1[i], eps[i])) + log(eps[i]) for i in 1:rank]
     f2 = [-log(max(kde2[i], eps[i])) + log(eps[i]) for i in 1:rank]
     f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    # if length(F.I[F.pos + 1]) == 3
+    #     println("$kde1 $kde2 $kde12")
+    #     println("$f1 $f2 $f12")
+    # end
     return -sum(alpha .* f1 .* f2 ./ f12)
 end
 
