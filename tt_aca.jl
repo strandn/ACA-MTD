@@ -63,31 +63,40 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # end
     # return -abs(new[])
     
-    # eps = [1.0e-6, 1.0e-6]
-    # alpha = [1.0, 0.05]
-    eps, alpha = if length(F.I[F.pos + 1]) == 1
-        [1.0e-6], [1.0]
-    elseif length(F.I[F.pos + 1]) == 2
-        [1.0e-6, 1.0e-6], [1.0, 0.08]
-    elseif length(F.I[F.pos + 1]) == 3
-        [1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03]
-    elseif length(F.I[F.pos + 1]) == 4
-        [1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03, 0.1]
-    end
+    # eps, alpha = if length(F.I[F.pos + 1]) == 1
+    #     [1.0e-2], [1.0]
+    # elseif length(F.I[F.pos + 1]) == 2
+    #     [1.0e-2, 1.0e-2], [1.0, 0.16]
+    # elseif length(F.I[F.pos + 1]) == 3
+    #     [1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03]
+    # elseif length(F.I[F.pos + 1]) == 4
+    #     [1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03, 0.1]
+    # end
+    # rank = length(F.I[F.pos + 1])
+    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    # (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
+    # kde1 = [F.f((x..., yk...)...) for yk in ylist]
+    # kde2 = [F.f((xk..., y...)...) for xk in xlist]
+    # kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
+    # f1 = [-log(max(kde1[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    # f2 = [-log(max(kde2[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    # f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
+    # return -sum(alpha .* f1 .* f2 ./ f12)
+
+    Vinc = 5
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
     kde1 = [F.f((x..., yk...)...) for yk in ylist]
     kde2 = [F.f((xk..., y...)...) for xk in xlist]
     kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
-    f1 = [-log(max(kde1[i], eps[i])) + log(eps[i]) for i in 1:rank]
-    f2 = [-log(max(kde2[i], eps[i])) + log(eps[i]) for i in 1:rank]
-    f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
-    # if length(F.I[F.pos + 1]) == 3
-    #     println("$kde1 $kde2 $kde12")
-    #     println("$f1 $f2 $f12")
-    # end
-    return -sum(alpha .* f1 .* f2 ./ f12)
+    f1 = -log.(abs.(kde1))
+    f2 = -log.(abs.(kde2))
+    f12 = -log.(abs.(kde12))
+    f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
+    f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
+    f12 = fill(Vinc, rank)
+    return sum(f1 .* f2 ./ f12)
 end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}

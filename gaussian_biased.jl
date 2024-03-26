@@ -19,8 +19,8 @@ nbins = 256
 data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-# kde_result = kde(data[:,2:3])
-kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3])
+# kde_result = kde(data[:,2:3], bandwidth = (0.05, 0.05), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.7, 0.9), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (nbins, nbins))
@@ -42,8 +42,6 @@ println()
 
 n_chains = 100
 n_samples = 1000
-# n_chains = 10
-# n_samples = 100
 jump_width = 0.01
 x_full = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/(nbins-1):domain_cv[1][2]
 y_full = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/(nbins-1):domain_cv[2][2]
@@ -56,7 +54,6 @@ for r in 1:1
 		println(file, IJ)
 	end
     println(IJ)
-	# println(F.minp)
 	open("res$r.txt", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
@@ -100,7 +97,6 @@ x(z) = 0.82 - 0.82 * z[1] - 0.41 * z[2] + 0.41 * z[3]
 y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
 
 function grad_Vbias(r)
-	# dVbiasdR = -10 / Vbias(F, x(r), y(r))
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
@@ -110,7 +106,6 @@ function grad_Vbias(r)
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]
 	dVdx4 = dVdx * dx[4] + dVdy * dy[4]
-	# println("$(Vbias(F, x(r), y(r))) $(dVbiasdR * dRdx) $(dVbiasdR * dRdy)")
 	return [dVdx1, dVdx2, dVdx3, dVdx4]
 end
 

@@ -18,7 +18,8 @@ nbins = 256
 
 data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
-kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
@@ -36,8 +37,8 @@ for i in len+1:len1
 end
 weights /= sum(weights)
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-# kde_result = kde(data[:,2:3], weights = weights)
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights)
+# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.6, 0.6), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
