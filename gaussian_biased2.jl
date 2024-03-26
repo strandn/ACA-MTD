@@ -29,9 +29,10 @@ initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
 
 data1 = readdlm("colvar_bias1.txt", ' ', Float64)
+data = vcat(data, data1)
 len1 = length(data1[:, 1])
-weights1 = [exp(Vbias(F, data1[i, 2], data1[i, 3])) for i in 1:len1]
-kde_result = kde(data1[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+weights = [weights; [exp(Vbias(F, data1[i, 2], data1[i, 3])) for i in 1:len1]]
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -41,11 +42,10 @@ initIJ(F1, eval(Meta.parse(readline(fp))))
 close(fp)
 
 data2 = readdlm("colvar_bias2.txt", ' ', Float64)
+data = vcat(data, data2)
 len2 = length(data2[:, 1])
-weights2 = [exp(Vbias(F1, data2[i, 2], data2[i, 3])) for i in 1:len2]
+weights = [weights; [exp(Vbias(F1, data2[i, 2], data2[i, 3])) for i in 1:len2]]
 
-data = vcat(data, data1, data2)
-weights = [weights; weights1; weights2]
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], weights = weights)
 kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
