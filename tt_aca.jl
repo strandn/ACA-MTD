@@ -83,20 +83,35 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
     # return -sum(alpha .* f1 .* f2 ./ f12)
 
+    # Vinc = 5
+    # rank = length(F.I[F.pos + 1])
+    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    # (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
+    # kde1 = [F.f((x..., yk...)...) for yk in ylist]
+    # kde2 = [F.f((xk..., y...)...) for xk in xlist]
+    # kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
+    # f1 = -log.(abs.(kde1))
+    # f2 = -log.(abs.(kde2))
+    # f12 = -log.(abs.(kde12))
+    # f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
+    # f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
+    # f12 = fill(Vinc, rank)
+    # return sum(f1 .* f2 ./ f12)
+
     Vinc = 5
+    alpha = [1.0]
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
-    kde1 = [F.f((x..., yk...)...) for yk in ylist]
-    kde2 = [F.f((xk..., y...)...) for xk in xlist]
-    kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
-    f1 = -log.(abs.(kde1))
-    f2 = -log.(abs.(kde2))
-    f12 = -log.(abs.(kde12))
+    f1 = [F.f((x..., yk...)...) for yk in ylist]
+    f2 = [F.f((xk..., y...)...) for xk in xlist]
+    f12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
     f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f12 = fill(Vinc, rank)
-    return sum(f1 .* f2 ./ f12)
+    return sum(alpha .* f1 .* f2 ./ f12)
+    # ratio = f1 .* f2 ./ f12
+    # return sum(alpha .* [max(-(ratio[i] - f12[i]) + Vinc, 0) for i in 1:rank])
 end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
@@ -230,7 +245,7 @@ function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, ju
         arg_new = [pivot; [p_new[k] for k in 1:order]]
         f_old = abs(F(arg_old...))
         f_new = abs(F(arg_new...))
-        acceptance_prob = min(1, f_new / f_old)
+        acceptance_prob = min(1, exp(f_new - f_old))
         
         if isnan(acceptance_prob) || rand() < acceptance_prob
             chain[i, :] = p_new
