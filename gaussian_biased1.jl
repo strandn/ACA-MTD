@@ -15,17 +15,16 @@ mpi_comm = MPI.COMM_WORLD
 domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
 nbins = 256
-eps = 1.0e-12
 
 data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 weights = ones(len)
 # kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], bandwidth = (0.05, 0.05), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
-fhat(x, y) = -log(max(pdf(ik, x, y), eps)) + log(eps)
+rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
-F = ResFunc(fhat, domain_cv_small)
+F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots.txt")
 initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
@@ -40,11 +39,11 @@ kde_result = kde(data1[:,2:3], npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
-fhat(x, y) = -log(max(pdf(ik, x, y), eps)) + log(eps)
-open("fes1.txt", "w") do file
+rhohat(x, y) = pdf(ik, x, y)
+open("kde1.txt", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
-			write(file, "$(fhat(x, y)) ")
+			write(file, "$(rhohat(x, y)) ")
 		end
 		write(file, "\n")
 	end
@@ -53,15 +52,15 @@ println()
 
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.05, 0.05), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
-fhat(x, y) = -log(max(pdf(ik, x, y), eps)) + log(eps)
+rhohat(x, y) = pdf(ik, x, y)
 open("kde.txt", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
-			write(file, "$(fhat(x, y)) ")
+			write(file, "$(rhohat(x, y)) ")
 		end
 		write(file, "\n")
 	end
@@ -72,7 +71,7 @@ n_chains = 100
 n_samples = 1000
 jump_width = 0.01
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
-F = ResFunc(fhat, domain_cv_small)
+F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots.txt")
 initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
@@ -86,8 +85,7 @@ for r in 2:2
 	open("res$r.txt", "w") do file
 		for x in kde_result.x
 			for y in kde_result.y
-				write(file, "$(F(x, y)) ")
-				# write(file, "$(abs(F(x, y))) ")
+				write(file, "$(abs(F(x, y))) ")
 			end
 			write(file, "\n")
 		end
