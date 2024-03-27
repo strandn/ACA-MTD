@@ -70,14 +70,6 @@ for r in 1:1
 			write(file, "\n")
 		end
 	end
-	open("vbiasfull$r.txt", "w") do file
-		for x in x_full
-			for y in y_full
-				write(file, "$(Vbias(F, x, y)) ")
-			end
-			write(file, "\n")
-		end
-	end
 end
 
 large1 = [1.0, 0.0, 0.0, -1.0]

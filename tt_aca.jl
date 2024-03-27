@@ -83,8 +83,7 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
     # return -sum(alpha .* f1 .* f2 ./ f12)
 
-    Vinc = 5
-    alpha = [1.0]
+    Vinc = 5.0
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
@@ -97,7 +96,7 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f12 = fill(Vinc, rank)
-    return sum(alpha .* f1 .* f2 ./ f12)
+    return sum(f1 .* f2 ./ f12)
 end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
