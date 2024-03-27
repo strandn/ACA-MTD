@@ -19,8 +19,8 @@ nbins = 256
 data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 weights = ones(len)
-kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
-# kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -33,8 +33,8 @@ data1 = readdlm("colvar_bias1.txt", ' ', Float64)
 data = vcat(data, data1)
 len1 = length(data1[:, 1])
 weights = [weights; [exp(Vbias(F, data1[i, 2], data1[i, 3])) for i in 1:len1]]
-kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
-# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -48,9 +48,25 @@ data = vcat(data, data2)
 len2 = length(data2[:, 1])
 weights = [weights; [exp(Vbias(F1, data2[i, 2], data2[i, 3])) for i in 1:len2]]
 
+println("$(minimum(data2[:,2])) $(maximum(data2[:,2])) $(minimum(data2[:,3])) $(maximum(data2[:,3]))")
+kde_result = kde(data2[:,2:3], npoints = (nbins, nbins))
+println("$(kde_result.x) $(kde_result.y)")
+
+ik = InterpKDE(kde_result)
+rhohat(x, y) = pdf(ik, x, y)
+open("kde2.txt", "w") do file
+	for x in kde_result.x
+		for y in kde_result.y
+			write(file, "$(rhohat(x, y)) ")
+		end
+		write(file, "\n")
+	end
+end
+println()
+
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
-# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
