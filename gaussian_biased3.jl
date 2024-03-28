@@ -33,7 +33,7 @@ close(fp)
 data1 = readdlm("colvar_bias1.txt", ' ', Float64)
 data = vcat(data, data1)
 len1 = length(data1[:, 1])
-weights = [weights; [exp(Vbias(F, 0.0, data1[i, 2], data1[i, 3])) for i in 1:len1]]
+weights = [weights; [exp(Vbias(F, data1[i, 2], data1[i, 3])) for i in 1:len1]]
 # kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
@@ -48,7 +48,7 @@ close(fp)
 data2 = readdlm("colvar_bias2.txt", ' ', Float64)
 data = vcat(data, data2)
 len2 = length(data2[:, 1])
-weights = [weights; [exp(Vbias(F1, 0.0, data2[i, 2], data2[i, 3])) for i in 1:len2]]
+weights = [weights; [exp(Vbias(F1, data2[i, 2], data2[i, 3])) for i in 1:len2]]
 # kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
 kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
@@ -63,7 +63,7 @@ close(fp)
 data3 = readdlm("colvar_bias3.txt", ' ', Float64)
 data = vcat(data, data3)
 len3 = length(data3[:, 1])
-weights = [weights; [exp(Vbias(F2, 0.0, data3[i, 2], data3[i, 3])) for i in 1:len3]]
+weights = [weights; [exp(Vbias(F2, data3[i, 2], data3[i, 3])) for i in 1:len3]]
 
 println("$(minimum(data3[:,2])) $(maximum(data3[:,2])) $(minimum(data3[:,3])) $(maximum(data3[:,3]))")
 kde_result = kde(data3[:,2:3], npoints = (nbins, nbins))
@@ -122,20 +122,18 @@ for r in 4:4
 			write(file, "\n")
 		end
 	end
+	open("vbias$r.txt", "w") do file
+		for x in kde_result.x
+			for y in kde_result.y
+				write(file, "$(Vbias(F, x, y)) ")
+			end
+			write(file, "\n")
+		end
+	end
 end
 for r in 1:4
 	row, col = F.I[F.pos + 1][r], F.J[F.pos + 1][r]
 	println("$(row) $(col) $(F.f(row..., col...)...)")
-end
-
-vmax = 0.0
-open("vbias4.txt", "w") do file
-	for x in kde_result.x
-		for y in kde_result.y
-			write(file, "$(Vbias(F, vmax, x, y)) ")
-		end
-		write(file, "\n")
-	end
 end
 
 large1 = [1.0, 0.0, 0.0, -1.0]
@@ -158,8 +156,8 @@ function grad_Vbias(r)
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dVdx = (Vbias(F, vmax, x(r) + h[1], y(r)) - Vbias(F, vmax, x(r) - h[1], y(r))) / (2 * h[1])
-	dVdy = (Vbias(F, vmax, x(r), y(r) + h[2]) - Vbias(F, vmax, x(r), y(r) - h[2])) / (2 * h[2])
+	dVdx = (Vbias(F, x(r) + h[1], y(r)) - Vbias(F, x(r) - h[1], y(r))) / (2 * h[1])
+	dVdy = (Vbias(F, x(r), y(r) + h[2]) - Vbias(F, x(r), y(r) - h[2])) / (2 * h[2])
 	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]

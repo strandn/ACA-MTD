@@ -21,7 +21,7 @@ len = length(data[:, 1])
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
 # kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
@@ -62,15 +62,13 @@ for r in 1:1
 			write(file, "\n")
 		end
 	end
-end
-
-vmax = 0.0
-open("vbias1.txt", "w") do file
-	for x in kde_result.x
-		for y in kde_result.y
-			write(file, "$(Vbias(F, vmax, x, y)) ")
+	open("vbias$r.txt", "w") do file
+		for x in kde_result.x
+			for y in kde_result.y
+				write(file, "$(Vbias(F, x, y)) ")
+			end
+			write(file, "\n")
 		end
-		write(file, "\n")
 	end
 end
 
@@ -94,8 +92,8 @@ function grad_Vbias(r)
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dVdx = (Vbias(F, vmax, x(r) + h[1], y(r)) - Vbias(F, vmax, x(r) - h[1], y(r))) / (2 * h[1])
-	dVdy = (Vbias(F, vmax, x(r), y(r) + h[2]) - Vbias(F, vmax, x(r), y(r) - h[2])) / (2 * h[2])
+	dVdx = (Vbias(F, x(r) + h[1], y(r)) - Vbias(F, x(r) - h[1], y(r))) / (2 * h[1])
+	dVdy = (Vbias(F, x(r), y(r) + h[2]) - Vbias(F, x(r), y(r) - h[2])) / (2 * h[2])
 	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]

@@ -37,7 +37,7 @@ function (F::ResFunc{T, N})(elements::T...) where {T, N}
 end
 
 
-function Vbias(F::ResFunc{T, N}, Vtop::T, elements::T...) where {T, N}
+function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # if length(F.I[F.pos + 1]) == 1
     #     return -10 * log(abs(F(elements...)) + 1.0e-6)
     # elseif length(F.I[F.pos + 1]) == 2
@@ -84,7 +84,7 @@ function Vbias(F::ResFunc{T, N}, Vtop::T, elements::T...) where {T, N}
     # return -sum(alpha .* f1 .* f2 ./ f12)
 
     Vinc = 5.0
-    Vmax = 20.0
+    offsets = [0.0, 0.0, 0.0]
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
@@ -97,15 +97,13 @@ function Vbias(F::ResFunc{T, N}, Vtop::T, elements::T...) where {T, N}
     f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f12 = fill(Vinc, rank)
-    return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
-    # result = 0.0
-    # for i in 1:rank
-    #     result += f1[i] * f2[i] / f12[i]
-    #     if Vtop > Vmax
-    #         result = max(result - (Vtop - Vmax), 0.0)
-    #     end
-    # end
-    # return result
+    # return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
+    result = 0.0
+    for i in 1:rank
+        result += f1[i] * f2[i] / f12[i]
+        result = max(result - offsets[i], 0.0)
+    end
+    return result
 end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
