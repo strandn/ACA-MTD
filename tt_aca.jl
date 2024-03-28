@@ -97,15 +97,15 @@ function Vbias(F::ResFunc{T, N}, Vtop::T, elements::T...) where {T, N}
     f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
     f12 = fill(Vinc, rank)
-    # return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
-    result = 0.0
-    for i in 1:rank
-        result += f1[i] * f2[i] / f12[i]
-        if Vtop > Vmax
-            result = max(result - (Vtop - Vmax), 0.0)
-        end
-    end
-    return result
+    return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
+    # result = 0.0
+    # for i in 1:rank
+    #     result += f1[i] * f2[i] / f12[i]
+    #     if Vtop > Vmax
+    #         result = max(result - (Vtop - Vmax), 0.0)
+    #     end
+    # end
+    # return result
 end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}

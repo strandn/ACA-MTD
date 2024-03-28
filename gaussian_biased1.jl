@@ -20,7 +20,8 @@ data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 weights = ones(len)
 # kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -52,7 +53,8 @@ println()
 
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
@@ -75,7 +77,7 @@ F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots.txt")
 initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
-for r in 2:3
+for r in 2:2
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
 	open("pivots1.txt", "w") do file
@@ -91,15 +93,16 @@ for r in 2:3
 		end
 	end
 end
-for r in 1:3
+for r in 1:2
 	row, col = F.I[F.pos + 1][r], F.J[F.pos + 1][r]
 	println("$(row) $(col) $(F.f(row..., col...)...)")
 end
 
+vmax = 0.0
 open("vbias2.txt", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
-			write(file, "$(Vbias(F, 0.0, x, y)) ")
+			write(file, "$(Vbias(F, vmax, x, y)) ")
 		end
 		write(file, "\n")
 	end
@@ -125,8 +128,8 @@ function grad_Vbias(r)
 	h = (step(kde_result.x), step(kde_result.y))
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dVdx = (Vbias(F, 0.0, x(r) + h[1], y(r)) - Vbias(F, 0.0, x(r) - h[1], y(r))) / (2 * h[1])
-	dVdy = (Vbias(F, 0.0, x(r), y(r) + h[2]) - Vbias(F, 0.0, x(r), y(r) - h[2])) / (2 * h[2])
+	dVdx = (Vbias(F, vmax, x(r) + h[1], y(r)) - Vbias(F, vmax, x(r) - h[1], y(r))) / (2 * h[1])
+	dVdy = (Vbias(F, vmax, x(r), y(r) + h[2]) - Vbias(F, vmax, x(r), y(r) - h[2])) / (2 * h[2])
 	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]

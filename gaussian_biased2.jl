@@ -20,7 +20,8 @@ data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 weights = ones(len)
 # kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -34,7 +35,8 @@ data = vcat(data, data1)
 len1 = length(data1[:, 1])
 weights = [weights; [exp(Vbias(F, 0.0, data1[i, 2], data1[i, 3])) for i in 1:len1]]
 # kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
 domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
@@ -66,7 +68,8 @@ println()
 
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
 # kde_result = kde(data[:,2:3], weights = weights, npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], weights = weights, bandwidth = (0.5, 0.5), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 
 ik = InterpKDE(kde_result)
@@ -89,7 +92,7 @@ F = ResFunc(rhohat, domain_cv_small)
 fp = open("pivots1.txt")
 initIJ(F, eval(Meta.parse(readline(fp))))
 close(fp)
-for r in 4:5
+for r in 3:3
     println("Target rank $r")
     IJ = continuous_aca(F, [r], n_chains, n_samples, jump_width, mpi_comm)
 	open("pivots2.txt", "w") do file
@@ -105,12 +108,12 @@ for r in 4:5
 		end
 	end
 end
-for r in 1:5
+for r in 1:3
 	row, col = F.I[F.pos + 1][r], F.J[F.pos + 1][r]
 	println("$(row) $(col) $(F.f(row..., col...)...)")
 end
 
-vmax = 28.9758
+vmax = 0.0
 open("vbias3.txt", "w") do file
 	for x in kde_result.x
 		for y in kde_result.y
