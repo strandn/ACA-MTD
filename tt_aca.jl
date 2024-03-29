@@ -84,7 +84,7 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     # return -sum(alpha .* f1 .* f2 ./ f12)
 
     Vinc = 5.0
-    alpha = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+    alpha = [1.0, 1.0, 1.0, 0.2, 0.3, 1.0]
     rank = length(F.I[F.pos + 1])
     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
@@ -94,9 +94,13 @@ function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
     f1 = -log.(abs.(kde1))
     f2 = -log.(abs.(kde2))
     f12 = -log.(abs.(kde12))
-    f1 = [max(-(f1[i] - f12[i]) + Vinc, 0) for i in 1:rank]
-    f2 = [max(-(f2[i] - f12[i]) + Vinc, 0) for i in 1:rank]
-    f12 = fill(Vinc, rank)
+    fmin = minimum(f12)
+    # println("$f1 $f2 $f12 $fmin")
+    f1 = [max(-(f1[i] - fmin) + Vinc, 0) for i in 1:rank]
+    f2 = [max(-(f2[i] - fmin) + Vinc, 0) for i in 1:rank]
+    f12 = [max(-(f12[i] - fmin) + Vinc, 0) for i in 1:rank]
+    # println("$(f1 .* f2 ./ f12)")
+    # return sum(f1 .* f2 ./ f12)
     # return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
     result = 0.0
     for i in 1:rank
