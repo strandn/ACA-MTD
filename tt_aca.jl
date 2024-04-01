@@ -37,79 +37,79 @@ function (F::ResFunc{T, N})(elements::T...) where {T, N}
 end
 
 
-function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
-    # if length(F.I[F.pos + 1]) == 1
-    #     return -10 * log(abs(F(elements...)) + 1.0e-6)
-    # elseif length(F.I[F.pos + 1]) == 2
-    #     return -30 * log(abs(F(elements...)) + 1.0e-5)
-    # end
-    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    # k = length(F.I[F.pos + 1])
-    # old = new = zeros(1, 1)
-    # for iter in 0:k
-    #     new = zeros(k - iter + 1, k - iter + 1)
-    #     for idx in CartesianIndices(new)
-    #         if iter == 0
-    #             row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-    #             col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-    #             # new[idx] = log(F.f((row..., col...)...)) - log(0.1 * F.minp[F.pos])
-    #             eps = 1.0e-12
-    #             new[idx] = log(max(abs(F.f((row..., col...)...)), eps)) - log(eps)
-    #         else
-    #             new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-    #         end
-    #     end
-    #     old = deepcopy(new)
-    # end
-    # return -abs(new[])
+# function Vbias(F::ResFunc{T, N}, elements::T...) where {T, N}
+#     # if length(F.I[F.pos + 1]) == 1
+#     #     return -10 * log(abs(F(elements...)) + 1.0e-6)
+#     # elseif length(F.I[F.pos + 1]) == 2
+#     #     return -30 * log(abs(F(elements...)) + 1.0e-5)
+#     # end
+#     # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+#     # k = length(F.I[F.pos + 1])
+#     # old = new = zeros(1, 1)
+#     # for iter in 0:k
+#     #     new = zeros(k - iter + 1, k - iter + 1)
+#     #     for idx in CartesianIndices(new)
+#     #         if iter == 0
+#     #             row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
+#     #             col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
+#     #             # new[idx] = log(F.f((row..., col...)...)) - log(0.1 * F.minp[F.pos])
+#     #             eps = 1.0e-12
+#     #             new[idx] = log(max(abs(F.f((row..., col...)...)), eps)) - log(eps)
+#     #         else
+#     #             new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
+#     #         end
+#     #     end
+#     #     old = deepcopy(new)
+#     # end
+#     # return -abs(new[])
     
-    # eps, alpha = if length(F.I[F.pos + 1]) == 1
-    #     [1.0e-2], [1.0]
-    # elseif length(F.I[F.pos + 1]) == 2
-    #     [1.0e-2, 1.0e-2], [1.0, 0.16]
-    # elseif length(F.I[F.pos + 1]) == 3
-    #     [1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03]
-    # elseif length(F.I[F.pos + 1]) == 4
-    #     [1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03, 0.1]
-    # end
-    # rank = length(F.I[F.pos + 1])
-    # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    # (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
-    # kde1 = [F.f((x..., yk...)...) for yk in ylist]
-    # kde2 = [F.f((xk..., y...)...) for xk in xlist]
-    # kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
-    # f1 = [-log(max(kde1[i], eps[i])) + log(eps[i]) for i in 1:rank]
-    # f2 = [-log(max(kde2[i], eps[i])) + log(eps[i]) for i in 1:rank]
-    # f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
-    # return -sum(alpha .* f1 .* f2 ./ f12)
+#     # eps, alpha = if length(F.I[F.pos + 1]) == 1
+#     #     [1.0e-2], [1.0]
+#     # elseif length(F.I[F.pos + 1]) == 2
+#     #     [1.0e-2, 1.0e-2], [1.0, 0.16]
+#     # elseif length(F.I[F.pos + 1]) == 3
+#     #     [1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03]
+#     # elseif length(F.I[F.pos + 1]) == 4
+#     #     [1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6], [1.0, 0.08, 0.03, 0.1]
+#     # end
+#     # rank = length(F.I[F.pos + 1])
+#     # (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+#     # (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
+#     # kde1 = [F.f((x..., yk...)...) for yk in ylist]
+#     # kde2 = [F.f((xk..., y...)...) for xk in xlist]
+#     # kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
+#     # f1 = [-log(max(kde1[i], eps[i])) + log(eps[i]) for i in 1:rank]
+#     # f2 = [-log(max(kde2[i], eps[i])) + log(eps[i]) for i in 1:rank]
+#     # f12 = [-log(max(kde12[i], eps[i])) + log(eps[i]) for i in 1:rank]
+#     # return -sum(alpha .* f1 .* f2 ./ f12)
 
-    Vinc = 5.0
-    alpha = [1.0, 1.0, 1.0, 0.2, 0.3, 1.0]
-    rank = length(F.I[F.pos + 1])
-    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
-    kde1 = [F.f((x..., yk...)...) for yk in ylist]
-    kde2 = [F.f((xk..., y...)...) for xk in xlist]
-    kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
-    f1 = -log.(abs.(kde1))
-    f2 = -log.(abs.(kde2))
-    f12 = -log.(abs.(kde12))
-    fmin = minimum(f12)
-    # println("$f1 $f2 $f12 $fmin")
-    f1 = [max(-(f1[i] - fmin) + Vinc, 0) for i in 1:rank]
-    f2 = [max(-(f2[i] - fmin) + Vinc, 0) for i in 1:rank]
-    f12 = [max(-(f12[i] - fmin) + Vinc, 0) for i in 1:rank]
-    # println("$(f1 .* f2 ./ f12)")
-    # return sum(f1 .* f2 ./ f12)
-    # return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
-    result = 0.0
-    for i in 1:rank
-        # result += f1[i] * f2[i] / f12[i]
-        # result = max(result - offsets[i], 0.0)
-        result += alpha[i] * f1[i] * f2[i] / f12[i]
-    end
-    return result
-end
+#     Vinc = 5.0
+#     alpha = [1.0, 1.0, 1.0, 0.2, 0.3, 1.0]
+#     rank = length(F.I[F.pos + 1])
+#     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+#     (xlist, ylist) = (F.I[F.pos + 1], F.J[F.pos + 1])
+#     kde1 = [F.f((x..., yk...)...) for yk in ylist]
+#     kde2 = [F.f((xk..., y...)...) for xk in xlist]
+#     kde12 = [F.f((xlist[i]..., ylist[i]...)...) for i in 1:rank]
+#     f1 = -log.(abs.(kde1))
+#     f2 = -log.(abs.(kde2))
+#     f12 = -log.(abs.(kde12))
+#     fmin = minimum(f12)
+#     # println("$f1 $f2 $f12 $fmin")
+#     f1 = [max(-(f1[i] - fmin) + Vinc, 0) for i in 1:rank]
+#     f2 = [max(-(f2[i] - fmin) + Vinc, 0) for i in 1:rank]
+#     f12 = [max(-(f12[i] - fmin) + Vinc, 0) for i in 1:rank]
+#     # println("$(f1 .* f2 ./ f12)")
+#     # return sum(f1 .* f2 ./ f12)
+#     # return Vtop > Vmax ? max(sum(f1 .* f2 ./ f12) - (Vtop - Vmax), 0.0) : sum(f1 .* f2 ./ f12)
+#     result = 0.0
+#     for i in 1:rank
+#         # result += f1[i] * f2[i] / f12[i]
+#         # result = max(result - offsets[i], 0.0)
+#         result += alpha[i] * f1[i] * f2[i] / f12[i]
+#     end
+#     return result
+# end
 
 function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
     order = F.ndims

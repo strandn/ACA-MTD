@@ -12,6 +12,23 @@ include("tt_aca.jl")
 MPI.Init()
 mpi_comm = MPI.COMM_WORLD
 
+function V(r)
+	x1, x2, x3, x4 = r
+	large1 = [1.0, 0.0, 0.0, -1.0]
+	large2 = [-1.0, -1.0, 1.0, -1.0]
+	large3 = [-1.0, -1.0, -1.0, 1.0]
+	max1 = [0.0, -0.5, 0.5, -1.0]
+	max2 = [0.0, -0.5, -0.5, 0.0]
+	max3 = [-1.0, -1.0, 0.0, -0.0]
+	max4 = [-1/3, -2/3, 0.0, -1/3]
+	return 30 * exp(-5 * norm(r - max1) ^ 2) + 35 * exp(-5 * norm(r - max2) ^ 2) + 40 * exp(-5 * norm(r - max3) ^ 2) +
+		45 * exp(-5 * norm(r - max4) ^ 2) -
+		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
+		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
+end
+
+
+
 domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
 nbins = 256
@@ -19,14 +36,14 @@ nbins = 256
 data = readdlm("colvar.txt", ' ', Float64)
 len = length(data[:, 1])
 println("$(minimum(data[:,2])) $(maximum(data[:,2])) $(minimum(data[:,3])) $(maximum(data[:,3]))")
-# kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
-# kde_result = kde(data[:,2:3], bandwidth = (0.1, 0.1), npoints = (nbins, nbins))
-kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
-# kde_result = kde(data[:,2:3], bandwidth = (0.9, 1.2), npoints = (nbins, nbins))
-# kde_result = kde(data[:,2:3], bandwidth = (0.87, 1.11), npoints = (nbins, nbins))
+kde_result = kde(data[:,2:3], npoints = (nbins, nbins))
+# kde_result = kde(data[:,2:3], bandwidth = (0.2, 0.2), npoints = (nbins, nbins))
 println("$(kde_result.x) $(kde_result.y)")
 p = contour(kde_result.x, kde_result.y, kde_result.density)
 savefig(p, "plot.png")
+
+println("std2 $(sqrt(sum((data[:,2].-mean(data[:,2])).^2)/(len-1)))")
+println("std3 $(sqrt(sum((data[:,3].-mean(data[:,3])).^2)/(len-1)))")
 
 ik = InterpKDE(kde_result)
 rhohat(x, y) = pdf(ik, x, y)
