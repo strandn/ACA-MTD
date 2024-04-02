@@ -47,7 +47,7 @@ function grad_V(r, slist, w, sigma)
 	return grad
 end
 
-function well_tempered_mtd()
+function well_tempered_mtd(biasfactor::Float64)
 	domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 	
 	T = 1.0
@@ -69,7 +69,7 @@ function well_tempered_mtd()
 
 	pace = 500
 	height = 1.2
-	biasfactor = 6
+	# biasfactor = 6
 	sigma = [0.15, 0.15]
 	
 	traj = []
@@ -137,4 +137,7 @@ function well_tempered_mtd()
 	# end
 end
 
-well_tempered_mtd()
+println(ARGS)
+flush(stdout)
+biasfactor = parse(Int64, ARGS[1])
+well_tempered_mtd(biasfactor)
