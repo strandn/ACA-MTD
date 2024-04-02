@@ -4,7 +4,7 @@
 #SBATCH --output=%x.out
 #SBATCH --error=%x.err
  
-#SBATCH --time=2:00:00
+#SBATCH --time=2-0:00:00
  
 #SBATCH --partition=dinner
 #SBATCH --account=pi-dinner
@@ -23,4 +23,4 @@ echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
 # julia gaussian_cv.jl
-mpiexecjl -n 1 julia gaussian_biased.jl
+mpiexecjl -n 1 julia gaussian_mtd.jl

@@ -53,7 +53,7 @@ function well_tempered_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = 1e7
+	steps = 1e8
 	
 	x1 = rand(Normal(-1.0, 0.1))
 	x2 = rand(Normal(-1.0, 0.1))
@@ -64,7 +64,7 @@ function well_tempered_mtd()
 	kb = 1.0
 	normal_dist = Normal(0.0, sqrt(2 * kb * T / (gamma * dt)))
 	
-	stride = 10
+	stride = 100
 	t = 0.0
 
 	pace = 500
@@ -115,7 +115,7 @@ function well_tempered_mtd()
 
 		if i % pace == 0
 			s_new = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-			w_new = biasfactor * exp(-Vbias([x1, x2, x3, x4], slist, w, sigma) / (kb * T * (biasfactor - 1)))
+			w_new = height * exp(-Vbias([x1, x2, x3, x4], slist, w, sigma) / (kb * T * (biasfactor - 1)))
 			push!(slist, s_new)
 			push!(w, w_new)
 			open("hills.txt", "a") do file
