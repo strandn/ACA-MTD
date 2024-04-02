@@ -24,4 +24,4 @@ echo $SLURM_JOB_NODELIST
 
 # julia gaussian_cv.jl
 # mpiexecjl -n 1 julia gaussian_biased.jl
-julia gaussian_mtd.jl 2
+julia gaussian_mtd.jl 2.0
