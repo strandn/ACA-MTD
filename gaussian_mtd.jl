@@ -111,14 +111,14 @@ function well_tempered_mtd(biasfactor::Float64)
 			w_new = height * exp(-Vbias([x1, x2, x3, x4], slist, w, sigma) / (kb * T * (biasfactor - 1)))
 			push!(slist, s_new)
 			push!(w, w_new)
-			open("hills.txt", "a") do file
+			open("hills_$biasfactor.txt", "a") do file
 				write(file, "$t $s_new $w_new\n")
 			end
 		end
 
 		t += dt
 	end
-	open("colvar.txt", "w") do file
+	open("colvar_$biasfactor.txt", "w") do file
 		for step in traj
 			write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 		end
