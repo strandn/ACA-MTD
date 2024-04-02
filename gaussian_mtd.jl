@@ -38,7 +38,7 @@ function grad_V(r, slist, w, sigma)
 	return grad
 end
 
-function well_tempered_mtd(biasfactor::Float64)
+function well_tempered_mtd(biasfactor)
 	domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 	
 	T = 1.0
