@@ -1,16 +1,9 @@
-using KernelDensity
-using DelimitedFiles
-using Plots
-using MPI
 using Random
 using Distributions
 using ForwardDiff
 using LinearAlgebra
 
 include("tt_aca.jl")
-
-MPI.Init()
-mpi_comm = MPI.COMM_WORLD
 
 x(r) = 0.82 - 0.82 * r[1] - 0.41 * r[2] + 0.41 * r[3]
 y(r) = 0.98 - 0.25 * r[1] - 0.12 * r[2] - 0.62 * r[3] + 0.74 * r[4]
