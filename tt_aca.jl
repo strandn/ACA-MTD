@@ -189,7 +189,7 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, 
             elseif res_new[] > F.resfirst[i]
                 F.resfirst[i] = res_new[]
             # elseif res_new[] / F.resfirst[i] < 1e-6
-            elseif res_new[] / F.resfirst[i] < 1e-3
+            elseif res_new[] / F.resfirst[i] < 0.1
                 break
             end
             updateIJ(F, xy[])
@@ -243,7 +243,9 @@ function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, ju
         arg_new = [pivot; [p_new[k] for k in 1:order]]
         f_old = abs(F(arg_old...))
         f_new = abs(F(arg_new...))
-        acceptance_prob = min(1, f_new / f_old)
+        # acceptance_prob = min(1, f_new / f_old)
+        # TODO might need to allow for variable kT
+        acceptance_prob = min(1, exp(f_new - f_old))
         
         if isnan(acceptance_prob) || rand() < acceptance_prob
             chain[i, :] = p_new
