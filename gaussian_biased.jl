@@ -282,7 +282,7 @@ function aca_mtd()
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
 		flush(stdout)
 		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins))
-		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), bandwidth = (0.2, 0.2))
+		# kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), bandwidth = (0.2, 0.2))
 		println("$(kde_result.x) $(kde_result.y)")
 		flush(stdout)
 		
