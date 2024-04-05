@@ -65,10 +65,9 @@ function dens(F, s)
 	end
 	result *= R
 	return result[]
-	# return 1.0e3 * max(result[], 1.0e-3)
 end
 
-dens_adj(F, s) = 1.0e3 * max(dens(F, s), 1.0e-3)
+dens_adj(F, s) = 1.0e2 * max(dens(F, s), 1.0e-2)
 
 function Vbias(s, rholist, kT)
 	result = 0.0
@@ -102,7 +101,7 @@ function dVbias(s, rholist, kT, Vshift, h)
 	end
 	for F in rholist
 		rho = dens(F, s)
-		if rho > 1.0e-3
+		if rho > 1.0e-2
 			order = F.ndims
 			npivots = [length(F.I[i]) for i in 2:order]
 			outer = []
@@ -281,13 +280,12 @@ function aca_mtd()
 		ylist = [step[3] for step in traj]
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
 		flush(stdout)
-		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins))
-		# kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), bandwidth = (0.2, 0.2))
+		# kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins))
+		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), bandwidth = (0.1, 0.1))
 		println("$(kde_result.x) $(kde_result.y)")
 		flush(stdout)
 		
 		ik = InterpKDE(kde_result)
-		# rhohat(x, y) = 1.0e3 * max(pdf(ik, x, y), 1.0e-3)
 		rhohat(x, y) = pdf(ik, x, y)
 		open("kde_$count.txt", "w") do file
 			for x in kde_result.x
