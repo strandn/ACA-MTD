@@ -188,7 +188,8 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, 
                 push!(F.resfirst, res_new[])
             elseif res_new[] > F.resfirst[i]
                 F.resfirst[i] = res_new[]
-            elseif res_new[] / F.resfirst[i] < 1e-6
+            # elseif res_new[] / F.resfirst[i] < 1e-6
+            elseif res_new[] / F.resfirst[i] < 1e-3
                 break
             end
             updateIJ(F, xy[])
