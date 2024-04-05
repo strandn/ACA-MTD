@@ -283,6 +283,7 @@ function aca_mtd()
 		# kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins))
 		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), bandwidth = (0.1, 0.1))
 		println("$(kde_result.x) $(kde_result.y)")
+		println()
 		flush(stdout)
 		
 		ik = InterpKDE(kde_result)
@@ -295,7 +296,6 @@ function aca_mtd()
 				write(file, "\n")
 			end
 		end
-		println()
 		
 		# n_chains = 100
 		# n_samples = 1000
@@ -308,9 +308,11 @@ function aca_mtd()
 		F = ResFunc(rhohat, domain_cv_small)
 		rank = 50
 		println("Target rank $rank")
+		flush(stdout)
 		IJ = continuous_aca(F, [rank], n_chains, n_samples, jump_width, mpi_comm)
 		println(IJ)
 		println()
+		flush(stdout)
 
 		open("dF_$(count).txt", "w") do file
 			for x in kde_result.x
@@ -326,6 +328,7 @@ function aca_mtd()
 		Vshift = max(Vpeak - Vmax, 0.0)
 		println("Vtop = $Vpeak Vshift = $Vshift")
 		println()
+		flush(stdout)
 		# open("res$count.txt", "w") do file
 		# 	for x in kde_result.x
 		# 		for y in kde_result.y
