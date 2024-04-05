@@ -199,10 +199,10 @@ function aca_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	# steps = 1e7
-	# stride = 100
-	steps = 10000
-	stride = 10
+	steps = 1e7
+	stride = 100
+	# steps = 10000
+	# stride = 10
 	nbiasupdates = 10
 
 	x1 = rand(Normal(-1.0, 0.1))

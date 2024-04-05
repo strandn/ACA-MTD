@@ -1,6 +1,6 @@
 #!/bin/bash
  
-#SBATCH --job-name=gaussian_mtd_20
+#SBATCH --job-name=gaussian_biased_01_3_2
 #SBATCH --output=%x.out
 #SBATCH --error=%x.err
  
@@ -23,5 +23,5 @@ echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
 # julia gaussian_cv.jl
-# mpiexecjl -n 1 julia gaussian_biased.jl
-julia gaussian_mtd.jl 20
+mpiexecjl -n 1 julia gaussian_biased.jl
+# julia gaussian_mtd.jl 20
