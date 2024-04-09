@@ -156,10 +156,6 @@ function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 	npivots = [length(F_Vbias.I[i]) for i in 2:order]
 	h = [(d[2] - d[1]) / (nbins - 1) for d in domain]
 	outer = []
-	# mat = zeros(1, npivots[1])
-	# for j in 1:npivots[1]
-		# mat[j] = F.f((s[1], F.J[2][j]...)...)
-	# end
 	range = domain[1][1]:(domain[1][2]-domain[1][1])/(nbins-1):domain[1][2]
 	mat = [
 		linear_interpolation(range, [F_Vbias.f((s, F_Vbias.J[2][j]...)...) for s in range])
@@ -167,12 +163,6 @@ function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 	]
 	push!(outer, mat)
 	for i in 2:order-1
-		# mat = zeros(npivots[i - 1], npivots[i])
-		# for j in 1:npivots[i - 1]
-		# 	for k in 1:npivots[i]
-				# mat[j, k] = F.f((F.I[i][j]..., s[i], F.J[i + 1][k]...)...)
-		# 	end
-		# end
 		range = domain[i][1]:(domain[i][2]-domain[i][1])/(nbins-1):domain[i][2]
 		mat = [
 			[
@@ -183,10 +173,6 @@ function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 		]
 		push!(outer, mat)
 	end
-	# mat = zeros(npivots[order - 1], 1)
-	# for j in 1:npivots[order - 1]
-		# mat[j] = F.f((F.I[order][j]..., s[order])...)
-	# end
 	range = domain[order][1]:(domain[order][2]-domain[order][1])/(nbins-1):domain[order][2]
 	mat = [
 		linear_interpolation(range, [F_Vbias.f((F_Vbias.I[order][j]..., s)...) for s in range])
@@ -194,11 +180,6 @@ function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 	]
 	push!(outer, mat)
 	douter = []
-	# mat = zeros(1, npivots[1])
-	# for j in 1:npivots[1]
-		# mat[j] = (F.f((s[1] + h[1], F.J[2][j]...)...) - F.f((s[1] - h[1], F.J[2][j]...)...)) / (2 * h[1])
-	# end
-	# range = domain[1][1]:(domain[1][2]-domain[1][1])/(nbins - 1):domain[1][2]
 	gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[1]]
 	for j in 1:npivots[1]
 		for pos in 1:nbins
@@ -217,12 +198,6 @@ function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 	]
 	push!(douter, mat)
 	for i in 2:order-1
-		# mat = zeros(npivots[i - 1], npivots[i])
-		# for j in 1:npivots[i - 1]
-		# 	for k in 1:npivots[i]
-				# mat[j, k] = (F.f((F.I[i][j]..., s[i] + h[i], F.J[i + 1][k]...)...) - F.f((F.I[i][j]..., s[i] - h[i], F.J[i + 1][k]...)...)) / (2 * h[i])
-		# 	end
-		# end
 		gridpoints = [[[0.0 for _ in 1:nbins] for _ in 1:npivots[i]] for _ in 1:npivots[i - 1]]
 		for j in 1:npivots[i - 1]
 			for k in 1:npivots[i]
@@ -246,10 +221,6 @@ function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 		]
 		push!(douter, mat)
 	end
-	# mat = zeros(npivots[order - 1], 1)
-	# for j in 1:npivots[order - 1]
-		# mat[j] = (F.f((F.I[order][j]..., s[order] + h[order])...) - F.f((F.I[order][j]..., s[order] - h[order])...))/ (2 * h[order])
-	# end
 	gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[order - 1]]
 	for j in 1:npivots[order - 1]
 		for pos in 1:nbins
