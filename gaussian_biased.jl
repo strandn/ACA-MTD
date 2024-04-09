@@ -4,6 +4,7 @@ using Random
 using Distributions
 using ForwardDiff
 using LinearAlgebra
+using Interpolations
 
 include("tt_aca.jl")
 
@@ -149,10 +150,11 @@ end
 # 	return grad
 # end
 
-function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
+function dVbias_mats(F_Vbias, rholist, Vshift, domain, nbins)
 	# TODO replace finite difference derivatives with analytical derivatives?
 	order = F_Vbias.ndims
 	npivots = [length(F_Vbias.I[i]) for i in 2:order]
+	h = [(d[2] - d[1]) / (nbins - 1) for d in domain]
 	outer = []
 	# mat = zeros(1, npivots[1])
 	# for j in 1:npivots[1]
@@ -160,7 +162,7 @@ function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
 	# end
 	range = domain[1][1]:(domain[1][2]-domain[1][1])/(nbins-1):domain[1][2]
 	mat = [
-		linear_interpolation(range, [F_Vbias.f((x, F_Vbias.J[2][j]...)...) for x in range])
+		linear_interpolation(range, [F_Vbias.f((s, F_Vbias.J[2][j]...)...) for s in range])
 		for j in 1:npivots[1]
 	]
 	push!(outer, mat)
@@ -174,7 +176,7 @@ function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
 		range = domain[i][1]:(domain[i][2]-domain[i][1])/(nbins-1):domain[i][2]
 		mat = [
 			[
-				linear_interpolation(range, [F_Vbias.f((F_Vbias.I[i][j]..., x, F_Vbias.J[i + 1][k]...)...) for x in range])
+				linear_interpolation(range, [F_Vbias.f((F_Vbias.I[i][j]..., s, F_Vbias.J[i + 1][k]...)...) for s in range])
 				for k in 1:npivots[i]
 			]
 			for j in 1:npivots[i - 1]
@@ -187,7 +189,7 @@ function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
 	# end
 	range = domain[order][1]:(domain[order][2]-domain[order][1])/(nbins-1):domain[order][2]
 	mat = [
-		linear_interpolation(range, [F_Vbias.f((F_Vbias.I[order][j]..., x)...) for x in range])
+		linear_interpolation(range, [F_Vbias.f((F_Vbias.I[order][j]..., s)...) for s in range])
 		for j in 1:npivots[order - 1]
 	]
 	push!(outer, mat)
@@ -200,10 +202,10 @@ function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
 	gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[1]]
 	for j in 1:npivots[1]
 		for pos in 1:nbins
-			x = domain[1][1] + (pos - 1) * (domain[1][2] - domain[1][1]) / (nbins - 1)
-			if Vbias([x, F_Vbias.J[2][j]...], rholist) > Vshift
+			s = domain[1][1] + (pos - 1) * (domain[1][2] - domain[1][1]) / (nbins - 1)
+			if Vbias([s, F_Vbias.J[2][j]...], rholist) > Vshift
 				for F in rholist
-					gridpoints[j][pos] += (F.f((x + h[1], F.J[2][j]...)...) - F.f((x - h[1], F.J[2][j]...)...)) / (2 * h[1])
+					gridpoints[j][pos] += (F.f((s + h[1], F.J[2][j]...)...) - F.f((s - h[1], F.J[2][j]...)...)) / (2 * h[1])
 				end
 			end
 		end
@@ -225,10 +227,10 @@ function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
 		for j in 1:npivots[i - 1]
 			for k in 1:npivots[i]
 				for pos in 1:nbins
-					x = domain[i][1] + (pos - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
-					if Vbias([F.I[i][j]..., x, F.J[i + 1][k]...], rholist) > Vshift
+					s = domain[i][1] + (pos - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
+					if Vbias([F_Vbias.I[i][j]..., s, F_Vbias.J[i + 1][k]...], rholist) > Vshift
 						for F in rholist
-							gridpoints[j][k][pos] += (F.f((F.I[i][j]..., x + h[i], F.J[i + 1][k]...)...) - F.f((F.I[i][j]..., x - h[i], F.J[i + 1][k]...)...)) / (2 * h[i])
+							gridpoints[j][k][pos] += (F.f((F.I[i][j]..., s + h[i], F.J[i + 1][k]...)...) - F.f((F.I[i][j]..., s - h[i], F.J[i + 1][k]...)...)) / (2 * h[i])
 						end
 					end
 				end
@@ -251,10 +253,10 @@ function dVbias_mats(F_Vbias, rholist, Vshift, h, domain, nbins)
 	gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[order - 1]]
 	for j in 1:npivots[order - 1]
 		for pos in 1:nbins
-			x = domain[order][1] + (pos - 1) * (domain[order][2] - domain[order][1]) / (nbins - 1)
-			if Vbias([F.I[order][j]..., x], rholist) > Vshift
+			s = domain[order][1] + (pos - 1) * (domain[order][2] - domain[order][1]) / (nbins - 1)
+			if Vbias([F_Vbias.I[order][j]..., s], rholist) > Vshift
 				for F in rholist
-					gridpoints[j][pos] += (F.f((F.I[order][j]..., x + h[order])...) - F.f((F.I[order][j]..., x - h[order])...))/ (2 * h[order])
+					gridpoints[j][pos] += (F.f((F.I[order][j]..., s + h[order])...) - F.f((F.I[order][j]..., s - h[order])...))/ (2 * h[order])
 				end
 			end
 		end
@@ -275,7 +277,7 @@ function dVbias(s, F_Vbias, outer, douter)
 	inner = []
 	mat = zeros(1, npivots[1])
 	for j in 1:npivots[1]
-		mat[j] = outer[j](s[1])
+		mat[j] = outer[1][j](s[1])
 	end
 	push!(outermat, mat)
 	AIJ = zeros(npivots[1], npivots[1])
@@ -289,7 +291,7 @@ function dVbias(s, F_Vbias, outer, douter)
 		mat = zeros(npivots[i - 1], npivots[i])
 		for j in 1:npivots[i - 1]
 			for k in 1:npivots[i]
-				mat[j, k] = outer[j][k](s[i])
+				mat[j, k] = outer[i][j][k](s[i])
 			end
 		end
 		push!(outermat, mat)
@@ -303,27 +305,27 @@ function dVbias(s, F_Vbias, outer, douter)
 	end
 	mat = zeros(npivots[order - 1], 1)
 	for j in 1:npivots[order - 1]
-		mat[j] = outer[j](s[order])
+		mat[j] = outer[order][j](s[order])
 	end
 	push!(outermat, mat)
 	doutermat = []
 	mat = zeros(1, npivots[1])
 	for j in 1:npivots[1]
-		mat[j] = douter[j](s[1])
+		mat[j] = douter[1][j](s[1])
 	end
 	push!(doutermat, mat)
 	for i in 2:order-1
 		mat = zeros(npivots[i - 1], npivots[i])
 		for j in 1:npivots[i - 1]
 			for k in 1:npivots[i]
-				mat[j, k] = douter[j][k](s[i])
+				mat[j, k] = douter[i][j][k](s[i])
 			end
 		end
 		push!(doutermat, mat)
 	end
 	mat = zeros(npivots[order - 1], 1)
 	for j in 1:npivots[order - 1]
-		mat[j] = douter[j](s[order])
+		mat[j] = douter[order][j](s[order])
 	end
 	push!(doutermat, mat)
 	inc = fill(outermat[1], order - 1)
@@ -360,10 +362,10 @@ function aca_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = 1e7
-	stride = 100
-	# steps = 10000
-	# stride = 10
+	# steps = 1e7
+	# stride = 100
+	steps = 10000
+	stride = 10
 	nbiasupdates = 10
 
 	x1 = rand(Normal(-1.0, 0.1))
@@ -377,11 +379,12 @@ function aca_mtd()
 	normal_dist = Normal(0.0, sigma)
 
 	rholist = []
-	Vmax = 20 * kb * T
+	# Vmax = 20 * kb * T
+	Vmax = Inf
 	Vinc = 4.6 * kb * T
 	samples = []
 	Vshift = 0.0
-	h = (0.0, 0.0)
+	# h = (0.0, 0.0)
 	F_Vbias = ResFunc(0, domain_cv, 0.0)
 	outer = []
 	douter = []
@@ -393,7 +396,7 @@ function aca_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], F_bias, outer, douter)
+			grad = grad_V([x1, x2, x3, x4], F_Vbias, outer, douter)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -428,9 +431,9 @@ function aca_mtd()
 
 			if i % stride == 0
 				# push!(traj, [t, x([x1, x2, x3, x4]), y([x1, x2, x3, x4]), Vbias_shifted([x1, x2, x3, x4], rholist, Vshift)])
-				x, y = x([x1, x2, x3, x4]), y([x1, x2, x3, x4])
-				push!(traj, [t, x, y, compute_func(F_Vbias, [x, y])])
-				push!(samples, [x, y])
+				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
+				push!(traj, [t, s[1], s[2], compute_func(F_Vbias, s)])
+				push!(samples, s)
 			end
 		end
 		open("data/colvar_$count.txt", "w") do file
@@ -472,7 +475,8 @@ function aca_mtd()
 		n_chains = 10
 		n_samples = 100
 		jump_width = 0.01
-		rank = 50
+		# rank = 50
+		rank = 2
 		domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 		F = ResFunc(fhat_adj, domain_cv_small, 0.1)
 		println("Target rank $rank")
@@ -500,7 +504,7 @@ function aca_mtd()
 		flush(stdout)
 
 		Vbias_shifted_f(x, y) = Vbias_shifted([x, y], rholist, Vshift)
-		F_Vbias = ResFunc(Vbias_shifted_f, domain_cv, 0.01)
+		F_Vbias = ResFunc(Vbias_shifted_f, domain_cv, 10^-3)
 		println("Target rank $rank (full Vbias)")
 		flush(stdout)
 		IJ = continuous_aca(F_Vbias, [rank], n_chains, n_samples, jump_width, mpi_comm)
@@ -508,21 +512,34 @@ function aca_mtd()
 		println()
 		flush(stdout)
 
+		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/(nbins-1):domain_cv[1][2]
+		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/(nbins-1):domain_cv[2][2]
 		open("data/F_$count.txt", "w") do file
-			for x in kde_result.x
-				for y in kde_result.y
+			for x in rangex
+				for y in rangey
 					# write(file, "$(-Vbias_shifted([x, y], rholist, Vshift)) ")
 					write(file, "$(compute_func(F_Vbias, [x, y])) ")
 				end
 				write(file, "\n")
 			end
 		end
-		h = (step(kde_result.x), step(kde_result.y))
-		outer, douter = dVbias_mats(F_Vbias, rholist, Vshift, h, domain_cv, nbins)
+		# h = (step(kde_result.x), step(kde_result.y))
+		outer, douter = dVbias_mats(F_Vbias, rholist, Vshift, domain_cv, nbins)
+
+		# for x in rangex
+		# 	for y in rangey
+		# 		grad = dVbias([x, y], F_Vbias, outer, douter)
+		# 		print("$(grad[1]) ")
+		# 		print("$(grad[2]) ")
+		# 	end
+		# 	println()
+		# 	println()
+		# end
+
 		open("data/dVbiasdx_$count.txt", "w") do filex
 			open("data/dVbiasdy_$count.txt", "w") do filey
-				for x in kde_result.x
-					for y in kde_result.y
+				for x in rangex
+					for y in rangey
 						grad = dVbias([x, y], F_Vbias, outer, douter)
 						write(filex, "$(grad[1]) ")
 						write(filey, "$(grad[2]) ")

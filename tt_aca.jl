@@ -265,7 +265,7 @@ function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, ju
     return Tuple(max_xy), max_res, min_res
 end
 
-function compute_func(F::ResFunc{T, N}, x::T) where {T, N}
+function compute_func(F::ResFunc{T, N}, x::Vector{T}) where {T, N}
     order = F.ndims
 	npivots = [length(F.I[i]) for i in 2:order]
 	result = zeros(1, npivots[1])
