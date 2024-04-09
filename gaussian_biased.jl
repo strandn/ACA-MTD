@@ -355,10 +355,10 @@ function aca_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	# steps = 1e7
-	# stride = 100
-	steps = 10000
-	stride = 10
+	steps = 1e7
+	stride = 100
+	# steps = 10000
+	# stride = 10
 	nbiasupdates = 10
 
 	x1 = rand(Normal(-1.0, 0.1))
@@ -468,8 +468,8 @@ function aca_mtd()
 		n_chains = 10
 		n_samples = 100
 		jump_width = 0.01
-		# rank = 50
-		rank = 2
+		rank = 50
+		# rank = 2
 		domain_cv_small = ((first(kde_result.x), last(kde_result.x)), (first(kde_result.y), last(kde_result.y)))
 		# F = ResFunc(rhohat, domain_cv_small, 0.1)
 		F = ResFunc(fhat_adj, domain_cv_small, 0.1)
