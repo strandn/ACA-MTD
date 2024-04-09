@@ -388,7 +388,7 @@ function aca_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift, kT)
+			grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift, kb * T)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -423,7 +423,8 @@ function aca_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				push!(traj, [t, s[1], s[2], compute_func(F_Vbias, s)])
+				# push!(traj, [t, s[1], s[2], compute_func(F_Vbias, s)])
+				push!(traj, [t, s[1], s[2], Vbias(s, rholist, kb * T)])
 				push!(samples, s)
 			end
 		end
@@ -472,6 +473,13 @@ function aca_mtd()
 		println(IJ)
 		println()
 		flush(stdout)
+
+		# for x in kde_result.x
+		# 	for y in kde_result.y
+		# 		print("$(-kb * T * log(compute_func(F, [x, y]))) ")
+		# 	end
+		# 	println()
+		# end
 
 		open("data/dF_$(count).txt", "w") do file
 			for x in kde_result.x
