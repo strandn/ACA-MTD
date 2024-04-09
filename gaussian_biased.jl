@@ -504,7 +504,7 @@ function aca_mtd()
 		flush(stdout)
 
 		Vbias_shifted_f(x, y) = Vbias_shifted([x, y], rholist, Vshift)
-		F_Vbias = ResFunc(Vbias_shifted_f, domain_cv, 10^-3)
+		F_Vbias = ResFunc(Vbias_shifted_f, domain_cv, 0.01)
 		println("Target rank $rank (full Vbias)")
 		flush(stdout)
 		IJ = continuous_aca(F_Vbias, [rank], n_chains, n_samples, jump_width, mpi_comm)
