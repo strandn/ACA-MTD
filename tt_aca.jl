@@ -10,9 +10,10 @@ mutable struct ResFunc{T, N}
     J::Vector{Vector{Vector{T}}}
     resfirst::Vector{T}
     minp::Vector{T}
+    cutoff::T
 
-    function ResFunc(f, domain::NTuple{N, Tuple{T, T}}) where {T, N}
-        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], fill(Inf, N - 1))
+    function ResFunc(f, domain::NTuple{N, Tuple{T, T}}, cutoff::T) where {T, N}
+        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], fill(Inf, N - 1), cutoff)
     end
 end
 
@@ -189,7 +190,7 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, 
             elseif res_new[] > F.resfirst[i]
                 F.resfirst[i] = res_new[]
             # elseif res_new[] / F.resfirst[i] < 1e-6
-            elseif res_new[] / F.resfirst[i] < 0.1
+            elseif res_new[] / F.resfirst[i] < F.cutoff
                 break
             end
             updateIJ(F, xy[])
@@ -262,6 +263,43 @@ function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, ju
     end
 
     return Tuple(max_xy), max_res, min_res
+end
+
+function compute_func(F::ResFunc{T, N}, x::T) where {T, N}
+    order = F.ndims
+	npivots = [length(F.I[i]) for i in 2:order]
+	result = zeros(1, npivots[1])
+	for j in 1:npivots[1]
+		result[j] = F.f((x[1], F.J[2][j]...)...)
+	end
+	AIJ = zeros(npivots[1], npivots[1])
+	for j in 1:npivots[1]
+		for k in 1:npivots[1]
+			AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
+		end
+	end
+	result *= inv(AIJ)
+	for i in 2:order-1
+		resulti = zeros(npivots[i - 1], npivots[i])
+		for j in 1:npivots[i - 1]
+			for k in 1:npivots[i]
+				resulti[j, k] = F.f((F.I[i][j]..., x[i], F.J[i + 1][k]...)...)
+			end
+		end
+		AIJ = zeros(npivots[i], npivots[i])
+		for j in 1:npivots[i]
+			for k in 1:npivots[i]
+				AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
+			end
+		end
+		result *= resulti * inv(AIJ)
+	end
+	R = zeros(npivots[order - 1])
+	for j in 1:npivots[order - 1]
+		R[j] = F.f((F.I[order][j]..., x[order])...)
+	end
+	result *= R
+	return result[]
 end
 
 function compute_norm(F::ResFunc{T, N}) where {T, N}
