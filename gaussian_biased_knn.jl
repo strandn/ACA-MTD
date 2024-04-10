@@ -237,6 +237,8 @@ function aca_mtd()
 	# stride = 10
 	nbiasupdates = 20
 
+	traj = fill([0.0, 0.0, 0.0, 0.0], div(steps, stride))
+
 	x1 = rand(Normal(-1.0, 0.1))
 	x2 = rand(Normal(-1.0, 0.1))
 	x3 = rand(Normal(-1.0, 0.1))
@@ -256,7 +258,7 @@ function aca_mtd()
 	outer = []
 	inner = []
 	douter = []
-
+	
 	n_chains = 10
 	n_samples = 100
 	jump_width = 0.01
@@ -268,7 +270,6 @@ function aca_mtd()
 			flush(stdout)
 			t = 0.0
 
-			traj = []
 			for i in 1:steps
 				grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift)
 
@@ -305,7 +306,8 @@ function aca_mtd()
 
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
+					# push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
+					traj[div(i, stride)] = [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)]
 					push!(samples, s)
 				end
 			end
@@ -314,28 +316,33 @@ function aca_mtd()
 					write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 				end
 			end
+		end
+		MPI.Bcast!(traj, 0, mpi_comm)
 
-			xlist = [step[2] for step in traj]
-			ylist = [step[3] for step in traj]
+		xlist = [step[2] for step in traj]
+		ylist = [step[3] for step in traj]
+		if mpi_rank == 0
 			println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
 			flush(stdout)
+		end
 
-			function rhohat(x, y, data)
-				N = size(data, 2)
-				D = size(data, 1)
-				# k_neighbors = 50
-				balltree = BallTree(data)
-				_, dists = knn(balltree, [x, y], k_neighbors, true)
-				return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
-			end
-			
-			data = transpose(hcat(xlist, ylist))
-			fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
-			fmin = minimum([fhat(step[2], step[3]) for step in traj])
-			fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
+		function rhohat(x, y, data)
+			N = size(data, 2)
+			D = size(data, 1)
+			# k_neighbors = 50
+			balltree = BallTree(data)
+			_, dists = knn(balltree, [x, y], k_neighbors, true)
+			return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
+		end
+		
+		data = transpose(hcat(xlist, ylist))
+		fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
+		fmin = minimum([fhat(step[2], step[3]) for step in traj])
+		fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
 
-			rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
-			rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
+		rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
+		rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
+		if mpi_rank == 0
 			open("data/nnde_$count_$k_neighbors.txt", "w") do file
 				write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
 				write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
@@ -346,10 +353,12 @@ function aca_mtd()
 					write(file, "\n")
 				end
 			end
-			
-			domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
-			# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
-			F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
+		end
+		
+		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
+		# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
+		F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
+		if mpi_rank == 0
 			println("Target rank $rank")
 			flush(stdout)
 		end
@@ -407,8 +416,10 @@ function aca_mtd()
 	end
 end
 
-println(ARGS)
-flush(stdout)
+if mpi_rank == 0
+	println(ARGS)
+	flush(stdout)
+end
 # jobid = if length(ARGS) > 0 parse(Int64, ARGS[1]) else 0 end
 rank = parse(Int64, ARGS[1])
 k_neighbors = parse(Int64, ARGS[2])
