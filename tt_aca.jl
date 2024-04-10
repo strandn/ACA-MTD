@@ -127,15 +127,15 @@ function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
 end
 
 function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, n_samples::Int64, jump_width::Float64, mpi_comm::MPI.Comm) where {T, N}
+    mpi_rank = MPI.Comm_rank(mpi_comm)
+    mpi_size = MPI.Comm_size(mpi_comm)
+    
     order = F.ndims
     if order == 1 && mpi_rank == 0
         error(
             "`continuous_aca` currently does not support system sizes of 1.",
         )
     end
-
-    mpi_rank = MPI.Comm_rank(mpi_comm)
-    mpi_size = MPI.Comm_size(mpi_comm)
 
     F.pos = 0
     for i in 1:order-1

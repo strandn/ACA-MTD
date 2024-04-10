@@ -11,6 +11,8 @@ include("tt_aca.jl")
 
 MPI.Init()
 mpi_comm = MPI.COMM_WORLD
+mpi_rank = MPI.Comm_rank(mpi_comm)
+mpi_size = MPI.Comm_size(mpi_comm)
 
 x(z) = 0.82 - 0.82 * z[1] - 0.41 * z[2] + 0.41 * z[3]
 y(z) = 0.98 - 0.25 * z[1] - 0.12 * z[2] - 0.62 * z[3] + 0.74 * z[4]
@@ -255,142 +257,150 @@ function aca_mtd()
 	inner = []
 	douter = []
 
+	n_chains = 10
+	n_samples = 100
+	jump_width = 0.01
+	# rank = 50
+
 	for count in 1:nbiasupdates
-		println("Vbias update $count...")
-		flush(stdout)
-		t = 0.0
+		if mpi_rank == 0
+			println("Vbias update $count...")
+			flush(stdout)
+			t = 0.0
 
-		traj = []
-		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift)
+			traj = []
+			for i in 1:steps
+				grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift)
 
-			v1 = -(grad[1] / fc) + rand(normal_dist)
-			v2 = -(grad[2] / fc) + rand(normal_dist)
-			v3 = -(grad[3] / fc) + rand(normal_dist)
-			v4 = -(grad[4] / fc) + rand(normal_dist)
+				v1 = -(grad[1] / fc) + rand(normal_dist)
+				v2 = -(grad[2] / fc) + rand(normal_dist)
+				v3 = -(grad[3] / fc) + rand(normal_dist)
+				v4 = -(grad[4] / fc) + rand(normal_dist)
 
-			old = [x1, x2, x3, x4]
-			x0 = x([x1, x2, x3, x4])
-			y0 = y([x1, x2, x3, x4])
+				old = [x1, x2, x3, x4]
+				x0 = x([x1, x2, x3, x4])
+				y0 = y([x1, x2, x3, x4])
 
-			x1 += v1 * dt
-			x2 += v2 * dt
-			x3 += v3 * dt
-			x4 += v4 * dt
+				x1 += v1 * dt
+				x2 += v2 * dt
+				x3 += v3 * dt
+				x4 += v4 * dt
 
-			if isnan(x1) || isnan(x2) || isnan(x3) || isnan(x4)
-				println("$old $([x0, y0]) $grad")
-				exit(1)
+				if isnan(x1) || isnan(x2) || isnan(x3) || isnan(x4)
+					println("$old $([x0, y0]) $grad")
+					exit(1)
+				end
+				
+				x1 = clamp(x1, domain[1][1], domain[1][2])
+				x2 = clamp(x2, domain[2][1], domain[2][2])
+				x3 = clamp(x3, domain[3][1], domain[3][2])
+				x4 = clamp(x4, domain[4][1], domain[4][2])
+
+				if any(abs.(grad) .> 100)
+					println("$t $old $([x0, y0]) $([x1, x2, x3, x4]) $([x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]) $grad")
+					flush(stdout)
+				end
+
+				t += dt
+
+				if i % stride == 0
+					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
+					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
+					push!(samples, s)
+				end
+			end
+			open("data/colvar_$count_$rank_$k_neighbors.txt", "w") do file
+				for step in traj
+					write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
+				end
+			end
+
+			xlist = [step[2] for step in traj]
+			ylist = [step[3] for step in traj]
+			println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
+			flush(stdout)
+
+			function rhohat(x, y, data)
+				N = size(data, 2)
+				D = size(data, 1)
+				# k_neighbors = 50
+				balltree = BallTree(data)
+				_, dists = knn(balltree, [x, y], k_neighbors, true)
+				return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
 			end
 			
-			x1 = clamp(x1, domain[1][1], domain[1][2])
-			x2 = clamp(x2, domain[2][1], domain[2][2])
-			x3 = clamp(x3, domain[3][1], domain[3][2])
-			x4 = clamp(x4, domain[4][1], domain[4][2])
+			data = transpose(hcat(xlist, ylist))
+			fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
+			fmin = minimum([fhat(step[2], step[3]) for step in traj])
+			fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
 
-			if any(abs.(grad) .> 100)
-				println("$t $old $([x0, y0]) $([x1, x2, x3, x4]) $([x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]) $grad")
-				flush(stdout)
-			end
-
-			t += dt
-
-			if i % stride == 0
-				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
-				push!(samples, s)
-			end
-		end
-		open("data/colvar_$count.txt", "w") do file
-			for step in traj
-				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
-			end
-		end
-
-		xlist = [step[2] for step in traj]
-		ylist = [step[3] for step in traj]
-		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
-		flush(stdout)
-
-		function rhohat(x, y, data)
-			N = size(data, 2)
-			D = size(data, 1)
-			# k_neighbors = 50
-			balltree = BallTree(data)
-			_, dists = knn(balltree, [x, y], k_neighbors, true)
-			return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
-		end
-		
-		data = transpose(hcat(xlist, ylist))
-		fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
-		fmin = minimum([fhat(step[2], step[3]) for step in traj])
-		fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
-
-		rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
-		rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
-		open("data/nnde_$count.txt", "w") do file
-			write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
-			write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
-			for x in rangex_small
-				for y in rangey_small
-					write(file, "$(rhohat(x, y, data)) ")
+			rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
+			rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
+			open("data/nnde_$count_$k_neighbors.txt", "w") do file
+				write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
+				write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
+				for x in rangex_small
+					for y in rangey_small
+						write(file, "$(rhohat(x, y, data)) ")
+					end
+					write(file, "\n")
 				end
-				write(file, "\n")
 			end
+			
+			domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
+			# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
+			F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
+			println("Target rank $rank")
+			flush(stdout)
 		end
-		
-		n_chains = 10
-		n_samples = 100
-		jump_width = 0.01
-		# rank = 50
-		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
-		# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
-		F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
-		println("Target rank $rank")
-		flush(stdout)
+
+		MPI.Bcast!(F, 0, mpi_comm)
 		IJ = continuous_aca(F, [rank], n_chains, n_samples, jump_width, mpi_comm)
-		println(IJ)
-		println()
-		flush(stdout)
 
-		open("data/dF_$(count).txt", "w") do file
-			for x in rangex_small
-				for y in rangey_small
-					write(file, "$(compute_func(F, [x, y])) ")
+		if mpi_rank == 0
+			println(IJ)
+			println()
+			flush(stdout)
+
+			open("data/dF_$count_$k_neighbors.txt", "w") do file
+				for x in rangex_small
+					for y in rangey_small
+						write(file, "$(compute_func(F, [x, y])) ")
+					end
+					write(file, "\n")
 				end
-				write(file, "\n")
 			end
-		end
 
-		push!(rholist, F)
-		Vpeak = Vtop(rholist, samples)
-		Vshift = max(Vpeak - Vmax, 0.0)
-		println("Vtop = $Vpeak Vshift = $Vshift")
-		println()
-		flush(stdout)
+			push!(rholist, F)
+			Vpeak = Vtop(rholist, samples)
+			Vshift = max(Vpeak - Vmax, 0.0)
+			println("Vtop = $Vpeak Vshift = $Vshift")
+			println()
+			flush(stdout)
 
-		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
-		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
-		open("data/F_$count.txt", "w") do file
-			for x in rangex
-				for y in rangey
-					write(file, "$(-Vbias_shifted([x, y], rholist, Vshift)) ")
-				end
-				write(file, "\n")
-			end
-		end
-		outer, inner, douter = dVbias_mats(rholist, domain_cv_full, nbins)
-
-		open("data/dVbiasdx_$count.txt", "w") do filex
-			open("data/dVbiasdy_$count.txt", "w") do filey
+			rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
+			rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+			open("data/F_$count_$k_neighbors.txt", "w") do file
 				for x in rangex
 					for y in rangey
-						grad = dVbias([x, y], rholist, outer, inner, douter, Vshift)
-						write(filex, "$(grad[1]) ")
-						write(filey, "$(grad[2]) ")
+						write(file, "$(-Vbias_shifted([x, y], rholist, Vshift)) ")
 					end
-					write(filex, "\n")
-					write(filey, "\n")
+					write(file, "\n")
+				end
+			end
+			outer, inner, douter = dVbias_mats(rholist, domain_cv_full, nbins)
+
+			open("data/dVbiasdx_$count_$k_neighbors.txt", "w") do filex
+				open("data/dVbiasdy_$count_$k_neighbors.txt", "w") do filey
+					for x in rangex
+						for y in rangey
+							grad = dVbias([x, y], rholist, outer, inner, douter, Vshift)
+							write(filex, "$(grad[1]) ")
+							write(filey, "$(grad[2]) ")
+						end
+						write(filex, "\n")
+						write(filey, "\n")
+					end
 				end
 			end
 		end
