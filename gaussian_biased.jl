@@ -349,9 +349,9 @@ end
 
 function aca_mtd()
 	domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
-	# domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
-	domain_cv = ((-2.46, 4.1), (-2.48, 4.44))
-	nbins = 100
+	domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
+	domain_cv_full = ((-2.46, 4.1), (-2.48, 4.44))
+	nbins = 256
 
 	T = 1.0
 	gamma = 1.0
@@ -514,8 +514,8 @@ function aca_mtd()
 		# println()
 		# flush(stdout)
 
-		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/(nbins-1):domain_cv[1][2]
-		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/(nbins-1):domain_cv[2][2]
+		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
+		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
 		open("data/F_$count.txt", "w") do file
 			for x in rangex
 				for y in rangey
@@ -525,7 +525,7 @@ function aca_mtd()
 				write(file, "\n")
 			end
 		end
-		outer, inner, douter = dVbias_mats(rholist, domain_cv, nbins)
+		outer, inner, douter = dVbias_mats(rholist, domain_cv_full, nbins)
 
 		open("data/dVbiasdx_$count.txt", "w") do filex
 			open("data/dVbiasdy_$count.txt", "w") do filey
