@@ -311,7 +311,7 @@ function aca_mtd()
 					push!(samples, s)
 				end
 			end
-			open("data/colvar_$count_$rank_$k_neighbors.txt", "w") do file
+			open("data/colvar_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for step in traj
 					write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 				end
@@ -343,7 +343,7 @@ function aca_mtd()
 		rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
 		rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
 		if mpi_rank == 0
-			open("data/nnde_$count_$k_neighbors.txt", "w") do file
+			open("data/nnde_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
 				write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
 				for x in rangex_small
@@ -371,7 +371,7 @@ function aca_mtd()
 			println()
 			flush(stdout)
 
-			open("data/dF_$count_$k_neighbors.txt", "w") do file
+			open("data/dF_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex_small
 					for y in rangey_small
 						write(file, "$(compute_func(F, [x, y])) ")
@@ -389,7 +389,7 @@ function aca_mtd()
 
 			rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
 			rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
-			open("data/F_$count_$k_neighbors.txt", "w") do file
+			open("data/F_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex
 					for y in rangey
 						write(file, "$(-Vbias_shifted([x, y], rholist, Vshift)) ")
@@ -399,8 +399,8 @@ function aca_mtd()
 			end
 			outer, inner, douter = dVbias_mats(rholist, domain_cv_full, nbins)
 
-			open("data/dVbiasdx_$count_$k_neighbors.txt", "w") do filex
-				open("data/dVbiasdy_$count_$k_neighbors.txt", "w") do filey
+			open("data/dVbiasdx_$(count)_$(rank)_$(k_neighbors).txt", "w") do filex
+				open("data/dVbiasdy_$(count)_$(rank)_$(k_neighbors).txt", "w") do filey
 					for x in rangex
 						for y in rangey
 							grad = dVbias([x, y], rholist, outer, inner, douter, Vshift)
