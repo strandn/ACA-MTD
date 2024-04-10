@@ -341,7 +341,8 @@ function aca_mtd()
 		
 		data = transpose(hcat(xlist, ylist))
 		fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
-		fmin = minimum([fhat(step[2], step[3]) for step in traj])
+		# fmin = minimum([fhat(step[2], step[3]) for step in traj])
+		fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 		fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
 
 		rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
