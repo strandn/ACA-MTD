@@ -237,7 +237,7 @@ function aca_mtd()
 	# stride = 10
 	nbiasupdates = 20
 
-	traj = fill([0.0, 0.0, 0.0, 0.0], div(steps, stride))
+	traj = fill([0.0, 0.0, 0.0, 0.0], Int64(div(steps, stride)))
 
 	x1 = rand(Normal(-1.0, 0.1))
 	x2 = rand(Normal(-1.0, 0.1))
@@ -307,7 +307,7 @@ function aca_mtd()
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
 					# push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
-					traj[div(i, stride)] = [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)]
+					traj[Int64(div(i, stride))] = [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)]
 					push!(samples, s)
 				end
 			end
