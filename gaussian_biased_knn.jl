@@ -237,7 +237,8 @@ function aca_mtd()
 	# stride = 10
 	nbiasupdates = 20
 
-	traj = fill([0.0, 0.0, 0.0, 0.0], Int64(div(steps, stride)))
+	xlist = fill(0.0, Int64(div(steps, stride)))
+	ylist = fill(0.0, Int64(div(steps, stride)))
 
 	x1 = rand(Normal(-1.0, 0.1))
 	x2 = rand(Normal(-1.0, 0.1))
@@ -270,6 +271,7 @@ function aca_mtd()
 			flush(stdout)
 			t = 0.0
 
+			traj = []
 			for i in 1:steps
 				grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift)
 
@@ -306,8 +308,9 @@ function aca_mtd()
 
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-					# push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
-					traj[Int64(div(i, stride))] = [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)]
+					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
+					# traj[Int64(div(i, stride))] = [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)]
+					xlist[Int64(div(i, stride))], ylist[Int64(div(i, stride))] = s[1], s[2]
 					push!(samples, s)
 				end
 			end
@@ -316,12 +319,12 @@ function aca_mtd()
 					write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 				end
 			end
-			println(traj)
 		end
-		MPI.Bcast!(traj, 0, mpi_comm)
 
-		xlist = [step[2] for step in traj]
-		ylist = [step[3] for step in traj]
+		# xlist = [step[2] for step in traj]
+		# ylist = [step[3] for step in traj]
+		MPI.Bcast!(xlist, 0, mpi_comm)
+		MPI.Bcast!(ylist, 0, mpi_comm)
 		if mpi_rank == 0
 			println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
 			flush(stdout)
