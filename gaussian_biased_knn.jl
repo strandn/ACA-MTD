@@ -316,6 +316,7 @@ function aca_mtd()
 					write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 				end
 			end
+			println(traj)
 		end
 		MPI.Bcast!(traj, 0, mpi_comm)
 
