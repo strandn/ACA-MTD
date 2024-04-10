@@ -315,10 +315,10 @@ function aca_mtd()
 		function rhohat(x, y, data)
 			N = size(data, 2)
 			D = size(data, 1)
-			k = 50
+			# k_neighbors = 50
 			balltree = BallTree(data)
-			_, dists = knn(balltree, [x, y], k, true)
-			return k * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k] ^ D)
+			_, dists = knn(balltree, [x, y], k_neighbors, true)
+			return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
 		end
 		
 		data = transpose(hcat(xlist, ylist))
@@ -342,9 +342,10 @@ function aca_mtd()
 		n_chains = 10
 		n_samples = 100
 		jump_width = 0.01
-		rank = 50
+		# rank = 50
 		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
-		F = ResFunc(fhat_adj, domain_cv_small, 0.1)
+		# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
+		F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
 		println("Target rank $rank")
 		flush(stdout)
 		IJ = continuous_aca(F, [rank], n_chains, n_samples, jump_width, mpi_comm)
@@ -396,7 +397,9 @@ function aca_mtd()
 	end
 end
 
-# println(ARGS)
-# flush(stdout)
-# biasfactor = parse(Int64, ARGS[1])
+println(ARGS)
+flush(stdout)
+# jobid = if length(ARGS) > 0 parse(Int64, ARGS[1]) else 0 end
+rank = parse(Int64, ARGS[1])
+k_neighbors = parse(Int64, ARGS[2])
 aca_mtd()
