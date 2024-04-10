@@ -1,6 +1,6 @@
 #!/bin/bash
  
-#SBATCH --job-name=gaussian_biased_00_1_46kT
+#SBATCH --job-name=gaussian_biased_5e6
 #SBATCH --output=%x.out
 #SBATCH --error=%x.err
  
