@@ -368,7 +368,6 @@ function aca_mtd()
 			flush(stdout)
 		end
 
-		MPI.Bcast!(F, 0, mpi_comm)
 		IJ = continuous_aca(F, [rank], n_chains, n_samples, jump_width, mpi_comm)
 
 		if mpi_rank == 0
