@@ -326,11 +326,13 @@ function aca_mtd()
 		fmin = minimum([fhat(step[2], step[3]) for step in traj])
 		fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
 
-		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
-		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+		rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
+		rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
 		open("data/nnde_$count.txt", "w") do file
-			for x in rangex
-				for y in rangey
+			write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
+			write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
+			for x in rangex_small
+				for y in rangey_small
 					write(file, "$(rhohat(x, y, data)) ")
 				end
 				write(file, "\n")
@@ -341,7 +343,8 @@ function aca_mtd()
 		n_samples = 100
 		jump_width = 0.01
 		rank = 50
-		F = ResFunc(fhat_adj, domain_cv, 0.1)
+		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
+		F = ResFunc(fhat_adj, domain_cv_small, 0.1)
 		println("Target rank $rank")
 		flush(stdout)
 		IJ = continuous_aca(F, [rank], n_chains, n_samples, jump_width, mpi_comm)
@@ -350,8 +353,8 @@ function aca_mtd()
 		flush(stdout)
 
 		open("data/dF_$(count).txt", "w") do file
-			for x in rangex
-				for y in rangey
+			for x in rangex_small
+				for y in rangey_small
 					write(file, "$(compute_func(F, [x, y])) ")
 				end
 				write(file, "\n")
@@ -365,6 +368,8 @@ function aca_mtd()
 		println()
 		flush(stdout)
 
+		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
+		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
 		open("data/F_$count.txt", "w") do file
 			for x in rangex
 				for y in rangey
