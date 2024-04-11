@@ -350,13 +350,13 @@ end
 function aca_mtd()
 	domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 	domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
-	domain_cv_full = ((-2.46, 4.1), (-2.48, 4.44))
+	domain_cv_full = ((-2.46, 4.1), (-2.48, 4.5))
 	nbins = 100
 
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = 5e6
+	steps = 1e6
 	stride = 100
 	# steps = 10000
 	# stride = 10
