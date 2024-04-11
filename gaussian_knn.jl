@@ -382,9 +382,10 @@ function aca_mtd()
 			end
 
 			push!(rholist, F)
-			Vpeak = Vtop(rholist, samples)
-			Vshift = max(Vpeak - Vmax, 0.0)
-			println("Vtop = $Vpeak Vshift = $Vshift")
+			# Vpeak = Vtop(rholist, samples)
+			# Vshift = max(Vpeak - Vmax, 0.0)
+			# println("Vtop = $Vpeak Vshift = $Vshift")
+			println("Vshift = $Vshift")
 			println()
 			flush(stdout)
 
