@@ -226,7 +226,7 @@ function aca_mtd()
 	T = 1.0
 	fc = 1.0
 	dt = 1.0e-4
-	steps = 5e6
+	steps = 1e6
 	stride = 100
 	# steps = 10000
 	# stride = 10
