@@ -53,96 +53,90 @@ function Vtop(rholist, samples)
 	return max
 end
 
-function dVbias_mats(rholist, domain, nbins)
+function udpate_dVbias(F, outer, douter, inner, domain, nbins)
 	# TODO replace finite difference derivatives with analytical derivatives?
 	ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
 	h = [step(r) for r in ranges]
-	outer = []
-	douter = []
-	inner = []
-	for F in rholist
-		order = F.ndims
-		npivots = [length(F.I[i]) for i in 2:order]
-		push!(outer, [])
-		push!(inner, [])
-		push!(douter, [])
+	order = F.ndims
+	npivots = [length(F.I[i]) for i in 2:order]
+	push!(outer, [])
+	push!(inner, [])
+	push!(douter, [])
+	mat = [
+		linear_interpolation(ranges[1], [F.f((s, F.J[2][j]...)...) for s in ranges[1]])
+		for j in 1:npivots[1]
+	]
+	push!(last(outer), mat)
+	AIJ = zeros(npivots[1], npivots[1])
+	for j in 1:npivots[1]
+		for k in 1:npivots[1]
+			AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
+		end
+	end
+	push!(last(inner), inv(AIJ))
+	gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[1]]
+	for j in 1:npivots[1]
+		for pos in 1:nbins
+			s = domain[1][1] + (pos - 1) * (domain[1][2] - domain[1][1]) / (nbins - 1)
+			gridpoints[j][pos] = (F.f((s + h[1], F.J[2][j]...)...) - F.f((s - h[1], F.J[2][j]...)...)) / (2 * h[1])
+		end
+	end
+	dmat = [
+		linear_interpolation(ranges[1], [gridpoints[j][pos] for pos in 1:nbins])
+		for j in 1:npivots[1]
+	]
+	push!(last(douter), dmat)
+	for i in 2:order-1
 		mat = [
-			linear_interpolation(ranges[1], [F.f((s, F.J[2][j]...)...) for s in ranges[1]])
-			for j in 1:npivots[1]
+			[
+				linear_interpolation(ranges[i], [F.f((F.I[i][j]..., s, F.J[i + 1][k]...)...) for s in ranges[i]])
+				for k in 1:npivots[i]
+			]
+			for j in 1:npivots[i - 1]
 		]
 		push!(last(outer), mat)
-		AIJ = zeros(npivots[1], npivots[1])
-		for j in 1:npivots[1]
-			for k in 1:npivots[1]
-				AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
+		AIJ = zeros(npivots[i], npivots[i])
+		for j in 1:npivots[i]
+			for k in 1:npivots[i]
+				AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
 			end
 		end
 		push!(last(inner), inv(AIJ))
-		gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[1]]
-		for j in 1:npivots[1]
-			for pos in 1:nbins
-				s = domain[1][1] + (pos - 1) * (domain[1][2] - domain[1][1]) / (nbins - 1)
-				gridpoints[j][pos] = (F.f((s + h[1], F.J[2][j]...)...) - F.f((s - h[1], F.J[2][j]...)...)) / (2 * h[1])
+		gridpoints = [[[0.0 for _ in 1:nbins] for _ in 1:npivots[i]] for _ in 1:npivots[i - 1]]
+		for j in 1:npivots[i - 1]
+			for k in 1:npivots[i]
+				for pos in 1:nbins
+					s = domain[i][1] + (pos - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
+					gridpoints[j][k][pos] = (F.f((F.I[i][j]..., s + h[i], F.J[i + 1][k]...)...) - F.f((F.I[i][j]..., s - h[i], F.J[i + 1][k]...)...)) / (2 * h[i])
+				end
 			end
 		end
 		dmat = [
-			linear_interpolation(ranges[1], [gridpoints[j][pos] for pos in 1:nbins])
-			for j in 1:npivots[1]
-		]
-		push!(last(douter), dmat)
-		for i in 2:order-1
-			mat = [
-				[
-					linear_interpolation(ranges[i], [F.f((F.I[i][j]..., s, F.J[i + 1][k]...)...) for s in ranges[i]])
-					for k in 1:npivots[i]
-				]
-				for j in 1:npivots[i - 1]
-			]
-			push!(last(outer), mat)
-			AIJ = zeros(npivots[i], npivots[i])
-			for j in 1:npivots[i]
+			[
+				linear_interpolation(ranges[i], [gridpoints[j][k][pos] for pos in 1:nbins])
 				for k in 1:npivots[i]
-					AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
-				end
-			end
-			push!(last(inner), inv(AIJ))
-			gridpoints = [[[0.0 for _ in 1:nbins] for _ in 1:npivots[i]] for _ in 1:npivots[i - 1]]
+			]
 			for j in 1:npivots[i - 1]
-				for k in 1:npivots[i]
-					for pos in 1:nbins
-						s = domain[i][1] + (pos - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
-						gridpoints[j][k][pos] = (F.f((F.I[i][j]..., s + h[i], F.J[i + 1][k]...)...) - F.f((F.I[i][j]..., s - h[i], F.J[i + 1][k]...)...)) / (2 * h[i])
-					end
-				end
-			end
-			dmat = [
-				[
-					linear_interpolation(ranges[i], [gridpoints[j][k][pos] for pos in 1:nbins])
-					for k in 1:npivots[i]
-				]
-				for j in 1:npivots[i - 1]
-			]
-			push!(last(douter), dmat)
-		end
-		mat = [
-			linear_interpolation(ranges[order], [F.f((F.I[order][j]..., s)...) for s in ranges[order]])
-			for j in 1:npivots[order - 1]
-		]
-		push!(last(outer), mat)
-		gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[order - 1]]
-		for j in 1:npivots[order - 1]
-			for pos in 1:nbins
-				s = domain[order][1] + (pos - 1) * (domain[order][2] - domain[order][1]) / (nbins - 1)
-				gridpoints[j][pos] = (F.f((F.I[order][j]..., s + h[order])...) - F.f((F.I[order][j]..., s - h[order])...))/ (2 * h[order])
-			end
-		end
-		dmat = [
-			linear_interpolation(ranges[order], [gridpoints[j][pos] for pos in 1:nbins])
-			for j in 1:npivots[order - 1]
 		]
 		push!(last(douter), dmat)
 	end
-	return outer, inner, douter
+	mat = [
+		linear_interpolation(ranges[order], [F.f((F.I[order][j]..., s)...) for s in ranges[order]])
+		for j in 1:npivots[order - 1]
+	]
+	push!(last(outer), mat)
+	gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:npivots[order - 1]]
+	for j in 1:npivots[order - 1]
+		for pos in 1:nbins
+			s = domain[order][1] + (pos - 1) * (domain[order][2] - domain[order][1]) / (nbins - 1)
+			gridpoints[j][pos] = (F.f((F.I[order][j]..., s + h[order])...) - F.f((F.I[order][j]..., s - h[order])...))/ (2 * h[order])
+		end
+	end
+	dmat = [
+		linear_interpolation(ranges[order], [gridpoints[j][pos] for pos in 1:nbins])
+		for j in 1:npivots[order - 1]
+	]
+	push!(last(douter), dmat)
 end
 
 function dVbias(s, rholist, outer, inner, douter, Vshift)
@@ -401,7 +395,7 @@ function aca_mtd()
 					write(file, "\n")
 				end
 			end
-			outer, inner, douter = dVbias_mats(rholist, domain_cv_full, nbins)
+			update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
 
 			open("data/dVbiasdx_$(count)_$(rank)_$(k_neighbors).txt", "w") do filex
 				open("data/dVbiasdy_$(count)_$(rank)_$(k_neighbors).txt", "w") do filey
