@@ -151,6 +151,7 @@ function update_dVbias(F, outer, inner, douter, domain, nbins)
 	# TODO replace finite difference derivatives with analytical derivatives?
 	ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
 	println(ranges)
+	flush(stdout)
 	h = [step(r) for r in ranges]
 	# outer = []
 	# douter = []
