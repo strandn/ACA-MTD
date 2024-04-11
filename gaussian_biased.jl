@@ -149,9 +149,8 @@ end
 
 function update_dVbias(F, outer, inner, douter, domain, nbins)
 	# TODO replace finite difference derivatives with analytical derivatives?
-	ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
-	println(ranges)
-	flush(stdout)
+	# ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
+	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 	h = [step(r) for r in ranges]
 	# outer = []
 	# douter = []
@@ -514,8 +513,10 @@ function aca_mtd()
 		# println()
 		# flush(stdout)
 
-		rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
-		rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+		# rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
+		# rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
+		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
 		open("data/F_$count.txt", "w") do file
 			for x in rangex
 				for y in rangey

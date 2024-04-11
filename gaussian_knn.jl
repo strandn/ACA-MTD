@@ -53,9 +53,10 @@ function Vtop(rholist, samples)
 	return max
 end
 
-function udpate_dVbias(F, outer, douter, inner, domain, nbins)
+function update_dVbias(F, outer, inner, douter, domain, nbins)
 	# TODO replace finite difference derivatives with analytical derivatives?
-	ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
+	# ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
+	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 	h = [step(r) for r in ranges]
 	order = F.ndims
 	npivots = [length(F.I[i]) for i in 2:order]
@@ -339,8 +340,10 @@ function aca_mtd()
 		fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 		fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
 
-		rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
-		rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
+		# rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
+		# rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
+		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
+		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
 		if mpi_rank == 0
 			open("data/nnde_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
@@ -385,8 +388,10 @@ function aca_mtd()
 			println()
 			flush(stdout)
 
-			rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
-			rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+			# rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
+			# rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+			rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
+			rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
 			open("data/F_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex
 					for y in rangey
