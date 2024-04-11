@@ -386,8 +386,7 @@ function aca_mtd()
 			# Vshift = max(Vpeak - Vmax, 0.0)
 			# println("Vtop = $Vpeak Vshift = $Vshift")
 			# println()
-			println("Vshift = $Vshift")
-			flush(stdout)
+			# flush(stdout)
 
 			# rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
 			# rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
