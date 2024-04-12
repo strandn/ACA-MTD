@@ -66,8 +66,8 @@ function well_tempered_mtd(biasfactor)
 	traj = []
 	slist = []
 	w = []
-	if isfile("hills.txt")
-		rm("hills.txt")
+	if isfile("hills_$biasfactor.txt")
+		rm("hills_$biasfactor.txt")
 	end
 	for i in 1:steps
 		grad = grad_V([x1, x2, x3, x4], slist, w, sigma)
