@@ -32,20 +32,55 @@ function V(r)
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
-function Vbias(s, rholist)
+# function Vbias(s, rholist)
+# 	result = 0.0
+# 	for F in rholist
+# 		result -= compute_func(F, s)
+# 	end
+# 	return result
+# end
+
+function Vbias(s, rholist, outer, inner)
 	result = 0.0
-	for F in rholist
-		result -= compute_func(F, s)
+	for step in eachindex(rholist)
+		F = rholist[step]
+		order = F.ndims
+		npivots = [length(F.I[i]) for i in 2:order]
+		outermat = []
+		mat = zeros(1, npivots[1])
+		for j in 1:npivots[1]
+			mat[j] = outer[step][1][j](s[1])
+		end
+		push!(outermat, mat)
+		for i in 2:order-1
+			mat = zeros(npivots[i - 1], npivots[i])
+			for j in 1:npivots[i - 1]
+				for k in 1:npivots[i]
+					mat[j, k] = outer[step][i][j][k](s[i])
+				end
+			end
+			push!(outermat, mat)
+		end
+		mat = zeros(npivots[order - 1], 1)
+		for j in 1:npivots[order - 1]
+			mat[j] = outer[step][order][j](s[order])
+		end
+		push!(outermat, mat)
+		inc = outermat[1]
+		for j in 2:order
+			inc *= inner[step][j - 1] * outermat[j]
+		end
+		result -= inc[1, 1]
 	end
 	return result
 end
 
-Vbias_shifted(s, rholist, Vshift) = max(Vbias(s, rholist) - Vshift, 0.0)
+Vbias_shifted(s, rholist, outer, inner, Vshift) = max(Vbias(s, outer, inner, rholist) - Vshift, 0.0)
 
-function Vtop(rholist, samples)
+function Vtop(rholist, outer, inner, samples)
 	max = 0.0
 	for s in samples
-		result = Vbias(s, rholist)
+		result = Vbias(s, rholist, outer, inner)
 		if result > max
 			max = result
 		end
@@ -55,7 +90,6 @@ end
 
 function update_dVbias(F, outer, inner, douter, domain, nbins)
 	# TODO replace finite difference derivatives with analytical derivatives?
-	# ranges = [d[1]:(d[2]-d[1])/(nbins-1):d[2] for d in domain]
 	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 	h = [step(r) for r in ranges]
 	order = F.ndims
@@ -142,7 +176,7 @@ end
 
 function dVbias(s, rholist, outer, inner, douter, Vshift)
 	grad = fill(0.0, length(s))
-	if Vbias(s, rholist) <= Vshift
+	if Vbias(s, rholist, outer, inner) <= Vshift
 		return grad
 	end
 	for step in eachindex(rholist)
@@ -150,11 +184,17 @@ function dVbias(s, rholist, outer, inner, douter, Vshift)
 		order = F.ndims
 		npivots = [length(F.I[i]) for i in 2:order]
 		outermat = []
+		doutermat = []
 		mat = zeros(1, npivots[1])
 		for j in 1:npivots[1]
 			mat[j] = outer[step][1][j](s[1])
 		end
 		push!(outermat, mat)
+		dmat = zeros(1, npivots[1])
+		for j in 1:npivots[1]
+			dmat[j] = douter[step][1][j](s[1])
+		end
+		push!(doutermat, dmat)
 		for i in 2:order-1
 			mat = zeros(npivots[i - 1], npivots[i])
 			for j in 1:npivots[i - 1]
@@ -163,19 +203,6 @@ function dVbias(s, rholist, outer, inner, douter, Vshift)
 				end
 			end
 			push!(outermat, mat)
-		end
-		mat = zeros(npivots[order - 1], 1)
-		for j in 1:npivots[order - 1]
-			mat[j] = outer[step][order][j](s[order])
-		end
-		push!(outermat, mat)
-		doutermat = []
-		dmat = zeros(1, npivots[1])
-		for j in 1:npivots[1]
-			dmat[j] = douter[step][1][j](s[1])
-		end
-		push!(doutermat, dmat)
-		for i in 2:order-1
 			dmat = zeros(npivots[i - 1], npivots[i])
 			for j in 1:npivots[i - 1]
 				for k in 1:npivots[i]
@@ -184,6 +211,11 @@ function dVbias(s, rholist, outer, inner, douter, Vshift)
 			end
 			push!(doutermat, dmat)
 		end
+		mat = zeros(npivots[order - 1], 1)
+		for j in 1:npivots[order - 1]
+			mat[j] = outer[step][order][j](s[order])
+		end
+		push!(outermat, mat)
 		dmat = zeros(npivots[order - 1], 1)
 		for j in 1:npivots[order - 1]
 			dmat[j] = douter[step][order][j](s[order])
@@ -228,8 +260,6 @@ function aca_mtd()
 	dt = 1.0e-4
 	steps = 1e6
 	stride = 100
-	# steps = 10000
-	# stride = 10
 	nbiasupdates = 20
 
 	xlist = fill(0.0, Int64(div(steps, stride)))
@@ -258,7 +288,6 @@ function aca_mtd()
 	n_chains = 10
 	n_samples = 100
 	jump_width = 0.01
-	# rank = 50
 
 	for count in 1:nbiasupdates
 		if mpi_rank == 0
@@ -303,8 +332,7 @@ function aca_mtd()
 
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)])
-					# traj[Int64(div(i, stride))] = [t, s[1], s[2], Vbias_shifted(s, rholist, Vshift)]
+					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, outer, inner, Vshift)])
 					xlist[Int64(div(i, stride))], ylist[Int64(div(i, stride))] = s[1], s[2]
 					push!(samples, s)
 				end
@@ -316,8 +344,6 @@ function aca_mtd()
 			end
 		end
 
-		# xlist = [step[2] for step in traj]
-		# ylist = [step[3] for step in traj]
 		MPI.Bcast!(xlist, 0, mpi_comm)
 		MPI.Bcast!(ylist, 0, mpi_comm)
 		if mpi_rank == 0
@@ -328,7 +354,6 @@ function aca_mtd()
 		function rhohat(x, y, data)
 			N = size(data, 2)
 			D = size(data, 1)
-			# k_neighbors = 50
 			balltree = BallTree(data)
 			_, dists = knn(balltree, [x, y], k_neighbors, true)
 			return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
@@ -336,12 +361,9 @@ function aca_mtd()
 		
 		data = transpose(hcat(xlist, ylist))
 		fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
-		# fmin = minimum([fhat(step[2], step[3]) for step in traj])
 		fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 		fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
 
-		# rangex_small = minimum(xlist):(maximum(xlist)-minimum(xlist))/(nbins-1):maximum(xlist)
-		# rangey_small = minimum(ylist):(maximum(ylist)-minimum(ylist))/(nbins-1):maximum(ylist)
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
 		if mpi_rank == 0
@@ -358,7 +380,6 @@ function aca_mtd()
 		end
 		
 		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
-		# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
 		F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
 		if mpi_rank == 0
 			println("Target rank $rank")
@@ -382,25 +403,24 @@ function aca_mtd()
 			end
 
 			push!(rholist, F)
-			# Vpeak = Vtop(rholist, samples)
-			# Vshift = max(Vpeak - Vmax, 0.0)
-			# println("Vtop = $Vpeak Vshift = $Vshift")
-			# println()
-			# flush(stdout)
 
-			# rangex = domain_cv[1][1]:(domain_cv[1][2]-domain_cv[1][1])/99:domain_cv[1][2]
-			# rangey = domain_cv[2][1]:(domain_cv[2][2]-domain_cv[2][1])/99:domain_cv[2][2]
+			update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
+			Vpeak = Vtop(rholist, outer, inner, samples)
+			Vshift = max(Vpeak - Vmax, 0.0)
+			println("Vtop = $Vpeak Vshift = $Vshift")
+			println()
+			flush(stdout)
+
 			rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
 			rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
 			open("data/F_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex
 					for y in rangey
-						write(file, "$(-Vbias_shifted([x, y], rholist, Vshift)) ")
+						write(file, "$(-Vbias_shifted([x, y], rholist, outer, inner, Vshift)) ")
 					end
 					write(file, "\n")
 				end
 			end
-			update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
 
 			open("data/dVbiasdx_$(count)_$(rank)_$(k_neighbors).txt", "w") do filex
 				open("data/dVbiasdy_$(count)_$(rank)_$(k_neighbors).txt", "w") do filey
