@@ -75,7 +75,7 @@ function Vbias(s, rholist, outer, inner)
 	return result
 end
 
-Vbias_shifted(s, rholist, outer, inner, Vshift) = max(Vbias(s, outer, inner, rholist) - Vshift, 0.0)
+Vbias_shifted(s, rholist, outer, inner, Vshift) = max(Vbias(s, rholist, outer, inner) - Vshift, 0.0)
 
 function Vtop(rholist, outer, inner, samples)
 	max = 0.0
