@@ -380,7 +380,7 @@ function aca_mtd()
 		end
 		
 		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
-		F = ResFunc(fhat_adj, domain_cv_small, 1.0e-3)
+		F = ResFunc(fhat_adj, domain_cv_small, 0.1)
 		if mpi_rank == 0
 			println("Target rank $rank")
 			flush(stdout)
