@@ -403,7 +403,6 @@ function aca_mtd()
 			end
 
 			push!(rholist, F)
-
 			update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
 			Vpeak = Vtop(rholist, outer, inner, samples)
 			Vshift = max(Vpeak - Vmax, 0.0)
