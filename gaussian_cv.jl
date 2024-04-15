@@ -1,20 +1,15 @@
 using HCubature
 using LinearAlgebra
 
-large1 = [1.0, 0.0, 0.0, -1.0]
-large2 = [-1.0, -1.0, 1.0, -1.0]
-large3 = [-1.0, -1.0, -1.0, 1.0]
-max1 = [0.0, -0.5, 0.5, -1.0]
-max2 = [0.0, -0.5, -0.5, 0.0]
-max3 = [-1.0, -1.0, 0.0, -0.0]
-max4 = [-1/3, -2/3, 0.0, -1/3]
-v12 = large2 - large1
-v12 = v12 / norm(v12)
-v13 = large3 - large1
-v13 = v13 - dot(v13, v12) / norm(v12)^2 * v12
-v13 = v13 / norm(v13)
-function V(x1, x2, x3, x4)
-	r = [x1, x2, x3, x4]
+function V(r)
+	x1, x2, x3, x4 = r
+	large1 = [1.0, 0.0, 0.0, -1.0]
+	large2 = [-1.0, -1.0, 1.0, -1.0]
+	large3 = [-1.0, -1.0, -1.0, 1.0]
+	max1 = [0.0, -0.5, 0.5, -1.0]
+	max2 = [0.0, -0.5, -0.5, 0.0]
+	max3 = [-1.0, -1.0, 0.0, -0.0]
+	max4 = [-1/3, -2/3, 0.0, -1/3]
 	return 30 * exp(-5 * norm(r - max1) ^ 2) + 35 * exp(-5 * norm(r - max2) ^ 2) + 40 * exp(-5 * norm(r - max3) ^ 2) +
 		45 * exp(-5 * norm(r - max4) ^ 2) -
 		15 * exp(-norm(r - large1) ^ 2) - 20 * exp(-norm(r - large2) ^ 2) - 25 * exp(-norm(r - large3) ^ 2) +
@@ -22,12 +17,12 @@ function V(x1, x2, x3, x4)
 end
 
 beta = 1
-P(x1, x2, x3, x4) = exp(-beta * V(x1, x2, x3, x4))
+P(x1, x2, x3, x4) = exp(-beta * V([x1, x2, x3, x4]))
 domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
 domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
 nbins = 50
-dx = (domain_cv[1][2] - domain_cv[1][1]) / nbins
-dy = (domain_cv[2][2] - domain_cv[2][1]) / nbins
+dx = (domain_cv[1][2] - domain_cv[1][1]) / (nbins - 1)
+dy = (domain_cv[2][2] - domain_cv[2][1]) / (nbins - 1)
 G = zeros(nbins - 1, nbins - 1)
 Z = hcubature(x->P(x[1], x[2], x[3], x[4]), [domain[k][1] for k in 1:4], [domain[k][2] for k in 1:4]; rtol = 10^-4)
 println(Z)
