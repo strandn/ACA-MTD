@@ -1,12 +1,12 @@
 #!/bin/bash
  
-#SBATCH --job-name=gaussian_cv
-#SBATCH --output=%x.out
-#SBATCH --error=%x.err
+##SBATCH --job-name=gaussian_cv
+##SBATCH --output=%x.out
+##SBATCH --error=%x.err
 
-##SBATCH --job-name=gaussian_knn
-##SBATCH --output=%x_%j.out
-##SBATCH --error=%x_%j.err
+#SBATCH --job-name=gaussian_cv
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
  
 #SBATCH --time=2-0:00:00
  
@@ -16,7 +16,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=48
-#SBATCH --mem=10G
+#SBATCH --mem=100G
  
 #SBATCH --export=NONE
 
