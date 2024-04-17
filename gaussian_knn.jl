@@ -368,7 +368,7 @@ function aca_mtd()
 		# fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
 		# fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 		# fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
-		# rhomax = maximum([rhohat(xlist[i], ylist[i], data) for i in 1:Int64(div(steps, stride))])
+		rhomax = maximum([rhohat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
@@ -378,7 +378,7 @@ function aca_mtd()
 				write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
 				for x in rangex_small
 					for y in rangey_small
-						write(file, "$(rhohat(x, y, data)) ")
+						write(file, "$(rhohat(x, y)) ")
 					end
 					write(file, "\n")
 				end
@@ -400,7 +400,7 @@ function aca_mtd()
 			println()
 			flush(stdout)
 
-			rhomax = maximum([compute_func(F, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))])
+			# rhomax = maximum([compute_func(F, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))])
 			open("data/dF_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex_small
 					for y in rangey_small
