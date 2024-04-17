@@ -37,7 +37,7 @@ function fes(rho, rhomax, kT)
 	return -kT * log(rho_adj)
 end
 
-function Vbias(s, rholist, outer, inner, rhomax, kT)
+function Vbias(s, rholist, outer, inner, kT)
 	result = 0.0
 	for step in eachindex(rholist)
 		F = rholist[step]
@@ -67,17 +67,17 @@ function Vbias(s, rholist, outer, inner, rhomax, kT)
 		for j in 2:order
 			inc *= inner[step][j - 1] * outermat[j]
 		end
-		result -= fes(inc[1, 1], rhomax, kT)
+		result -= fes(inc[1, 1], maximum(maximum.(inner[step])), kT)
 	end
 	return result
 end
 
-Vbias_shifted(s, rholist, outer, inner, Vshift, rhomax, kT) = max(Vbias(s, rholist, outer, inner, rhomax, kT) - Vshift, 0.0)
+Vbias_shifted(s, rholist, outer, inner, Vshift, kT) = max(Vbias(s, rholist, outer, inner, kT) - Vshift, 0.0)
 
-function Vtop(rholist, outer, inner, samples, rhomax, kT)
+function Vtop(rholist, outer, inner, samples, kT)
 	max = 0.0
 	for s in samples
-		result = Vbias(s, rholist, outer, inner, rhomax, kT)
+		result = Vbias(s, rholist, outer, inner, kT)
 		if result > max
 			max = result
 		end
@@ -171,9 +171,9 @@ function update_dVbias(F, outer, inner, douter, domain, nbins)
 	push!(last(douter), dmat)
 end
 
-function dVbias(s, rholist, outer, inner, douter, Vshift, rhomax, kT)
+function dVbias(s, rholist, outer, inner, douter, Vshift, kT)
 	grad = fill(0.0, length(s))
-	if Vbias(s, rholist, outer, inner, rhomax, kT) <= Vshift
+	if Vbias(s, rholist, outer, inner, kT) <= Vshift
 		return grad
 	end
 	for step in eachindex(rholist)
@@ -223,6 +223,7 @@ function dVbias(s, rholist, outer, inner, douter, Vshift, rhomax, kT)
 			inc *= inner[step][j - 1] * outermat[j]
 		end
 		rho = inc[1, 1]
+		rhomax = maximum(maximum.(inner[step]))
 		if rho * 100 / rhomax > 1
 			inc = fill(outermat[1], order - 1)
 			pushfirst!(inc, doutermat[1])
@@ -237,14 +238,14 @@ function dVbias(s, rholist, outer, inner, douter, Vshift, rhomax, kT)
 	return grad
 end
 
-function grad_V(r, rholist, outer, inner, douter, Vshift, rhomax, kT)
+function grad_V(r, rholist, outer, inner, douter, Vshift, kT)
 	grad = ForwardDiff.gradient(V, r)
 	if isempty(outer)
 		return grad
 	end
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dVdx, dVdy = dVbias([x(r), y(r)], rholist, outer, inner, douter, Vshift, rhomax, kT)
+	dVdx, dVdy = dVbias([x(r), y(r)], rholist, outer, inner, douter, Vshift, kT)
 	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]
@@ -288,7 +289,7 @@ function aca_mtd()
 	outer = []
 	inner = []
 	douter = []
-	rhomax = 0.0
+	# rhomax = 0.0
 	
 	n_chains = 10
 	n_samples = 100
@@ -302,7 +303,7 @@ function aca_mtd()
 
 			traj = []
 			for i in 1:steps
-				grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift, rhomax, kb * T)
+				grad = grad_V([x1, x2, x3, x4], rholist, outer, inner, douter, Vshift, kb * T)
 
 				v1 = -(grad[1] / fc) + rand(normal_dist)
 				v2 = -(grad[2] / fc) + rand(normal_dist)
@@ -337,7 +338,7 @@ function aca_mtd()
 
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, outer, inner, Vshift, rhomax, kb * T)])
+					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, outer, inner, Vshift, kb * T)])
 					xlist[Int64(div(i, stride))], ylist[Int64(div(i, stride))] = s[1], s[2]
 					push!(samples, s)
 				end
@@ -368,7 +369,7 @@ function aca_mtd()
 		# fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
 		# fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 		# fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
-		rhomax = maximum([rhohat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
+		# rhomax = maximum([rhohat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
@@ -400,7 +401,9 @@ function aca_mtd()
 			println()
 			flush(stdout)
 
+			update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
 			# rhomax = maximum([compute_func(F, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))])
+			rhomax = maximum(maximum.(last(inner)))
 			open("data/dF_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex_small
 					for y in rangey_small
@@ -411,8 +414,7 @@ function aca_mtd()
 			end
 
 			push!(rholist, F)
-			update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
-			Vpeak = Vtop(rholist, outer, inner, samples, rhomax, kb * T)
+			Vpeak = Vtop(rholist, outer, inner, samples, kb * T)
 			Vshift = max(Vpeak - Vmax, 0.0)
 			println("Vtop = $Vpeak Vshift = $Vshift")
 			println()
@@ -423,7 +425,7 @@ function aca_mtd()
 			open("data/F_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex
 					for y in rangey
-						write(file, "$(-Vbias_shifted([x, y], rholist, outer, inner, Vshift, rhomax, kb * T)) ")
+						write(file, "$(-Vbias_shifted([x, y], rholist, outer, inner, Vshift, kb * T)) ")
 					end
 					write(file, "\n")
 				end
@@ -433,7 +435,7 @@ function aca_mtd()
 				open("data/dVbiasdy_$(count)_$(rank)_$(k_neighbors).txt", "w") do filey
 					for x in rangex
 						for y in rangey
-							grad = dVbias([x, y], rholist, outer, inner, douter, Vshift, rhomax, kb * T)
+							grad = dVbias([x, y], rholist, outer, inner, douter, Vshift, kb * T)
 							write(filex, "$(grad[1]) ")
 							write(filey, "$(grad[2]) ")
 						end
