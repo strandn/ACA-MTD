@@ -72,7 +72,7 @@ function Vbias(s, rholist, outer, inner, rhomax, kT)
 	return result
 end
 
-Vbias_shifted(s, rholist, outer, inner, Vshift) = max(Vbias(s, rholist, outer, inner, rhomax, kT) - Vshift, 0.0)
+Vbias_shifted(s, rholist, outer, inner, Vshift, rhomax, kT) = max(Vbias(s, rholist, outer, inner, rhomax, kT) - Vshift, 0.0)
 
 function Vtop(rholist, outer, inner, samples, rhomax, kT)
 	max = 0.0
@@ -337,7 +337,7 @@ function aca_mtd()
 
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, outer, inner, Vshift)])
+					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, outer, inner, Vshift, rhomax, kb * T)])
 					xlist[Int64(div(i, stride))], ylist[Int64(div(i, stride))] = s[1], s[2]
 					push!(samples, s)
 				end
@@ -423,7 +423,7 @@ function aca_mtd()
 			open("data/F_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex
 					for y in rangey
-						write(file, "$(-Vbias_shifted([x, y], rholist, outer, inner, Vshift)) ")
+						write(file, "$(-Vbias_shifted([x, y], rholist, outer, inner, Vshift, rhomax, kb * T)) ")
 					end
 					write(file, "\n")
 				end
