@@ -231,7 +231,7 @@ function dVbias(s, rholist, outer, inner, douter, Vshift, rhomax, kT)
 					inc[i] *= inner[step][j - 1] * (i == j ? doutermat[j] : outermat[j])
 				end
 			end
-			grad += [kT / inci[1, 1] for inci in inc]
+			grad += [inci[1, 1] for inci in inc] * kT / rho
 		end
 	end
 	return grad
