@@ -356,7 +356,8 @@ function aca_mtd()
 			flush(stdout)
 		end
 
-		function rhohat(x, y, data)
+		data = transpose(hcat(xlist, ylist))
+		function rhohat(x, y)
 			N = size(data, 2)
 			D = size(data, 1)
 			balltree = BallTree(data)
@@ -364,7 +365,6 @@ function aca_mtd()
 			return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
 		end
 		
-		data = transpose(hcat(xlist, ylist))
 		# fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
 		# fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
 		# fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
