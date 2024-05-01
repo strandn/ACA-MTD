@@ -205,9 +205,9 @@ function grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     d = length(elements)
     grad = zeros(d)
     for dim in 1:d
-        result = G[1] * (dim == 1 ? ITensor(basis_d[1]([elements[1]]), siteind(G, 1)) : ITensor(basis[1]([elements[1]]), siteind(G, 1)))
+        result = G[1] * ITensor(dim == 1 ? basis_d[1]([elements[1]]) : basis[1]([elements[1]]), siteind(G, 1))
         for i in 2:d
-            result *= G[i] * (dim == i ? ITensor(basis_d[i]([elements[i]]), siteind(G, i)) : ITensor(basis[i]([elements[i]]), siteind(G, i)))
+            result *= G[i] * ITensor(dim == i ? basis_d[i]([elements[i]]) : basis[i]([elements[i]]), siteind(G, i))
         end
         grad[dim] = result[]
     end
