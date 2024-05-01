@@ -145,10 +145,10 @@ end
 function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64)
     d = size(samples, 2)
     basis, basis_d, nb = if basis_type == "fourier"
-        nb0 = 10;
+        nb0 = 20;
         ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], [db(x) = fourier_d(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
     elseif basis_type == "poly"
-        nb0 = 18;
+        nb0 = 50;
         ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], [b(x) = legendre_d(x, nb0, domain[i]) for i in 1:d], nb0)
     end
 

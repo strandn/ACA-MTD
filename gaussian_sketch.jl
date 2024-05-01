@@ -170,7 +170,7 @@ function sketch_mtd()
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
         println("Forming TT...")
         flush(stdout)
-		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv, "poly", 2, 30, 0.05)
+		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv, "fourier", 4, 32, 0.05)
         
         push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		
