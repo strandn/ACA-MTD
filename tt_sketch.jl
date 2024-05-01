@@ -4,6 +4,9 @@ using LinearAlgebra
 using ForwardDiff
 
 function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    if x < dom[1] || x > dom[2]
+        return 0.0
+    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), 2 * n + 1)
@@ -22,6 +25,9 @@ function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64
 end
     
 function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    if x < dom[1] || x > dom[2]
+        return 0.0
+    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), n)
@@ -32,6 +38,9 @@ function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float6
 end
 
 function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    if x < dom[1] || x > dom[2]
+        return 0.0
+    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     dy = zeros(length(x), 2 * n + 1)
@@ -47,6 +56,9 @@ function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
 end
 
 function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    if x < dom[1] || x > dom[2]
+        return 0.0
+    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     dy = zeros(length(x), n)
