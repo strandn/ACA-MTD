@@ -1,6 +1,7 @@
 using LegendrePolynomials
 using ITensors
 using LinearAlgebra
+using ForwardDiff
 
 function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
     L = (dom[2] - dom[1]) / 2
@@ -28,6 +29,33 @@ function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float6
         y[:, i] = sqrt(i - 1 / 2) * Pl.((x .- shift) / L, i - 1)
     end
     return y
+end
+
+function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    L = (dom[2] - dom[1]) / 2
+    shift = (dom[2] + dom[1]) / 2
+    dy = zeros(length(x), 2 * n + 1)
+    for i in 1:n
+        y1(x) = sqrt(1 / L) * cos(pi * (x - shift) * i / L)
+        dy1(x) = ForwardDiff.derivative(y1, x)
+        y2(x) = sqrt(1 / L) * sin(pi * (x - shift) * i / L)
+        dy2(x) = ForwardDiff.derivative(y2, x)
+        dy[:, 2 * i] = dy1.(x)
+        dy[:, 2 * i + 1] = dy2.(x)
+    end
+    return dy
+end
+
+function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    L = (dom[2] - dom[1]) / 2
+    shift = (dom[2] + dom[1]) / 2
+    dy = zeros(length(x), n)
+    for i in 1:n
+        f(x) = sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1)
+        df(x) = ForwardDiff.derivative(f, x)
+        dy[:, i] = df.(x)
+    end
+    return dy
 end
 
 function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
@@ -117,12 +145,12 @@ end
 
 function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64)
     d = size(samples, 2)
-    basis, nb = if basis_type == "fourier"
+    basis, basis_d, nb = if basis_type == "fourier"
         nb0 = 10;
-        ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
+        ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], [db(x) = fourier_d(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
     elseif basis_type == "poly"
         nb0 = 18;
-        ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], nb0)
+        ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], [b(x) = legendre_d(x, nb0, domain[i]) for i in 1:d], nb0)
     end
 
     coeff = create_TT_coeff(nb, d, rc, alpha)
@@ -158,7 +186,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
         end
     end
 
-    return MPS(G), basis
+    return MPS(G), basis, basis_d
 end
 
 function eval(G::MPS, basis, elements::Vector{Float64})
@@ -171,8 +199,27 @@ function eval(G::MPS, basis, elements::Vector{Float64})
     return result[]
 end
 
-G, basis = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05)
+function grad(G::MPS, basis, basis_d, elements::Vector{Float64})
+    # f(x) = eval(G, basis, x)
+    # return ForwardDiff.gradient(f, elements)
+    d = length(elements)
+    grad = zeros(d)
+    for dim in 1:d
+        result = G[1] * (dim == 1 ? ITensor(basis_d[1]([elements[1]]), siteind(G, 1)) : ITensor(basis[1]([elements[1]]), siteind(G, 1)))
+        for i in 2:d
+            result *= G[i] * (dim == i ? ITensor(basis_d[i]([elements[i]]), siteind(G, i)) : ITensor(basis[i]([elements[i]]), siteind(G, i)))
+        end
+        grad[dim] = result[]
+    end
+    return grad
+end
+
+G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05)
 result = eval(G, basis, [-0.9, -0.8, -0.6])
 println(result)
 result = eval(G, basis, [-0.95, -0.85, -0.65])
+println(result)
+result = grad(G, basis, basis_d, [-0.9, -0.8, -0.6])
+println(result)
+result = grad(G, basis, basis_d, [-0.95, -0.85, -0.65])
 println(result)
