@@ -50,7 +50,7 @@ function Vtop(rholist, rhomaxlist, basislist, kT, samples)
 end
 
 function dVbias(s, rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
-	grad = fill(0.0, length(s))
+	grad = zeros(length(s))
 	if Vbias(s, rholist, rhomaxlist, basislist, kT) <= Vshift
 		return grad
 	end
@@ -170,7 +170,8 @@ function sketch_mtd()
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
         println("Forming TT...")
         flush(stdout)
-		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, r, rc, 0.05)
+        domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
+		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, basis_type, r, rc, 0.05)
         
         push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		

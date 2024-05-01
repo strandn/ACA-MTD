@@ -7,17 +7,14 @@ function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), 2 * n + 1)
-    y0 = ones(length(x)) * 1 / sqrt(2 * L)
-    y1 = zeros(length(x), n)
-    y2 = zeros(length(x), n)
     for i in 1:n
-        y1[:, i] = sqrt(1 / L) * cos.(pi * (x .- shift) * i / L)
-        y2[:, i] = sqrt(1 / L) * sin.(pi * (x .- shift) * i / L)
+        y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
+        y1(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * cos(pi * (x - shift) * i / L) : 0.0
+        y2(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * sin(pi * (x - shift) * i / L) : 0.0
+        y[:, 1] = y0.(x)
+        y[:, 2 * i] = y1.(x)
+        y[:, 2 * i + 1] = y2.(x)
     end
-
-    y[:, 1] = y0
-    y[:, 2:2:end-1] = y1
-    y[:, 3:2:end] = y2
     return y
 end
     
@@ -26,7 +23,8 @@ function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float6
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), n)
     for i in 1:n
-        y[:, i] = sqrt(i - 1 / 2) * Pl.((x .- shift) / L, i - 1)
+        f(x) = x > dom[1] && x < dom[2] ? sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1) : 0.0
+        y[:, i] = f.(x)
     end
     return y
 end
@@ -37,9 +35,9 @@ function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
     dy = zeros(length(x), 2 * n + 1)
     for i in 1:n
         y1(x) = sqrt(1 / L) * cos(pi * (x - shift) * i / L)
-        dy1(x) = ForwardDiff.derivative(y1, x)
+        dy1(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y1, x) : 0.0
         y2(x) = sqrt(1 / L) * sin(pi * (x - shift) * i / L)
-        dy2(x) = ForwardDiff.derivative(y2, x)
+        dy2(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y2, x) : 0.0
         dy[:, 2 * i] = dy1.(x)
         dy[:, 2 * i + 1] = dy2.(x)
     end
@@ -52,7 +50,7 @@ function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
     dy = zeros(length(x), n)
     for i in 1:n
         f(x) = sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1)
-        df(x) = ForwardDiff.derivative(f, x)
+        df(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(f, x) : 0.0
         dy[:, i] = df.(x)
     end
     return dy
@@ -145,10 +143,10 @@ end
 function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64)
     d = size(samples, 2)
     basis, basis_d, nb = if basis_type == "fourier"
-        nb0 = 20;
+        nb0 = 10;
         ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], [db(x) = fourier_d(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
     elseif basis_type == "poly"
-        nb0 = 50;
+        nb0 = 18;
         ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], [b(x) = legendre_d(x, nb0, domain[i]) for i in 1:d], nb0)
     end
 
