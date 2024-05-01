@@ -159,7 +159,7 @@ function sketch_mtd()
 				push!(samples, s)
 			end
 		end
-		open("data/colvar_$count.txt", "w") do file
+		open("data/colvar_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 			end
@@ -176,7 +176,7 @@ function sketch_mtd()
 		
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
-        open("data/ttde_$count.txt", "w") do file
+        open("data/ttde_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
             write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
             write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
             for x in rangex_small
@@ -187,7 +187,7 @@ function sketch_mtd()
             end
         end
 
-		open("data/dF_$count.txt", "w") do file
+		open("data/dF_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
                     write(file, "$(fes(dens_eval(G, basis, [x, y]), last(rhomaxlist), kb * T)) ")
@@ -207,7 +207,7 @@ function sketch_mtd()
 
 		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
 		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
-		open("data/F_$count.txt", "w") do file
+		open("data/F_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
 			for x in rangex
 				for y in rangey
 					write(file, "$(-Vbias_shifted([x, y], rholist, rhomaxlist, basislist, kb * T, Vshift)) ")
@@ -216,8 +216,8 @@ function sketch_mtd()
 			end
 		end
 
-		open("data/dVbiasdx_$count.txt", "w") do filex
-			open("data/dVbiasdy_$count.txt", "w") do filey
+		open("data/dVbiasdx_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do filex
+			open("data/dVbiasdy_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do filey
 				for x in rangex
 					for y in rangey
 						grad = dVbias([x, y], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
