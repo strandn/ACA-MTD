@@ -4,7 +4,7 @@
 ##SBATCH --output=%x.out
 ##SBATCH --error=%x.err
 
-#SBATCH --job-name=gaussian_knn
+#SBATCH --job-name=gaussian_sketch
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
  
@@ -14,7 +14,7 @@
 #SBATCH --account=pi-dinner
  
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=10
+#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=10G
  
@@ -29,4 +29,5 @@ echo $SLURM_JOB_NODELIST
 # julia gaussian_cv.jl
 # mpiexecjl -n 1 julia gaussian_biased.jl
 # julia gaussian_mtd.jl 20
-mpiexecjl -n 10 julia gaussian_knn.jl $RANK $K
+# mpiexecjl -n 10 julia gaussian_knn.jl $RANK $K
+julia gaussian_sketch.jl $R $RC $BASIS

@@ -1,5 +1,5 @@
 #!/bin/bash
 while IFS='' read -r line || [[ -n "$line" ]]; do
         arr=($line)
-        sbatch --export=RANK=${arr[0]},K=${arr[1]} qsubmit.sh
+        sbatch --export=R=${arr[0]},RC=${arr[1]},BASIS=${arr[2]} qsubmit.sh
 done < "$1"
