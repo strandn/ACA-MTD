@@ -36,7 +36,7 @@ function Vbias(s, rholist, rhomaxlist, basislist, kT)
 	return result
 end
 
-Vbias_shifted(s, rholist, basislist, rhomaxlist, kT, Vshift) = max(Vbias(s, rholist, rhomaxlist, basislist, kT) - Vshift, 0.0)
+Vbias_shifted(s, rholist, rhomaxlist, basislist, kT, Vshift) = max(Vbias(s, rholist, rhomaxlist, basislist, kT) - Vshift, 0.0)
 
 function Vtop(rholist, rhomaxlist, basislist, kT, samples)
 	max = 0.0
@@ -80,9 +80,8 @@ function grad_V(r, rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
 end
 
 function sketch_mtd()
-	domain = ((-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0))
-	domain_cv = ((-1.5, 4.0), (-1.5, 4.5))
-	domain_cv_full = ((-2.46, 4.1), (-2.48, 4.5))
+	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
+	domain_cv = [(-1.5, 4.0), (-1.5, 4.5)]
 	nbins = 100
 
 	T = 1.0
@@ -156,7 +155,7 @@ function sketch_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, rhomaxlist, basislist, kT, Vshift)])
+				push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, rhomaxlist, basislist, kb * T, Vshift)])
 				push!(samples, s)
 			end
 		end
@@ -170,7 +169,6 @@ function sketch_mtd()
 		ylist = [step[3] for step in traj]
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
         println("Forming TT...")
-        println()
         flush(stdout)
 		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv, "poly", 2, 30, 0.05)
         
@@ -192,7 +190,7 @@ function sketch_mtd()
 		open("data/dF_$count.txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
-                    write(file, "$(fes(dens_eval(G, basis, [x, y]), last(rhomaxlist), kT)) ")
+                    write(file, "$(fes(dens_eval(G, basis, [x, y]), last(rhomaxlist), kb * T)) ")
                 end
                 write(file, "\n")
             end
@@ -212,12 +210,11 @@ function sketch_mtd()
 		open("data/F_$count.txt", "w") do file
 			for x in rangex
 				for y in rangey
-					write(file, "$(-Vbias_shifted([x, y], rholist, basislist, rhomaxlist, kb * T, Vshift)) ")
+					write(file, "$(-Vbias_shifted([x, y], rholist, rhomaxlist, basislist, kb * T, Vshift)) ")
 				end
 				write(file, "\n")
 			end
 		end
-		update_dVbias(F, outer, inner, douter, domain_cv_full, nbins)
 
 		open("data/dVbiasdx_$count.txt", "w") do filex
 			open("data/dVbiasdy_$count.txt", "w") do filey

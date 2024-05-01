@@ -94,8 +94,7 @@ end
 function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
     d = length(M);
     N = size(M[1], 1);
-    # nb = dim(siteind(coeff, 1))
-    rc = dim(linkind(coeff, 1))
+    rc = linkdim(coeff, 1)
     L = deepcopy(coeff)
 
     for i in 1:d
