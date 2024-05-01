@@ -189,7 +189,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     return MPS(G), basis, basis_d
 end
 
-function eval(G::MPS, basis, elements::Vector{Float64})
+function dens_eval(G::MPS, basis, elements::Vector{Float64})
     d = length(elements)
     result = G[1] * ITensor(basis[1]([elements[1]]), siteind(G, 1))
     # phi = Vector{ITensor}(undef, d)
@@ -199,7 +199,7 @@ function eval(G::MPS, basis, elements::Vector{Float64})
     return result[]
 end
 
-function grad(G::MPS, basis, basis_d, elements::Vector{Float64})
+function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     # f(x) = eval(G, basis, x)
     # return ForwardDiff.gradient(f, elements)
     d = length(elements)
@@ -214,12 +214,12 @@ function grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     return grad
 end
 
-G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05)
-result = eval(G, basis, [-0.9, -0.8, -0.6])
-println(result)
-result = eval(G, basis, [-0.95, -0.85, -0.65])
-println(result)
-result = grad(G, basis, basis_d, [-0.9, -0.8, -0.6])
-println(result)
-result = grad(G, basis, basis_d, [-0.95, -0.85, -0.65])
-println(result)
+# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05)
+# result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
+# println(result)
+# result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
+# println(result)
+# result = dens_grad(G, basis, basis_d, [-0.9, -0.8, -0.6])
+# println(result)
+# result = dens_grad(G, basis, basis_d, [-0.95, -0.85, -0.65])
+# println(result)
