@@ -4,51 +4,40 @@ using LinearAlgebra
 using ForwardDiff
 
 function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), 2 * n + 1)
-    y0 = ones(length(x)) * 1 / sqrt(2 * L)
-    y1 = zeros(length(x), n)
-    y2 = zeros(length(x), n)
     for i in 1:n
-        y1[:, i] = sqrt(1 / L) * cos.(pi * (x .- shift) * i / L)
-        y2[:, i] = sqrt(1 / L) * sin.(pi * (x .- shift) * i / L)
+        y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
+        y1(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * cos(pi * (x - shift) * i / L) : 0.0
+        y2(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * sin(pi * (x - shift) * i / L) : 0.0
+        y[:, 1] = y0.(x)
+        y[:, 2 * i] = y1.(x)
+        y[:, 2 * i + 1] = y2.(x)
     end
-
-    y[:, 1] = y0
-    y[:, 2:2:end-1] = y1
-    y[:, 3:2:end] = y2
     return y
 end
     
 function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), n)
     for i in 1:n
-        y[:, i] = sqrt(i - 1 / 2) * Pl.((x .- shift) / L, i - 1)
+        f(x) = x > dom[1] && x < dom[2] ? sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1) : 0.0
+        y[:, i] = f.(x)
     end
     return y
 end
 
 function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     dy = zeros(length(x), 2 * n + 1)
     for i in 1:n
         y1(x) = sqrt(1 / L) * cos(pi * (x - shift) * i / L)
-        dy1(x) = ForwardDiff.derivative(y1, x)
+        dy1(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y1, x) : 0.0
         y2(x) = sqrt(1 / L) * sin(pi * (x - shift) * i / L)
-        dy2(x) = ForwardDiff.derivative(y2, x)
+        dy2(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y2, x) : 0.0
         dy[:, 2 * i] = dy1.(x)
         dy[:, 2 * i + 1] = dy2.(x)
     end
@@ -56,15 +45,12 @@ function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
 end
 
 function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     dy = zeros(length(x), n)
     for i in 1:n
         f(x) = sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1)
-        df(x) = ForwardDiff.derivative(f, x)
+        df(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(f, x) : 0.0
         dy[:, i] = df.(x)
     end
     return dy
