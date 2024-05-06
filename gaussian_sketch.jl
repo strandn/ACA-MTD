@@ -1,5 +1,6 @@
 using Random
 using Distributions
+using KernelDensity
 
 include("tt_sketch.jl")
 
@@ -108,7 +109,7 @@ function sketch_mtd()
     basislist = []
     basisdlist = []
     # nblist = [15, 20, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]
-	nblist = [4, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+	# nblist = [4, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 	# Vmax = 20 * kb * T
 	Vmax = Inf
 	# Vinc = 4.6 * kb * T
@@ -161,7 +162,7 @@ function sketch_mtd()
 				push!(samples, s)
 			end
 		end
-		open("data/colvar_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
+		open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 			end
@@ -173,13 +174,13 @@ function sketch_mtd()
         println("Forming TT...")
         flush(stdout)
         domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
-		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, basis_type, r, rc, 0.05, nblist[count])
+		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.05, nbasis)
         
         push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
-        open("data/ttde_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
+        open("data/ttde_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
             write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
             write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
             for x in rangex_small
@@ -190,7 +191,18 @@ function sketch_mtd()
             end
         end
 
-		open("data/dF_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
+		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins))
+		ik = InterpKDE(kde_result)
+		open("data/kde_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+            for x in rangex_small
+                for y in rangey_small
+                    write(file, "$(pdf(ik, x, y)) ")
+                end
+                write(file, "\n")
+            end
+        end
+
+		open("data/dF_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
                     write(file, "$(fes(dens_eval(G, basis, [x, y]), last(rhomaxlist), kb * T)) ")
@@ -210,7 +222,7 @@ function sketch_mtd()
 
 		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
 		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
-		open("data/F_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do file
+		open("data/F_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
 			for x in rangex
 				for y in rangey
 					write(file, "$(-Vbias_shifted([x, y], rholist, rhomaxlist, basislist, kb * T, Vshift)) ")
@@ -219,8 +231,8 @@ function sketch_mtd()
 			end
 		end
 
-		open("data/dVbiasdx_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do filex
-			open("data/dVbiasdy_$(count)_$(r)_$(rc)_$(basis_type).txt", "w") do filey
+		open("data/dVbiasdx_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do filex
+			open("data/dVbiasdy_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do filey
 				for x in rangex
 					for y in rangey
 						grad = dVbias([x, y], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
@@ -239,5 +251,5 @@ println(ARGS)
 flush(stdout)
 r = parse(Int64, ARGS[1])
 rc = parse(Int64, ARGS[2])
-basis_type = ARGS[3]
+nbasis = parse(Int64, ARGS[3])
 sketch_mtd()
