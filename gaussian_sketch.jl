@@ -107,6 +107,8 @@ function sketch_mtd()
     rhomaxlist = []
     basislist = []
     basisdlist = []
+    # nblist = [15, 20, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]
+	nblist = [4, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 	# Vmax = 20 * kb * T
 	Vmax = Inf
 	# Vinc = 4.6 * kb * T
@@ -171,7 +173,7 @@ function sketch_mtd()
         println("Forming TT...")
         flush(stdout)
         domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
-		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, basis_type, r, rc, 0.1)
+		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, basis_type, r, rc, 0.05, nblist[count])
         
         push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		
