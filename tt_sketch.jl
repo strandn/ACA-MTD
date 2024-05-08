@@ -2,78 +2,142 @@ using LegendrePolynomials
 using ITensors
 using LinearAlgebra
 using ForwardDiff
+using QuadGK
 
-function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+# function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+#     L = (dom[2] - dom[1]) / 2
+#     shift = (dom[2] + dom[1]) / 2
+#     y = zeros(length(x), 2 * n + 1)
+#     y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
+#     y[:, 1] = y0.(x)
+#     for i in 1:n
+#         y1(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * cos(pi * (x - shift) * i / L) : 0.0
+#         y2(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * sin(pi * (x - shift) * i / L) : 0.0
+#         y[:, 2 * i] = y1.(x)
+#         y[:, 2 * i + 1] = y2.(x)
+#     end
+#     return y
+# end
+    
+# function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+#     L = (dom[2] - dom[1]) / 2
+#     shift = (dom[2] + dom[1]) / 2
+#     y = zeros(length(x), n)
+#     for i in 1:n
+#         f(x) = x > dom[1] && x < dom[2] ? sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1) : 0.0
+#         y[:, i] = f.(x)
+#     end
+#     return y
+# end
+
+# function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+#     L = (dom[2] - dom[1]) / 2
+#     shift = (dom[2] + dom[1]) / 2
+#     dy = zeros(length(x), 2 * n + 1)
+#     for i in 1:n
+#         y1(x) = sqrt(1 / L) * cos(pi * (x - shift) * i / L)
+#         dy1(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y1, x) : 0.0
+#         y2(x) = sqrt(1 / L) * sin(pi * (x - shift) * i / L)
+#         dy2(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y2, x) : 0.0
+#         dy[:, 2 * i] = dy1.(x)
+#         dy[:, 2 * i + 1] = dy2.(x)
+#     end
+#     return dy
+# end
+
+# function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+#     L = (dom[2] - dom[1]) / 2
+#     shift = (dom[2] + dom[1]) / 2
+#     dy = zeros(length(x), n)
+#     for i in 1:n
+#         f(x) = sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1)
+#         df(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(f, x) : 0.0
+#         dy[:, i] = df.(x)
+#     end
+#     return dy
+# end
+
+function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    y = zeros(length(x), 2 * n + 1)
-    y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
-    y[:, 1] = y0.(x)
-    for i in 1:n
-        y1(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * cos(pi * (x - shift) * i / L) : 0.0
-        y2(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * sin(pi * (x - shift) * i / L) : 0.0
-        y[:, 2 * i] = y1.(x)
-        y[:, 2 * i + 1] = y2.(x)
+    if x < dom[1] || x > dom[2]
+        return 0.0
     end
-    return y
+    if pos == 1
+        return 1 / sqrt(2 * L)
+    elseif pos % 2 == 0
+        return sqrt(1 / L) * cos(pi * (x - shift) * pos / L)
+    else
+        return sqrt(1 / L) * sin(pi * (x - shift) * pos / L)
+    end
 end
     
-function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+function legendre_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    y = zeros(length(x), n)
-    for i in 1:n
-        f(x) = x > dom[1] && x < dom[2] ? sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1) : 0.0
-        y[:, i] = f.(x)
+    if x < dom[1] || x > dom[2]
+        return 0.0
     end
-    return y
+    return sqrt(pos / L - 1 / (2 * L)) * Pl((x - shift) / L, pos - 1)
 end
 
-function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+function fourier_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    dy = zeros(length(x), 2 * n + 1)
-    for i in 1:n
-        y1(x) = sqrt(1 / L) * cos(pi * (x - shift) * i / L)
-        dy1(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y1, x) : 0.0
-        y2(x) = sqrt(1 / L) * sin(pi * (x - shift) * i / L)
-        dy2(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y2, x) : 0.0
-        dy[:, 2 * i] = dy1.(x)
-        dy[:, 2 * i + 1] = dy2.(x)
+    if x < dom[1] || x > dom[2]
+        return 0.0
     end
-    return dy
+    f(x) = if pos == 1
+        1 / sqrt(2 * L)
+    elseif pos % 2 == 0
+        sqrt(1 / L) * cos(pi * (x - shift) * pos / L)
+    else
+        sqrt(1 / L) * sin(pi * (x - shift) * pos / L)
+    end
+    df(x) = ForwardDiff.derivative(f, x)
+    return df(x)
 end
-
-function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
+    
+function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    dy = zeros(length(x), n)
-    for i in 1:n
-        f(x) = sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1)
-        df(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(f, x) : 0.0
-        dy[:, i] = df.(x)
+    if x < dom[1] || x > dom[2]
+        return 0.0
     end
-    return dy
+    f(x) = sqrt(pos / L - 1 / (2 * L)) * Pl((x - shift) / L, pos - 1)
+    df(x) = ForwardDiff.derivative(f, x)
+    return df(x)
 end
 
-function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
+function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::Int64, domain::Vector{Tuple{Float64, Float64}})
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
     for i in 1:d
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
-        noprime!(coeff[i])
+        basis_int = zeros(nb, nb)
+        for s in 1:nb
+            for t in s:nb
+                f(x) = basis[i](x, s) * basis[i](x, t)
+                basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[i]...)[1]
+            end
+        end
+        # display(basis_int)
+        coeff[i] *= ITensor(basis_int, sites[i], sites[i]')
+        # noprime!(coeff[i])
     end
     return coeff
 end
 
-function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sample_weight::Vector{Float64})
+function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sample_weight::Vector{Float64}, nb::Int64)
     d = size(samples, 2)
     is_new = siteinds(size(samples, 1), d)
     M = Vector{ITensor}(undef, d)
     for i in 1:d
-        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i](samples[:, i]), is_new[i], is[i])
+        # M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i](samples[:, i]), is_new[i], is[i])
+        # M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i].(samples[:, i], 1:nb), is_new[i], is[i])
+        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
     end
     return M, is_new
 end
@@ -128,16 +192,21 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
     return MPS(B), envi_L, envi_R
 end
 
-function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb0::Int64, sample_weight::Vector{Float64})
+function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb::Int64, sample_weight::Vector{Float64})
     d = size(samples, 2)
-    basis, basis_d, nb = if basis_type == "fourier"
-        ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], [db(x) = fourier_d(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
+    # basis, basis_d, nb = if basis_type == "fourier"
+    #     ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], [db(x) = fourier_d(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
+    # elseif basis_type == "poly"
+    #     ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], [b(x) = legendre_d(x, nb0, domain[i]) for i in 1:d], nb0)
+    # end
+    basis, basis_d = if basis_type == "fourier"
+        ([b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = fourier_d(x, pos, domain[i]) for i in 1:d])
     elseif basis_type == "poly"
-        ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], [b(x) = legendre_d(x, nb0, domain[i]) for i in 1:d], nb0)
+        ([b(x, pos) = legendre_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = legendre_d(x, pos, domain[i]) for i in 1:d])
     end
 
-    coeff = create_TT_coeff(nb, d, rc, alpha)
-    M, is = int_basis_sample(basis, samples, siteinds(coeff), sample_weight)
+    coeff = create_TT_coeff(nb, d, rc, alpha, basis, nb, domain)
+    M, is = int_basis_sample(basis, samples, siteinds(coeff), sample_weight, nb)
     # for i in 1:d
     #     M[i] .*= sample_weight .^ (1 / d) / sum(sample_weight)
     # end
@@ -173,27 +242,31 @@ end
 
 function dens_eval(G::MPS, basis, elements::Vector{Float64})
     d = length(elements)
-    result = G[1] * ITensor(basis[1]([elements[1]]), siteind(G, 1))
+    s = siteinds(G)
+    result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
     for i in 2:d
-        result *= G[i] * ITensor(basis[i]([elements[i]]), siteind(G, i))
+        result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
     end
     return result[]
 end
 
 function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     d = length(elements)
+    s = siteinds(G)
     grad = zeros(d)
-    for dim in 1:d
-        result = G[1] * ITensor(dim == 1 ? basis_d[1]([elements[1]]) : basis[1]([elements[1]]), siteind(G, 1))
+    # display(basis)
+    # display(basis_d)
+    for k in 1:d
+        result = G[1] * ITensor((k == 1 ? basis_d : basis)[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
         for i in 2:d
-            result *= G[i] * ITensor(dim == i ? basis_d[i]([elements[i]]) : basis[i]([elements[i]]), siteind(G, i))
+            result *= G[i] * ITensor((k == i ? basis_d : basis)[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
         end
-        grad[dim] = result[]
+        grad[k] = result[]
     end
     return grad
 end
 
-G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05, 10, [1.0, 2.0, 3.0])
+G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 2, 4, 0.05, 10, [1.0, 1.0, 1.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
