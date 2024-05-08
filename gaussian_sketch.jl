@@ -30,7 +30,6 @@ end
 function Vbias(s, rholist, rhomaxlist, basislist, kT)
 	result = 0.0
 	for i in eachindex(rholist)
-		# result += kT * log(dens_eval(rholist[i], basislist[i], s))
         rho = dens_eval(rholist[i], basislist[i], s)
         result -= fes(rho, rhomaxlist[i], kT)
 	end

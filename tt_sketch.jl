@@ -7,11 +7,11 @@ function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     y = zeros(length(x), 2 * n + 1)
+    y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
+    y[:, 1] = y0.(x)
     for i in 1:n
-        y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
         y1(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * cos(pi * (x - shift) * i / L) : 0.0
         y2(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * sin(pi * (x - shift) * i / L) : 0.0
-        y[:, 1] = y0.(x)
         y[:, 2 * i] = y1.(x)
         y[:, 2 * i + 1] = y2.(x)
     end
@@ -57,18 +57,9 @@ function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
 end
 
 function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
-    # sites = [Index(n, "Site,n=" * string(i)) for i in 1:d]
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
     for i in 1:d
-        # if i == 1
-        #     coeff[1][:, :] = 0.5 * ones(n, r)
-        # elseif i == d
-        #     coeff[d][:, :] = 0.5 * ones(r, n)
-        # else
-        #     coeff[i][:, :, :] = 0.5 * ones(r, n, r)
-        # end
-
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
@@ -77,14 +68,12 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     return coeff
 end
 
-function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet)
+function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sample_weight::Vector{Float64})
     d = size(samples, 2)
-    # is_new = [Index(size(samples, 1), "Site,n=" * string(i)) for i in 1:d]
     is_new = siteinds(size(samples, 1), d)
-    # M = [ITensor(is[i], is_new[i]) for i in 1:d]
     M = Vector{ITensor}(undef, d)
     for i in 1:d
-        M[i] = ITensor(basis[i](samples[:, i]), is_new[i], is[i])
+        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i](samples[:, i]), is_new[i], is[i])
     end
     return M, is_new
 end
@@ -126,7 +115,6 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
         elseif core_id == d
             B[d] = ITensor(envi_L[d], is[d], linkind(coeff, d - 1)) * M[d] / N
         else
-            # B[core_id] = M[core_id] * envi_L[core_id] * envi_R[core_id]
             B[core_id] = ITensor(linkind(coeff, core_id - 1), is[core_id], linkind(coeff, core_id))
             for i in 1:rc
                 for j in 1:rc
@@ -140,18 +128,19 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
     return MPS(B), envi_L, envi_R
 end
 
-function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb0::Int64)
+function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb0::Int64, sample_weight::Vector{Float64})
     d = size(samples, 2)
     basis, basis_d, nb = if basis_type == "fourier"
-        # nb0 = 15;
         ([b(x) = fourier_basis(x, nb0, domain[i]) for i in 1:d], [db(x) = fourier_d(x, nb0, domain[i]) for i in 1:d], 2 * nb0 + 1)
     elseif basis_type == "poly"
-        # nb0 = 15;
         ([b(x) = legendre_basis(x, nb0, domain[i]) for i in 1:d], [b(x) = legendre_d(x, nb0, domain[i]) for i in 1:d], nb0)
     end
 
     coeff = create_TT_coeff(nb, d, rc, alpha)
-    M, is = int_basis_sample(basis, samples, siteinds(coeff))
+    M, is = int_basis_sample(basis, samples, siteinds(coeff), sample_weight)
+    # for i in 1:d
+    #     M[i] .*= sample_weight .^ (1 / d) / sum(sample_weight)
+    # end
     G = Vector{ITensor}(undef, d)
 
     Bemp, envi_L, envi_R = form_tensor_moment(M, coeff, is)
@@ -161,10 +150,6 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             G[1] = Bemp[1]
         else
             l = linkind(coeff, core_id - 1)
-            # A = envi_L[core_id] * delta(l', l) * envi_R[core_id - 1]
-            # G[core_id] = ITensor(pinv(matrix(A, l', l)), l', l) * Bemp[core_id]
-            # noprime!(G[core_id])
-            # _, _, V[core_id] = svd(A, l', maxdim = r, righttags = tags(l))
             A = envi_L[core_id]' * envi_R[core_id - 1]
             G[core_id] = ITensor(pinv(A), l', l) * Bemp[core_id]
             noprime!(G[core_id])
@@ -189,7 +174,6 @@ end
 function dens_eval(G::MPS, basis, elements::Vector{Float64})
     d = length(elements)
     result = G[1] * ITensor(basis[1]([elements[1]]), siteind(G, 1))
-    # phi = Vector{ITensor}(undef, d)
     for i in 2:d
         result *= G[i] * ITensor(basis[i]([elements[i]]), siteind(G, i))
     end
@@ -197,8 +181,6 @@ function dens_eval(G::MPS, basis, elements::Vector{Float64})
 end
 
 function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
-    # f(x) = eval(G, basis, x)
-    # return ForwardDiff.gradient(f, elements)
     d = length(elements)
     grad = zeros(d)
     for dim in 1:d
@@ -211,7 +193,7 @@ function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     return grad
 end
 
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05)
+G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "poly", 2, 4, 0.05, 10, [1.0, 2.0, 3.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
