@@ -66,9 +66,9 @@ function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     if pos == 1
         return 1 / sqrt(2 * L)
     elseif pos % 2 == 0
-        return sqrt(1 / L) * cos(pi * (x - shift) * pos / L)
+        return sqrt(1 / L) * cos(pi * (x - shift) * div(pos, 2) / L)
     else
-        return sqrt(1 / L) * sin(pi * (x - shift) * pos / L)
+        return sqrt(1 / L) * sin(pi * (x - shift) * div(pos, 2) / L)
     end
 end
     
@@ -113,6 +113,13 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::In
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
     for i in 1:d
+        # if i == 1
+        #     coeff[1][:, :] = 0.5 * ones(n, r)
+        # elseif i == d
+        #     coeff[d][:, :] = 0.5 * ones(r, n)
+        # else
+        #     coeff[i][:, :, :] = 0.5 * ones(r, n, r)
+        # end
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
@@ -131,13 +138,14 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::In
 end
 
 function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sample_weight::Vector{Float64}, nb::Int64)
-    d = size(samples, 2)
+    N, d = size(samples)
     is_new = siteinds(size(samples, 1), d)
     M = Vector{ITensor}(undef, d)
     for i in 1:d
         # M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i](samples[:, i]), is_new[i], is[i])
         # M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i].(samples[:, i], 1:nb), is_new[i], is[i])
-        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        M[i] = ITensor((sample_weight * N / sum(sample_weight)) .^ d .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        # M[i] = ITensor((sample_weight) .^ d .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
     end
     return M, is_new
 end
@@ -266,7 +274,7 @@ function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     return grad
 end
 
-G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 2, 4, 0.05, 10, [1.0, 1.0, 1.0])
+# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
