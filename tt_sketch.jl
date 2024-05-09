@@ -86,7 +86,7 @@ function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n:
         return 0.0
     end
     dx = (dom[2] - dom[1]) / (n - 2)
-    centers = domain[1]:dx:domain[2]
+    centers = dom[1]:dx:dom[2]
     if pos == 1
         return 1.0
     else
@@ -127,7 +127,7 @@ function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int
         return 0.0
     end
     dx = (dom[2] - dom[1]) / (n - 2)
-    centers = domain[1]:dx:domain[2]
+    centers = dom[1]:dx:dom[2]
     f(x) = if pos == 1
         1.0
     else
@@ -140,13 +140,17 @@ end
 function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::Int64, domain::Vector{Tuple{Float64, Float64}})
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
+    # println(coeff)
     for i in 1:d
         # if i == 1
-        #     coeff[1][:, :] = 0.5 * ones(n, r)
+        #     coeff[1][:, :] = randn(n, r)
+        #     # coeff[1][:, :] = 0.5 * ones(n, r)
         # elseif i == d
-        #     coeff[d][:, :] = 0.5 * ones(r, n)
+        #     coeff[d][:, :] = randn(r, n)
+        #     # coeff[d][:, :] = 0.5 * ones(r, n)
         # else
-        #     coeff[i][:, :, :] = 0.5 * ones(r, n, r)
+        #     coeff[i][:, :, :] = randn(r, n, r)
+        #     # coeff[i][:, :, :] = 0.5 * ones(r, n, r)
         # end
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
@@ -158,7 +162,7 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::In
                 basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[i]...)[1]
             end
         end
-        display(basis_int)
+        # display(basis_int)
         coeff[i] *= ITensor(basis_int, sites[i], sites[i]')
         # noprime!(coeff[i])
     end
