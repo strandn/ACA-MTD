@@ -78,7 +78,14 @@ function legendre_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    return sqrt(pos / L - 1 / (2 * L)) * Pl((x - shift) / L, pos - 1)
+    xadj = (x - shift) / L
+    if xadj < -1.0
+        xadj = -1.0
+    end
+    if xadj > 1.0
+        xadj = 1.0
+    end
+    return sqrt(pos / L - 1 / (2 * L)) * Pl(xadj, pos - 1)
 end
 
 function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int64)
@@ -86,11 +93,12 @@ function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n:
         return 0.0
     end
     dx = (dom[2] - dom[1]) / (n - 2)
-    centers = dom[1]:dx:dom[2]
+    # centers = dom[1]:dx:dom[2]
+    centers = LinRange(dom[1], dom[2], n - 1)
     if pos == 1
         return 1.0
     else
-        return exp(-(x - centers[pos - 1]) ^ 2 / (2 * dx ^ 2))
+        return exp(-(x - centers[pos - 1]) ^ 2 / (2 * (0.5*dx) ^ 2))
     end
 end
 
@@ -117,7 +125,16 @@ function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    f(x) = sqrt(pos / L - 1 / (2 * L)) * Pl((x - shift) / L, pos - 1)
+    function f(x)
+        xadj = (x - shift) / L
+        if xadj < -1.0
+            xadj = -1.0
+        end
+        if xadj > 1.0
+            xadj = 1.0
+        end
+        return sqrt(pos / L - 1 / (2 * L)) * Pl(xadj, pos - 1)
+    end
     df(x) = ForwardDiff.derivative(f, x)
     return df(x)
 end
@@ -127,7 +144,8 @@ function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int
         return 0.0
     end
     dx = (dom[2] - dom[1]) / (n - 2)
-    centers = dom[1]:dx:dom[2]
+    # centers = dom[1]:dx:dom[2]
+    centers = LinRange(dom[1], dom[2], n - 1)
     f(x) = if pos == 1
         1.0
     else
@@ -137,7 +155,7 @@ function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int
     return df(x)
 end
 
-function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::Int64, domain::Vector{Tuple{Float64, Float64}})
+function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
     # println(coeff)
@@ -155,16 +173,7 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64, basis, nb::In
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
-        basis_int = zeros(nb, nb)
-        for s in 1:nb
-            for t in s:nb
-                f(x) = basis[i](x, s) * basis[i](x, t)
-                basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[i]...)[1]
-            end
-        end
-        # display(basis_int)
-        coeff[i] *= ITensor(basis_int, sites[i], sites[i]')
-        # noprime!(coeff[i])
+        noprime!(coeff[i])
     end
     return coeff
 end
@@ -247,7 +256,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
         ([b(x, pos) = gaussian_basis(x, pos, domain[i], nb) for i in 1:d], [db(x, pos) = gaussian_d(x, pos, domain[i], nb) for i in 1:d])
     end
 
-    coeff = create_TT_coeff(nb, d, rc, alpha, basis, nb, domain)
+    coeff = create_TT_coeff(nb, d, rc, alpha)
     M, is = int_basis_sample(basis, samples, siteinds(coeff), sample_weight, nb)
     # for i in 1:d
     #     M[i] .*= sample_weight .^ (1 / d) / sum(sample_weight)
@@ -269,6 +278,16 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     end
 
     for core_id in 1:d
+        basis_int = zeros(nb, nb)
+        for s in 1:nb
+            for t in s:nb
+                f(x) = basis[core_id](x, s) * basis[core_id](x, t)
+                basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]...)[1]
+            end
+        end
+        # display(basis_int)
+        G[core_id] *= ITensor(inv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
+        noprime!(G[core_id])
         if core_id == 1
             G[1] *= V[2]
         elseif core_id == d
@@ -308,7 +327,7 @@ function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     return grad
 end
 
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
+# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
