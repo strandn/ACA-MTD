@@ -1,6 +1,7 @@
 using Random
 using Distributions
 using KernelDensity
+using ForwardDiff
 
 include("tt_sketch.jl")
 

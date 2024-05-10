@@ -1,61 +1,7 @@
 using LegendrePolynomials
 using ITensors
 using LinearAlgebra
-using ForwardDiff
 using QuadGK
-
-# function fourier_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-#     L = (dom[2] - dom[1]) / 2
-#     shift = (dom[2] + dom[1]) / 2
-#     y = zeros(length(x), 2 * n + 1)
-#     y0(x) = x > dom[1] && x < dom[2] ? 1 / sqrt(2 * L) : 0.0
-#     y[:, 1] = y0.(x)
-#     for i in 1:n
-#         y1(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * cos(pi * (x - shift) * i / L) : 0.0
-#         y2(x) = x > dom[1] && x < dom[2] ? sqrt(1 / L) * sin(pi * (x - shift) * i / L) : 0.0
-#         y[:, 2 * i] = y1.(x)
-#         y[:, 2 * i + 1] = y2.(x)
-#     end
-#     return y
-# end
-    
-# function legendre_basis(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-#     L = (dom[2] - dom[1]) / 2
-#     shift = (dom[2] + dom[1]) / 2
-#     y = zeros(length(x), n)
-#     for i in 1:n
-#         f(x) = x > dom[1] && x < dom[2] ? sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1) : 0.0
-#         y[:, i] = f.(x)
-#     end
-#     return y
-# end
-
-# function fourier_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-#     L = (dom[2] - dom[1]) / 2
-#     shift = (dom[2] + dom[1]) / 2
-#     dy = zeros(length(x), 2 * n + 1)
-#     for i in 1:n
-#         y1(x) = sqrt(1 / L) * cos(pi * (x - shift) * i / L)
-#         dy1(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y1, x) : 0.0
-#         y2(x) = sqrt(1 / L) * sin(pi * (x - shift) * i / L)
-#         dy2(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(y2, x) : 0.0
-#         dy[:, 2 * i] = dy1.(x)
-#         dy[:, 2 * i + 1] = dy2.(x)
-#     end
-#     return dy
-# end
-
-# function legendre_d(x::Vector{Float64}, n::Int64, dom::Tuple{Float64, Float64})
-#     L = (dom[2] - dom[1]) / 2
-#     shift = (dom[2] + dom[1]) / 2
-#     dy = zeros(length(x), n)
-#     for i in 1:n
-#         f(x) = sqrt(i - 1 / 2) * Pl((x - shift) / L, i - 1)
-#         df(x) = x > dom[1] && x < dom[2] ? ForwardDiff.derivative(f, x) : 0.0
-#         dy[:, i] = df.(x)
-#     end
-#     return dy
-# end
 
 function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     if x < dom[1] || x > dom[2]
@@ -92,13 +38,12 @@ function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n:
     if x < dom[1] || x > dom[2]
         return 0.0
     end
-    dx = (dom[2] - dom[1]) / (n - 2)
-    # centers = dom[1]:dx:dom[2]
-    centers = LinRange(dom[1], dom[2], n - 1)
+    dx = (dom[2] - dom[1]) / (n - 1)
+    centers = LinRange(dom[1], dom[2], n + 1)
     if pos == 1
         return 1.0
     else
-        return exp(-(x - centers[pos - 1]) ^ 2 / (2 * (0.5*dx) ^ 2))
+        return exp(-(x - centers[pos]) ^ 2 / (2 * dx ^ 2))
     end
 end
 
@@ -108,15 +53,13 @@ function fourier_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    f(x) = if pos == 1
-        1 / sqrt(2 * L)
+    if pos == 1
+        return 0.0
     elseif pos % 2 == 0
-        sqrt(1 / L) * cos(pi * (x - shift) * pos / L)
+        return -(1 / L) ^ (3 / 2) * pi * div(pos, 2) * sin(pi * (x - shift) * div(pos, 2) / L)
     else
-        sqrt(1 / L) * sin(pi * (x - shift) * pos / L)
+        return (1 / L) ^ (3 / 2) * pi * div(pos, 2) * cos(pi * (x - shift) * div(pos, 2) / L)
     end
-    df(x) = ForwardDiff.derivative(f, x)
-    return df(x)
 end
     
 function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
@@ -125,34 +68,27 @@ function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
-    function f(x)
-        xadj = (x - shift) / L
-        if xadj < -1.0
-            xadj = -1.0
-        end
-        if xadj > 1.0
-            xadj = 1.0
-        end
-        return sqrt(pos / L - 1 / (2 * L)) * Pl(xadj, pos - 1)
+    xadj = (x - shift) / L
+    if xadj < -1.0
+        xadj = -1.0
     end
-    df(x) = ForwardDiff.derivative(f, x)
-    return df(x)
+    if xadj > 1.0
+        xadj = 1.0
+    end
+    return pos / L * (1 / (xadj ^ 2 - 1)) * sqrt(pos / L - 1 / (2 * L)) * (Pl(xadj, pos) - xadj * Pl(xadj, pos - 1))
 end
 
 function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int64)
     if x < dom[1] || x > dom[2]
         return 0.0
     end
-    dx = (dom[2] - dom[1]) / (n - 2)
-    # centers = dom[1]:dx:dom[2]
-    centers = LinRange(dom[1], dom[2], n - 1)
-    f(x) = if pos == 1
-        1.0
+    dx = (dom[2] - dom[1]) / (n - 1)
+    centers = LinRange(dom[1], dom[2], n + 1)
+    if pos == 1
+        return 0.0
     else
-        exp(-(x - centers[pos - 1]) ^ 2 / (2 * dx ^ 2))
+        return (centers[pos] - x) / (dx ^ 2) * exp(-(x - centers[pos]) ^ 2 / (2 * dx ^ 2))
     end
-    df(x) = ForwardDiff.derivative(f, x)
-    return df(x)
 end
 
 function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
@@ -278,16 +214,18 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     end
 
     for core_id in 1:d
-        basis_int = zeros(nb, nb)
-        for s in 1:nb
-            for t in s:nb
-                f(x) = basis[core_id](x, s) * basis[core_id](x, t)
-                basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]...)[1]
+        if basis_type == "gaussian"
+            basis_int = zeros(nb, nb)
+            for s in 1:nb
+                for t in s:nb
+                    f(x) = basis[core_id](x, s) * basis[core_id](x, t)
+                    basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]...)[1]
+                end
             end
+            # display(basis_int)
+            G[core_id] *= ITensor(inv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
+            noprime!(G[core_id])
         end
-        # display(basis_int)
-        G[core_id] *= ITensor(inv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
-        noprime!(G[core_id])
         if core_id == 1
             G[1] *= V[2]
         elseif core_id == d
