@@ -174,7 +174,7 @@ function sketch_mtd()
         println("Forming TT...")
         flush(stdout)
         domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
-		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, "gaussian", r, rc, 0.001, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, "gaussian", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
         
         push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		
