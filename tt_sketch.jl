@@ -209,7 +209,8 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             A = envi_L[core_id]' * envi_R[core_id - 1]
             G[core_id] = ITensor(pinv(A), l', l) * Bemp[core_id]
             noprime!(G[core_id])
-            _, _, V[core_id] = svd(ITensor(A, l', l), l', maxdim = r, righttags = tags(l))
+            _, S, V[core_id] = svd(ITensor(A, l', l), l', maxdim = r, righttags = tags(l))
+            println(S)
         end
     end
 
