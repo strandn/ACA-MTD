@@ -38,12 +38,13 @@ function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n:
     if x < dom[1] || x > dom[2]
         return 0.0
     end
+    w = 1.0
     dx = (dom[2] - dom[1]) / (n - 1)
     centers = LinRange(dom[1], dom[2], n + 1)
     if pos == 1
         return 1.0
     else
-        return exp(-(x - centers[pos]) ^ 2 / (2 * dx ^ 2))
+        return exp(-(x - centers[pos]) ^ 2 / (2 * (w * dx) ^ 2))
     end
 end
 
@@ -82,12 +83,13 @@ function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int
     if x < dom[1] || x > dom[2]
         return 0.0
     end
+    w = 1.0
     dx = (dom[2] - dom[1]) / (n - 1)
     centers = LinRange(dom[1], dom[2], n + 1)
     if pos == 1
         return 0.0
     else
-        return (centers[pos] - x) / (dx ^ 2) * exp(-(x - centers[pos]) ^ 2 / (2 * dx ^ 2))
+        return (centers[pos] - x) / (w * dx) ^ 2 * exp(-(x - centers[pos]) ^ 2 / (2 * (w * dx) ^ 2))
     end
 end
 
@@ -222,8 +224,9 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
                     basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]...)[1]
                 end
             end
+            # println(det(basis_int))
             # display(basis_int)
-            G[core_id] *= ITensor(inv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
+            G[core_id] *= ITensor(pinv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
             noprime!(G[core_id])
         end
         if core_id == 1
@@ -239,26 +242,69 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     return MPS(G), basis, basis_d
 end
 
-function dens_eval(G::MPS, basis, elements::Vector{Float64})
+# function dens_eval(G::MPS, basis, elements::Vector{Float64})
+#     d = length(elements)
+#     s = siteinds(G)
+#     result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
+#     for i in 2:d
+#         result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
+#     end
+#     return result[]
+# end
+
+# function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
+#     d = length(elements)
+#     s = siteinds(G)
+#     grad = zeros(d)
+#     for k in 1:d
+#         result = G[1] * ITensor((k == 1 ? basis_d : basis)[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
+#         for i in 2:d
+#             result *= G[i] * ITensor((k == i ? basis_d : basis)[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
+#         end
+#         grad[k] = result[]
+#     end
+#     return grad
+# end
+
+function dens_eval(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
     d = length(elements)
     s = siteinds(G)
-    result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
+    w = 0.01
+    conv = ITensor.(s)
+    for i in 1:d
+        sigma = w * (domain[i][2] - domain[i][1])
+        for j in 1:ITensors.dim(s[i])
+            f(x) = basis[i](x, j) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
+            conv[i][j] = quadgk(f, domain[i]...)[1]
+        end
+    end
+    result = G[1] * conv[1]
     for i in 2:d
-        result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
+        result *= G[i] * conv[i]
     end
     return result[]
 end
 
-function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
+function dens_grad(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
     d = length(elements)
     s = siteinds(G)
     grad = zeros(d)
-    # display(basis)
-    # display(basis_d)
+    w = 0.01
+    conv = ITensor.(s)
+    conv_d = ITensor.(s)
+    for i in 1:d
+        sigma = w * (domain[i][2] - domain[i][1])
+        for j in 1:ITensors.dim(s[i])
+            f(x) = basis[i](x, j) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
+            df(x) = basis[i](x, j) * ((x - elements[i]) / sigma ^ 2) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
+            conv[i][j] = quadgk(f, domain[i]...)[1]
+            conv_d[i][j] = quadgk(df, domain[i]...)[1]
+        end
+    end
     for k in 1:d
-        result = G[1] * ITensor((k == 1 ? basis_d : basis)[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
+        result = G[1] * (k == 1 ? conv_d[1] : conv[1])
         for i in 2:d
-            result *= G[i] * ITensor((k == i ? basis_d : basis)[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
+            result *= G[i] * (k == i ? conv_d[i] : conv[i])
         end
         grad[k] = result[]
     end
