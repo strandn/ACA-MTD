@@ -242,74 +242,74 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     return MPS(G), basis, basis_d
 end
 
-# function dens_eval(G::MPS, basis, elements::Vector{Float64})
-#     d = length(elements)
-#     s = siteinds(G)
-#     result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
-#     for i in 2:d
-#         result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
-#     end
-#     return result[]
-# end
-
-# function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
-#     d = length(elements)
-#     s = siteinds(G)
-#     grad = zeros(d)
-#     for k in 1:d
-#         result = G[1] * ITensor((k == 1 ? basis_d : basis)[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
-#         for i in 2:d
-#             result *= G[i] * ITensor((k == i ? basis_d : basis)[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
-#         end
-#         grad[k] = result[]
-#     end
-#     return grad
-# end
-
-function dens_eval(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
+function dens_eval(G::MPS, basis, elements::Vector{Float64})
     d = length(elements)
     s = siteinds(G)
-    w = 0.01
-    conv = ITensor.(s)
-    for i in 1:d
-        sigma = w * (domain[i][2] - domain[i][1])
-        for j in 1:ITensors.dim(s[i])
-            f(x) = basis[i](x, j) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
-            conv[i][j] = quadgk(f, domain[i]...)[1]
-        end
-    end
-    result = G[1] * conv[1]
+    result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
     for i in 2:d
-        result *= G[i] * conv[i]
+        result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
     end
     return result[]
 end
 
-function dens_grad(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
+function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     d = length(elements)
     s = siteinds(G)
     grad = zeros(d)
-    w = 0.01
-    conv = ITensor.(s)
-    conv_d = ITensor.(s)
-    for i in 1:d
-        sigma = w * (domain[i][2] - domain[i][1])
-        for j in 1:ITensors.dim(s[i])
-            f(x) = basis[i](x, j) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
-            df(x) = basis[i](x, j) * ((x - elements[i]) / sigma ^ 2) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
-            conv[i][j] = quadgk(f, domain[i]...)[1]
-            conv_d[i][j] = quadgk(df, domain[i]...)[1]
-        end
-    end
     for k in 1:d
-        result = G[1] * (k == 1 ? conv_d[1] : conv[1])
+        result = G[1] * ITensor((k == 1 ? basis_d : basis)[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
         for i in 2:d
-            result *= G[i] * (k == i ? conv_d[i] : conv[i])
+            result *= G[i] * ITensor((k == i ? basis_d : basis)[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
         end
         grad[k] = result[]
     end
     return grad
 end
+
+# function dens_eval(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
+#     d = length(elements)
+#     s = siteinds(G)
+#     w = 0.01
+#     conv = ITensor.(s)
+#     for i in 1:d
+#         sigma = w * (domain[i][2] - domain[i][1])
+#         for j in 1:ITensors.dim(s[i])
+#             f(x) = basis[i](x, j) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
+#             conv[i][j] = quadgk(f, domain[i]...)[1]
+#         end
+#     end
+#     result = G[1] * conv[1]
+#     for i in 2:d
+#         result *= G[i] * conv[i]
+#     end
+#     return result[]
+# end
+
+# function dens_grad(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
+#     d = length(elements)
+#     s = siteinds(G)
+#     grad = zeros(d)
+#     w = 0.01
+#     conv = ITensor.(s)
+#     conv_d = ITensor.(s)
+#     for i in 1:d
+#         sigma = w * (domain[i][2] - domain[i][1])
+#         for j in 1:ITensors.dim(s[i])
+#             f(x) = basis[i](x, j) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
+#             df(x) = basis[i](x, j) * ((x - elements[i]) / sigma ^ 2) * exp(-(elements[i] - x) ^ 2 / (2 * sigma ^ 2))
+#             conv[i][j] = quadgk(f, domain[i]...)[1]
+#             conv_d[i][j] = quadgk(df, domain[i]...)[1]
+#         end
+#     end
+#     for k in 1:d
+#         result = G[1] * (k == 1 ? conv_d[1] : conv[1])
+#         for i in 2:d
+#             result *= G[i] * (k == i ? conv_d[i] : conv[i])
+#         end
+#         grad[k] = result[]
+#     end
+#     return grad
+# end
 
 # G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])

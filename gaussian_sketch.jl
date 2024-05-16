@@ -2,6 +2,7 @@ using Random
 using Distributions
 using KernelDensity
 using ForwardDiff
+using Interpolations
 
 include("tt_sketch.jl")
 
@@ -28,21 +29,21 @@ function fes(rho, rhomax, kT)
 	return -kT * log(rho_adj)
 end
 
-function Vbias(s, rholist, rhomaxlist, basislist, kT, domain)
+function Vbias(s, rholist, rhomaxlist, basislist, kT)
 	result = 0.0
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basislist[i], s, domain)
+        rho = dens_eval(rholist[i], basislist[i], s)
         result -= fes(rho, rhomaxlist[i], kT)
 	end
 	return result
 end
 
-Vbias_shifted(s, rholist, rhomaxlist, basislist, kT, domain, Vshift) = max(Vbias(s, rholist, rhomaxlist, basislist, kT, domain) - Vshift, 0.0)
+Vbias_shifted(s, rholist, rhomaxlist, basislist, kT, Vshift) = max(Vbias(s, rholist, rhomaxlist, basislist, kT) - Vshift, 0.0)
 
-function Vtop(rholist, rhomaxlist, basislist, kT, domain, samples)
+function Vtop(rholist, rhomaxlist, basislist, kT, samples)
 	max = 0.0
 	for s in samples
-		result = Vbias(s, rholist, rhomaxlist, basislist, kT, domain)
+		result = Vbias(s, rholist, rhomaxlist, basislist, kT)
 		if result > max
 			max = result
 		end
@@ -50,28 +51,62 @@ function Vtop(rholist, rhomaxlist, basislist, kT, domain, samples)
 	return max
 end
 
-function dVbias(s, rholist, rhomaxlist, basislist, basisdlist, kT, domain, Vshift)
+function update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
+	order = length(basis)
+	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
+	push!(basislist, [])
+	push!(basisdlist, [])
+	for i in 1:order
+		gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
+		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
+		for j in 1:nbasis
+			for k in 1:nbins
+				w = 0.01
+				sigma = w * (domain[i][2] - domain[i][1])
+				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
+				f(x) = basis[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
+				df(x) = basis[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
+				gridpoints[j][k] = quadgk(f, domain[i]...)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i]...)[1]
+			end
+		end
+		vec = [
+			linear_interpolation(ranges[i], [gridpoints[j][k] for k in 1:nbins])
+			for j in 1:nbasis
+		]
+		conv(x, pos) = vec[pos](x)
+		push!(last(basislist), conv)
+		vec_d = [
+			linear_interpolation(ranges[i], [gridpoints_d[j][k] for k in 1:nbins])
+			for j in 1:nbasis
+		]
+		conv_d(x, pos) = vec_d[pos](x)
+		push!(last(basisdlist), conv_d)
+	end
+end
+
+function dVbias(s, rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
 	grad = zeros(length(s))
-	if Vbias(s, rholist, rhomaxlist, basislist, kT, domain) <= Vshift
+	if Vbias(s, rholist, rhomaxlist, basislist, kT) <= Vshift
 		return grad
 	end
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basislist[i], s, domain)
+        rho = dens_eval(rholist[i], basislist[i], s)
         if rho * 100 / rhomaxlist[i] > 1
-            grad += dens_grad(rholist[i], basislist[i], s, domain) * kT / rho
+            grad += dens_grad(rholist[i], basislist[i], basisdlist[i], s) * kT / rho
         end
 	end
 	return grad
 end
 
-function grad_V(r, rholist, rhomaxlist, basislist, basisdlist, kT, domain, Vshift)
+function grad_V(r, rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
 	grad = ForwardDiff.gradient(V, r)
 	if isempty(rholist)
 		return grad
 	end
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dVdx, dVdy = dVbias([x(r), y(r)], rholist, rhomaxlist, basislist, basisdlist, kT, domain, Vshift)
+	dVdx, dVdy = dVbias([x(r), y(r)], rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
 	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]
@@ -83,6 +118,7 @@ end
 function sketch_mtd()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	domain_cv = [(-1.5, 4.0), (-1.5, 4.5)]
+	domain_cv_full = ((-2.46, 4.1), (-2.48, 4.5))
 	nbins = 100
 
 	T = 1.0
@@ -106,7 +142,7 @@ function sketch_mtd()
 
 	rholist = []
     rhomaxlist = []
-    basislist = []
+	basislist = []
     basisdlist = []
     # nblist = [15, 20, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]
 	# nblist = [4, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
@@ -123,7 +159,7 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], rholist, rhomaxlist, basislist, basisdlist, kb * T, domain_cv, Vshift)
+			grad = grad_V([x1, x2, x3, x4], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -158,7 +194,7 @@ function sketch_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, rhomaxlist, basislist, kb * T, domain_cv, Vshift)])
+				push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, rhomaxlist, basislist, kb * T, Vshift)])
 				push!(samples, s)
 			end
 		end
@@ -174,9 +210,11 @@ function sketch_mtd()
         println("Forming TT...")
         flush(stdout)
         domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
-		G, basis, basis_d = para_sketch(hcat(xlist, ylist), domain_cv_small, "gaussian", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
-        
-        push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]], domain_cv) for i in 1:Int64(div(steps, stride))]))
+		G, basis, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
+
+		push!(rholist, G)
+		update_conv(basis, basislist, basisdlist, domain_cv_full, nbins, nbasis)
+		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
@@ -185,7 +223,7 @@ function sketch_mtd()
             write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
             for x in rangex_small
                 for y in rangey_small
-                    write(file, "$(dens_eval(G, basis, [x, y], domain_cv)) ")
+                    write(file, "$(dens_eval(G, last(basislist), [x, y])) ")
                 end
                 write(file, "\n")
             end
@@ -205,16 +243,13 @@ function sketch_mtd()
 		open("data/dF_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
-                    write(file, "$(fes(dens_eval(G, basis, [x, y], domain_cv), last(rhomaxlist), kb * T)) ")
+                    write(file, "$(fes(dens_eval(G, last(basislist), [x, y]), last(rhomaxlist), kb * T)) ")
                 end
                 write(file, "\n")
             end
         end
 
-		push!(rholist, G)
-        push!(basislist, basis)
-        push!(basisdlist, basis_d)
-		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, domain_cv, samples)
+		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
 		println("Vtop = $Vpeak Vshift = $Vshift")
 		println()
@@ -225,7 +260,7 @@ function sketch_mtd()
 		open("data/F_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
 			for x in rangex
 				for y in rangey
-					write(file, "$(-Vbias_shifted([x, y], rholist, rhomaxlist, basislist, kb * T, domain_cv, Vshift)) ")
+					write(file, "$(-Vbias_shifted([x, y], rholist, rhomaxlist, basislist, kb * T, Vshift)) ")
 				end
 				write(file, "\n")
 			end
@@ -235,7 +270,7 @@ function sketch_mtd()
 			open("data/dVbiasdy_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do filey
 				for x in rangex
 					for y in rangey
-						grad = dVbias([x, y], rholist, rhomaxlist, basislist, basisdlist, kb * T, domain_cv, Vshift)
+						grad = dVbias([x, y], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
 						write(filex, "$(grad[1]) ")
 						write(filey, "$(grad[2]) ")
 					end
