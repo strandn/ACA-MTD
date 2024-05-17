@@ -210,7 +210,7 @@ function sketch_mtd()
         println("Forming TT...")
         flush(stdout)
         domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
-		G, basis, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "gaussian", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
 
 		push!(rholist, G)
 		update_conv(basis, basislist, basisdlist, domain_cv_full, nbins, nbasis)
