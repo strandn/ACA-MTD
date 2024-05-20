@@ -219,6 +219,8 @@ function sketch_mtd()
 		update_conv(basis, basislist, basisdlist, domain_cv_full, nbins, nbasis)
 		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
 		
+		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
+		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
         open("data/ttde_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
@@ -271,8 +273,6 @@ function sketch_mtd()
 		println()
 		flush(stdout)
 
-		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
-		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
 		open("data/F_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
 			for x in rangex
 				for y in rangey
