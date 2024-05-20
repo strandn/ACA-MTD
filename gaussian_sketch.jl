@@ -61,7 +61,7 @@ function update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
 		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
 		for j in 1:nbasis
 			for k in 1:nbins
-				w = 0.05
+				w = 0.02
 				sigma = w * (domain[i][2] - domain[i][1])
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
@@ -146,7 +146,7 @@ function sketch_mtd()
     basisdlist = []
     # nblist = [15, 20, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]
 	# nblist = [4, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-	Vmax = 25 * kb * T
+	Vmax = 30 * kb * T
 	# Vmax = Inf
 	# Vinc = 4.6 * kb * T
 	samples = []
