@@ -123,7 +123,7 @@ function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sampl
     for i in 1:d
         # M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i](samples[:, i]), is_new[i], is[i])
         # M[i] = ITensor((sample_weight / sum(sample_weight)) .^ d .* basis[i].(samples[:, i], 1:nb), is_new[i], is[i])
-        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        M[i] = ITensor((sample_weight * N / sum(sample_weight)) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
         # M[i] = ITensor((sample_weight) .^ d .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
     end
     return M, is_new
