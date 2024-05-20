@@ -257,8 +257,6 @@ function sketch_mtd()
 		Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv, "fourier", r, rc, 0.2, nbasis, weights / sum(weights))
 
 		open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
-            write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
-            write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
             for x in rangex_small
                 for y in rangey_small
                     write(file, "$(dens_eval(Grw, basisrw, [x, y])) ")
