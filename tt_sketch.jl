@@ -121,8 +121,8 @@ function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sampl
     is_new = siteinds(size(samples, 1), d)
     M = Vector{ITensor}(undef, d)
     for i in 1:d
-        # M[i] = ITensor((sample_weight * N / sum(sample_weight)) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
-        M[i] = ITensor(sample_weight .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        # M[i] = ITensor(sample_weight .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
     end
     return M, is_new
 end
@@ -160,9 +160,11 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
     B = Vector{ITensor}(undef, d)
     for core_id in 1:d
         if core_id == 1
-            B[1] = ITensor(envi_R[1], is[1], linkind(coeff, 1)) * M[1] / norm
+            # B[1] = ITensor(envi_R[1], is[1], linkind(coeff, 1)) * M[1] / norm
+            B[1] = ITensor(envi_R[1], is[1], linkind(coeff, 1)) * M[1]
         elseif core_id == d
-            B[d] = ITensor(envi_L[d], is[d], linkind(coeff, d - 1)) * M[d] / norm
+            # B[d] = ITensor(envi_L[d], is[d], linkind(coeff, d - 1)) * M[d] / norm
+            B[d] = ITensor(envi_L[d], is[d], linkind(coeff, d - 1)) * M[d]
         else
             B[core_id] = ITensor(linkind(coeff, core_id - 1), is[core_id], linkind(coeff, core_id))
             for i in 1:rc
@@ -170,7 +172,8 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
                     B[core_id][i, :, j] = envi_L[core_id][:, i] .* envi_R[core_id][:, j]
                 end
             end
-            B[core_id] *= M[core_id] / norm
+            # B[core_id] *= M[core_id] / norm
+            B[core_id] *= M[core_id]
         end
     end
 
