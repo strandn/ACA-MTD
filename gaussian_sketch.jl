@@ -124,7 +124,7 @@ function sketch_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = 1e7
+	steps = 1e6
 	stride = 100
 	# steps = 10000
 	# stride = 10
@@ -144,11 +144,7 @@ function sketch_mtd()
     rhomaxlist = []
 	basislist = []
     basisdlist = []
-    # nblist = [15, 20, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15]
-	# nblist = [4, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 	Vmax = 30 * kb * T
-	# Vmax = Inf
-	# Vinc = 4.6 * kb * T
 	samples = []
 	Vshift = 0.0
 
@@ -254,18 +250,18 @@ function sketch_mtd()
             end
         end
 
-		println("Forming reweighted TT...")
-        flush(stdout)
-		Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, weights / sum(weights))
+		# println("Forming reweighted TT...")
+        # flush(stdout)
+		# Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, weights / sum(weights))
 
-		open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
-            for x in rangex
-                for y in rangey
-                    write(file, "$(dens_eval(Grw, basisrw, [x, y])) ")
-                end
-                write(file, "\n")
-            end
-        end
+		# open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+        #     for x in rangex
+        #         for y in rangey
+        #             write(file, "$(dens_eval(Grw, basisrw, [x, y])) ")
+        #         end
+        #         write(file, "\n")
+        #     end
+        # end
 
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
