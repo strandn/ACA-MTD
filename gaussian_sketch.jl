@@ -256,7 +256,7 @@ function sketch_mtd()
 
 		println("Forming reweighted TT...")
         flush(stdout)
-		Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, weights / sum(weights))
+		Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, weights * 1.0)
 
 		open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
             for x in rangex
