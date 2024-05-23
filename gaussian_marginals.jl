@@ -35,7 +35,7 @@ function gaussian_marginals()
 		Threads.@threads for x in ranges[1]
 			f(x2, x3, x4) = P(x, x2, x3, x4)
 			rho, _ = hcubature(x->f(x[1], x[2], x[3]), [domain[k][1] for k in [2, 3, 4]], [domain[k][2] for k in [2, 3, 4]])
-			rho_total += rho
+			rho_total += rho * (domain[1][2] - domain[1][1]) / (nbins - 1)
 			write(file, "$(-log(rho) / beta) ")
 		end
 		write(file, "\n")
@@ -50,7 +50,7 @@ function gaussian_marginals()
 		Threads.@threads for x in ranges[2]
 			f(x1, x3, x4) = P(x1, x, x3, x4)
 			rho, _ = hcubature(x->f(x[1], x[2], x[3]), [domain[k][1] for k in [1, 3, 4]], [domain[k][2] for k in [1, 3, 4]])
-			global rho_total += rho
+			rho_total += rho * (domain[2][2] - domain[2][1]) / (nbins - 1)
 			write(file, "$(-log(rho) / beta) ")
 		end
 		write(file, "\n")
@@ -65,7 +65,7 @@ function gaussian_marginals()
 		Threads.@threads for x in ranges[3]
 			f(x1, x2, x4) = P(x1, x2, x, x4)
 			rho, _ = hcubature(x->f(x[1], x[2], x[3]), [domain[k][1] for k in [1, 2, 4]], [domain[k][2] for k in [1, 2, 4]])
-			global rho_total += rho
+			rho_total += rho * (domain[3][2] - domain[3][1]) / (nbins - 1)
 			write(file, "$(-log(rho) / beta) ")
 		end
 		write(file, "\n")
@@ -80,7 +80,7 @@ function gaussian_marginals()
 		Threads.@threads for x in ranges[4]
 			f(x1, x2, x3) = P(x1, x2, x3, x)
 			rho, _ = hcubature(x->f(x[1], x[2], x[3]), [domain[k][1] for k in [1, 2, 3]], [domain[k][2] for k in [1, 2, 3]])
-			global rho_total += rho
+			rho_total += rho * (domain[4][2] - domain[4][1]) / (nbins - 1)
 			write(file, "$(-log(rho) / beta) ")
 		end
 		write(file, "\n")
@@ -99,7 +99,7 @@ function gaussian_marginals()
 			for y in ranges[2]
 				f(x3, x4) = P(x, y, x3, x4)
 				rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [3, 4]], [domain[k][2] for k in [3, 4]])
-				rho_total += rho
+				rho_total += rho * (domain[1][2] - domain[1][1]) * (domain[2][2] - domain[2][1]) / (nbins - 1) ^ 2
 				write(file, "$(-log(rho) / beta) ")
 			end
 			write(file, "\n")
@@ -116,7 +116,7 @@ function gaussian_marginals()
 			for y in ranges[3]
 				f(x2, x4) = P(x, x2, y, x4)
 				rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [2, 4]], [domain[k][2] for k in [2, 4]])
-				rho_total += rho
+				rho_total += rho * (domain[1][2] - domain[1][1]) * (domain[3][2] - domain[3][1]) / (nbins - 1) ^ 2
 				write(file, "$(-log(rho) / beta) ")
 			end
 			write(file, "\n")
@@ -133,7 +133,7 @@ function gaussian_marginals()
 			for y in ranges[4]
 				f(x2, x3) = P(x, x2, x3, y)
 				rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [2, 3]], [domain[k][2] for k in [2, 3]])
-				rho_total += rho
+				rho_total += rho * (domain[1][2] - domain[1][1]) * (domain[4][2] - domain[4][1]) / (nbins - 1) ^ 2
 				write(file, "$(-log(rho) / beta) ")
 			end
 			write(file, "\n")
@@ -150,7 +150,7 @@ function gaussian_marginals()
 			for y in ranges[3]
 				f(x1, x4) = P(x1, x, y, x4)
 				rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [1, 4]], [domain[k][2] for k in [1, 4]])
-				rho_total += rho
+				rho_total += rho * (domain[2][2] - domain[2][1]) * (domain[3][2] - domain[3][1]) / (nbins - 1) ^ 2
 				write(file, "$(-log(rho) / beta) ")
 			end
 			write(file, "\n")
@@ -167,7 +167,7 @@ function gaussian_marginals()
 			for y in ranges[4]
 				f(x1, x3) = P(x1, x, x3, y)
 				rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [1, 3]], [domain[k][2] for k in [1, 3]])
-				rho_total += rho
+				rho_total += rho * (domain[2][2] - domain[2][1]) * (domain[4][2] - domain[4][1]) / (nbins - 1) ^ 2
 				write(file, "$(-log(rho) / beta) ")
 			end
 			write(file, "\n")
@@ -184,7 +184,7 @@ function gaussian_marginals()
 			for y in ranges[4]
 				f(x1, x2) = P(x1, x2, x, y)
 				rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [1, 2]], [domain[k][2] for k in [1, 2]])
-				rho_total += rho
+				rho_total += rho * (domain[3][2] - domain[3][1]) * (domain[4][2] - domain[4][1]) / (nbins - 1) ^ 2
 				write(file, "$(-log(rho) / beta) ")
 			end
 			write(file, "\n")
