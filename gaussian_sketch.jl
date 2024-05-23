@@ -61,7 +61,7 @@ function update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
 		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
 		for j in 1:nbasis
 			for k in 1:nbins
-				w = 0.02
+				w = 0.01
 				sigma = w * (domain[i][2] - domain[i][1])
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
@@ -124,7 +124,7 @@ function sketch_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = 1e6
+	steps = 2e6
 	stride = 100
 	# steps = 10000
 	# stride = 10
