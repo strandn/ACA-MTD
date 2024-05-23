@@ -50,13 +50,13 @@ function sketch_mtd()
         if i % stride == 0
             push!(traj, [x1, x2])
             # push!(weights, x1 ^ 4 + x2 ^ 4 + 1.0)
-            push!(weights, x1 + x2 > 0 ? exp(15.0) : 1.0)
+            push!(weights, x1 + x2 > 0 ? exp(4.0) : 1.0)
         end
     end
 
     xlist = [step[1] for step in traj]
     ylist = [step[2] for step in traj]
-    G, basis, _ = para_sketch(hcat(xlist, ylist), domain, "poly", 6, 30, 0.2, 30, ones(Int64(div(steps, stride))))
+    G, basis, _ = para_sketch(hcat(xlist, ylist), domain, basistype, r, rc, alpha, nbasis, ones(Int64(div(steps, stride))))
 
     rangex = LinRange(domain[1][1], domain[1][2], nbins)
     rangey = LinRange(domain[2][1], domain[2][2], nbins)
@@ -80,7 +80,7 @@ function sketch_mtd()
         end
     end
 
-    G, basis, _ = para_sketch(hcat(xlist, ylist), domain, "poly", 6, 30, 0.2, 30, weights / sum(weights))
+    G, basis, _ = para_sketch(hcat(xlist, ylist), domain, basistype, r, rc, alpha, nbasis, weights / sum(weights))
 
     rangex = LinRange(domain[1][1], domain[1][2], nbins)
     rangey = LinRange(domain[2][1], domain[2][2], nbins)
@@ -92,6 +92,22 @@ function sketch_mtd()
             write(file, "\n")
         end
     end
+
+    kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), weights = weights / sum(weights))
+    ik = InterpKDE(kde_result)
+    open("kderw.out", "w") do file
+        for x in rangex
+            for y in rangey
+                write(file, "$(pdf(ik, x, y)) ")
+            end
+            write(file, "\n")
+        end
+    end
 end
 
+r = 8
+rc = 30
+nbasis = 30
+basistype = "gaussian"
+alpha = 0.2
 sketch_mtd()
