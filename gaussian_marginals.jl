@@ -22,6 +22,7 @@ function gaussian_marginals()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	Z = hcubature(x->P(x[1], x[2], x[3], x[4]), [d[1] for d in domain], [d[2] for d in domain])
 	println(Z)
+	println()
 	flush(stdout)
 
 	nbins = 1000
