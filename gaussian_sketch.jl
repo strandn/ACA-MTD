@@ -263,6 +263,17 @@ function sketch_mtd()
         #     end
         # end
 
+		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), weights = weights / sum(weights))
+		ik = InterpKDE(kde_result)
+		open("data/kderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+            for x in rangex_small
+                for y in rangey_small
+                    write(file, "$(pdf(ik, x, y)) ")
+                end
+                write(file, "\n")
+            end
+        end
+
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
 		println("Vtop = $Vpeak Vshift = $Vshift")
