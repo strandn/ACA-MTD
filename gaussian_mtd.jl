@@ -61,13 +61,14 @@ function well_tempered_mtd()
 
 	pace = 500
 	height = 1.0
+	sigma = width * 0.01
 	# sigma = [0.15, 0.15]
 	
 	traj = []
 	slist = []
 	w = []
-	if isfile("hills_$(biasfactor)_$(sigma).txt")
-		rm("hills_$(biasfactor)_$(sigma).txt")
+	if isfile("hills_$(biasfactor)_$(width).txt")
+		rm("hills_$(biasfactor)_$(width).txt")
 	end
 	for i in 1:steps
 		grad = grad_V([x1, x2, x3, x4], slist, w, sigma, domain_cv)
@@ -109,14 +110,14 @@ function well_tempered_mtd()
 			w_new = height * exp(-Vbias([x1, x2, x3, x4], slist, w, sigma, domain_cv) / (kb * T * (biasfactor - 1)))
 			push!(slist, s_new)
 			push!(w, w_new)
-			open("hills_$(biasfactor)_$(sigma).txt", "a") do file
+			open("hills_$(biasfactor)_$(width).txt", "a") do file
 				write(file, "$t $s_new $w_new\n")
 			end
 		end
 
 		t += dt
 	end
-	open("colvar_$(biasfactor)_$(sigma).txt", "w") do file
+	open("colvar_$(biasfactor)_$(width).txt", "w") do file
 		for step in traj
 			write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 		end
@@ -130,6 +131,6 @@ end
 
 println(ARGS)
 flush(stdout)
-biasfactor = parse(Float64, ARGS[1])
-sigma = parse(Float64, ARGS[2])
+biasfactor = parse(Int64, ARGS[1])
+width = parse(Int64, ARGS[2])
 well_tempered_mtd()
