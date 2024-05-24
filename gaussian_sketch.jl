@@ -124,7 +124,8 @@ function sketch_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = 2e6
+	# steps = 2e6
+	steps = nsamples * 1e6
 	stride = 100
 	# steps = 10000
 	# stride = 10
@@ -197,7 +198,7 @@ function sketch_mtd()
 				push!(samples, s)
 			end
 		end
-		open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+		open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4])\n")
 			end
@@ -219,7 +220,7 @@ function sketch_mtd()
 		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
-        open("data/ttde_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+        open("data/ttde_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             write(file, "$(first(rangex_small)) $(last(rangex_small)) $(step(rangex_small))\n")
             write(file, "$(first(rangey_small)) $(last(rangey_small)) $(step(rangey_small))\n")
             for x in rangex_small
@@ -232,7 +233,7 @@ function sketch_mtd()
 
 		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins))
 		ik = InterpKDE(kde_result)
-		open("data/kde_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+		open("data/kde_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
                     write(file, "$(pdf(ik, x, y)) ")
@@ -241,7 +242,7 @@ function sketch_mtd()
             end
         end
 
-		open("data/dF_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+		open("data/dF_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
                     write(file, "$(fes(dens_eval(G, last(basislist), [x, y]), last(rhomaxlist), kb * T)) ")
@@ -254,7 +255,7 @@ function sketch_mtd()
         # flush(stdout)
 		# Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, weights / sum(weights))
 
-		# open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+		# open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
         #     for x in rangex
         #         for y in rangey
         #             write(file, "$(dens_eval(Grw, basisrw, [x, y])) ")
@@ -265,7 +266,7 @@ function sketch_mtd()
 
 		kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), weights = weights / sum(weights))
 		ik = InterpKDE(kde_result)
-		open("data/kderw_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+		open("data/kderw_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex_small
                 for y in rangey_small
                     write(file, "$(pdf(ik, x, y)) ")
@@ -280,7 +281,7 @@ function sketch_mtd()
 		println()
 		flush(stdout)
 
-		open("data/F_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do file
+		open("data/F_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			for x in rangex
 				for y in rangey
 					write(file, "$(-Vbias_shifted([x, y], rholist, rhomaxlist, basislist, kb * T, Vshift)) ")
@@ -289,8 +290,8 @@ function sketch_mtd()
 			end
 		end
 
-		open("data/dVbiasdx_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do filex
-			open("data/dVbiasdy_$(count)_$(r)_$(rc)_$(nbasis).txt", "w") do filey
+		open("data/dVbiasdx_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do filex
+			open("data/dVbiasdy_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do filey
 				for x in rangex
 					for y in rangey
 						grad = dVbias([x, y], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
@@ -310,4 +311,5 @@ flush(stdout)
 r = parse(Int64, ARGS[1])
 rc = parse(Int64, ARGS[2])
 nbasis = parse(Int64, ARGS[3])
+nsamples = parse(Int64, ARGS[4])
 sketch_mtd()
