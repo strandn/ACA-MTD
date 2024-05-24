@@ -130,6 +130,6 @@ end
 
 println(ARGS)
 flush(stdout)
-biasfactor = parse(Int64, ARGS[1])
-sigma = parse(Int64, ARGS[2])
+biasfactor = parse(Float64, ARGS[1])
+sigma = parse(Float64, ARGS[2])
 well_tempered_mtd()
