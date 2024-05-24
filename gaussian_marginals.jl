@@ -32,7 +32,7 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x1)...")
 	flush(stdout)
-	Threads.@threads for i in nbins
+	Threads.@threads for i in 1:nbins
 		dx = (domain[1][2] - domain[1][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[1][1]
 		f(x2, x3, x4) = P(x, x2, x3, x4)
@@ -41,7 +41,7 @@ function gaussian_marginals()
 		G[i] = -log(rho) / beta
 	end
 	open("fes_correct_1.txt", "w") do file
-		for i in nbins
+		for i in 1:nbins
 			write(file, "$(G[i]) ")
 		end
 		write(file, "\n")
@@ -53,7 +53,7 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x2)...")
 	flush(stdout)
-	Threads.@threads for i in nbins
+	Threads.@threads for i in 1:nbins
 		dx = (domain[2][2] - domain[2][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[2][1]
 		f(x1, x3, x4) = P(x1, x, x3, x4)
@@ -62,7 +62,7 @@ function gaussian_marginals()
 		G[i] = -log(rho) / beta
 	end
 	open("fes_correct_2.txt", "w") do file
-		for i in nbins
+		for i in 1:nbins
 			write(file, "$(G[i]) ")
 		end
 		write(file, "\n")
@@ -74,7 +74,7 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x3)...")
 	flush(stdout)
-	Threads.@threads for i in nbins
+	Threads.@threads for i in 1:nbins
 		dx = (domain[3][2] - domain[3][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[3][1]
 		f(x1, x2, x4) = P(x1, x2, x, x4)
@@ -83,7 +83,7 @@ function gaussian_marginals()
 		G[i] = -log(rho) / beta
 	end
 	open("fes_correct_3.txt", "w") do file
-		for i in nbins
+		for i in 1:nbins
 			write(file, "$(G[i]) ")
 		end
 		write(file, "\n")
@@ -95,7 +95,7 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x4)...")
 	flush(stdout)
-	Threads.@threads for i in nbins
+	Threads.@threads for i in 1:nbins
 		dx = (domain[4][2] - domain[4][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[4][1]
 		f(x1, x2, x3) = P(x1, x2, x3, x)
@@ -104,7 +104,7 @@ function gaussian_marginals()
 		G[i] = -log(rho) / beta
 	end
 	open("fes_correct_4.txt", "w") do file
-		for i in nbins
+		for i in 1:nbins
 			write(file, "$(G[i]) ")
 		end
 		write(file, "\n")
@@ -112,16 +112,18 @@ function gaussian_marginals()
 	println(rho_total)
 	println()
 
+	nbins = 100
+
 	G = zeros(nbins, nbins)
 	rho_total = 0.0
 	println("Computing F(x1, x2)...")
 	flush(stdout)
-	for i in nbins
+	for i in 1:nbins
 		dx = (domain[1][2] - domain[1][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[1][1]
-		Threads.@threads for j in nbins
+		Threads.@threads for j in 1:nbins
 			dy = (domain[2][2] - domain[2][1]) / (nbins - 1)
-			y = (i - 1) * dy + domain[2][1]
+			y = (j - 1) * dy + domain[2][1]
 			f(x3, x4) = P(x, y, x3, x4)
 			rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [3, 4]], [domain[k][2] for k in [3, 4]])
 			rho_total += rho * dx * dy
@@ -129,8 +131,8 @@ function gaussian_marginals()
 		end
 	end
 	open("fes_correct_12.txt", "w") do file
-		for i in nbins
-			for j in nbins
+		for i in 1:nbins
+			for j in 1:nbins
 				write(file, "$(G[i, j]) ")
 			end
 			write(file, "\n")
@@ -143,12 +145,12 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x1, x3)...")
 	flush(stdout)
-	for i in nbins
+	for i in 1:nbins
 		dx = (domain[1][2] - domain[1][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[1][1]
-		Threads.@threads for j in nbins
+		Threads.@threads for j in 1:nbins
 			dy = (domain[3][2] - domain[3][1]) / (nbins - 1)
-			y = (i - 1) * dy + domain[3][1]
+			y = (j - 1) * dy + domain[3][1]
 			f(x2, x4) = P(x, x2, y, x4)
 			rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [2, 4]], [domain[k][2] for k in [2, 4]])
 			rho_total += rho * dx * dy
@@ -156,8 +158,8 @@ function gaussian_marginals()
 		end
 	end
 	open("fes_correct_13.txt", "w") do file
-		for i in nbins
-			for j in nbins
+		for i in 1:nbins
+			for j in 1:nbins
 				write(file, "$(G[i, j]) ")
 			end
 			write(file, "\n")
@@ -170,12 +172,12 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x1, x4)...")
 	flush(stdout)
-	for i in nbins
+	for i in 1:nbins
 		dx = (domain[1][2] - domain[1][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[1][1]
-		Threads.@threads for j in nbins
+		Threads.@threads for j in 1:nbins
 			dy = (domain[4][2] - domain[4][1]) / (nbins - 1)
-			y = (i - 1) * dy + domain[4][1]
+			y = (j - 1) * dy + domain[4][1]
 			f(x2, x3) = P(x, x2, x3, y)
 			rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [2, 3]], [domain[k][2] for k in [2, 3]])
 			rho_total += rho * dx * dy
@@ -183,8 +185,8 @@ function gaussian_marginals()
 		end
 	end
 	open("fes_correct_14.txt", "w") do file
-		for i in nbins
-			for j in nbins
+		for i in 1:nbins
+			for j in 1:nbins
 				write(file, "$(G[i, j]) ")
 			end
 			write(file, "\n")
@@ -197,12 +199,12 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x2, x3)...")
 	flush(stdout)
-	for i in nbins
+	for i in 1:nbins
 		dx = (domain[2][2] - domain[2][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[2][1]
-		Threads.@threads for j in nbins
+		Threads.@threads for j in 1:nbins
 			dy = (domain[3][2] - domain[3][1]) / (nbins - 1)
-			y = (i - 1) * dy + domain[3][1]
+			y = (j - 1) * dy + domain[3][1]
 			f(x1, x4) = P(x1, x, y, x4)
 			rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [1, 4]], [domain[k][2] for k in [1, 4]])
 			rho_total += rho * dx * dy
@@ -210,8 +212,8 @@ function gaussian_marginals()
 		end
 	end
 	open("fes_correct_23.txt", "w") do file
-		for i in nbins
-			for j in nbins
+		for i in 1:nbins
+			for j in 1:nbins
 				write(file, "$(G[i, j]) ")
 			end
 			write(file, "\n")
@@ -224,12 +226,12 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x2, x4)...")
 	flush(stdout)
-	for i in nbins
+	for i in 1:nbins
 		dx = (domain[2][2] - domain[2][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[2][1]
-		Threads.@threads for j in nbins
+		Threads.@threads for j in 1:nbins
 			dy = (domain[4][2] - domain[4][1]) / (nbins - 1)
-			y = (i - 1) * dy + domain[4][1]
+			y = (j - 1) * dy + domain[4][1]
 			f(x1, x3) = P(x1, x, x3, y)
 			rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [1, 3]], [domain[k][2] for k in [1, 3]])
 			rho_total += rho * dx * dy
@@ -237,8 +239,8 @@ function gaussian_marginals()
 		end
 	end
 	open("fes_correct_24.txt", "w") do file
-		for i in nbins
-			for j in nbins
+		for i in 1:nbins
+			for j in 1:nbins
 				write(file, "$(G[i, j]) ")
 			end
 			write(file, "\n")
@@ -251,12 +253,12 @@ function gaussian_marginals()
 	rho_total = 0.0
 	println("Computing F(x3, x4)...")
 	flush(stdout)
-	for i in nbins
+	for i in 1:nbins
 		dx = (domain[3][2] - domain[3][1]) / (nbins - 1)
 		x = (i - 1) * dx + domain[3][1]
-		Threads.@threads for j in nbins
+		Threads.@threads for j in 1:nbins
 			dy = (domain[4][2] - domain[4][1]) / (nbins - 1)
-			y = (i - 1) * dy + domain[4][1]
+			y = (j - 1) * dy + domain[4][1]
 			f(x1, x2) = P(x1, x2, x, y)
 			rho, _ = hcubature(x->f(x[1], x[2]), [domain[k][1] for k in [1, 2]], [domain[k][2] for k in [1, 2]])
 			rho_total += rho * dx * dy
@@ -264,8 +266,8 @@ function gaussian_marginals()
 		end
 	end
 	open("fes_correct_34.txt", "w") do file
-		for i in nbins
-			for j in nbins
+		for i in 1:nbins
+			for j in 1:nbins
 				write(file, "$(G[i, j]) ")
 			end
 			write(file, "\n")
