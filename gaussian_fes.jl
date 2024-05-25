@@ -11,7 +11,8 @@ function gaussian_fes()
     nbins = 100
     for count in range
         data = readdlm("data/colvar_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", ' ', Float64)
-        for i in size(data, 1)
+        for i in axes(data, 1)
+            # println("$(data[i, 2]) $(data[i, 3]) $(data[i, 4])")
             push!(xlist, data[i, 2])
             push!(ylist, data[i, 3])
             push!(weights, exp(data[i, 4] / kT))
@@ -21,6 +22,16 @@ function gaussian_fes()
     rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
     rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
     bw = w .* (domain_cv[1][2] - domain_cv[1][1], domain_cv[2][2] - domain_cv[2][1])
+    # kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), bandwidth = bw)
+    # ik = InterpKDE(kde_result)
+    # open("data/kde.out", "w") do file
+    #     for x in rangex
+    #         for y in rangey
+    #             write(file, "$(pdf(ik, x, y)) ")
+    #         end
+    #         write(file, "\n")
+    #     end
+    # end
     kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
     ik = InterpKDE(kde_result)
     open("data/kderw.out", "w") do file
