@@ -32,7 +32,7 @@ echo $SLURM_JOB_NODELIST
 
 # julia gaussian_cv.jl
 # mpiexecjl -n 1 julia gaussian_biased.jl
-julia gaussian_mtd.jl $BF $W
+julia gaussian_mtd_analysis.jl $BF $W
 # mpiexecjl -n 10 julia gaussian_knn.jl $RANK $K
 # julia gaussian_sketch.jl $R $RC $NBASIS 5
 # julia gaussian_marginals.jl
