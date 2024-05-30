@@ -213,7 +213,7 @@ function sketch_mtd()
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde(xlist[i], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			open("data/fes_$(i)_$(count).txt", "w") do file
+			open("data/ttde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
 				end
@@ -228,7 +228,7 @@ function sketch_mtd()
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat(xlist[i], xlist[j]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				open("data/fes_$(i)$(j)_$(count).txt", "w") do file
+				open("data/ttde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
 							write(file, "$(pdf(ik, x, y)) ")
