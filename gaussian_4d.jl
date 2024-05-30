@@ -132,6 +132,7 @@ function sketch_mtd()
     basisdlist = []
 	Vmax = 30 * kb * T
 	samples = []
+	weights = []
 	Vshift = 0.0
 
 	for count in 1:nbiasupdates
@@ -140,7 +141,6 @@ function sketch_mtd()
 		t = 0.0
 
 		traj = []
-		weights = []
 		for i in 1:steps
 			grad = grad_V([x1, x2, x3, x4], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
 
