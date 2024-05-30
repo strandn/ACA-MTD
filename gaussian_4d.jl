@@ -211,9 +211,9 @@ function sketch_mtd()
 		ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 		for i in 1:4
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
-			kde_result = kde(xlist[i], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
+			kde_result = kde([step[i] for step in traj], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			open("data/ttde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+			open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
 				end
@@ -226,9 +226,9 @@ function sketch_mtd()
 		for i in 1:4
 			for j in i+1:4
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
-				kde_result = kde(hcat(xlist[i], xlist[j]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
+				kde_result = kde(hcat([step[i] for step in traj], [step[j] for step in traj]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				open("data/ttde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+				open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
 							write(file, "$(pdf(ik, x, y)) ")
