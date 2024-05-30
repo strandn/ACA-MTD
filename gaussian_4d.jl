@@ -198,7 +198,7 @@ function sketch_mtd()
 		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
 
 		push!(rholist, G)
-		update_conv(basis, basislist, basisdlist, domain_cv_full, nbins, nbasis)
+		update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
 		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))]))
 
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
@@ -213,7 +213,7 @@ function sketch_mtd()
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde(xlist[i], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			open("data/fes_$(i)_$(count).out", "w") do file
+			open("data/fes_$(i)_$(count).txt", "w") do file
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
 				end
@@ -228,7 +228,7 @@ function sketch_mtd()
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat(xlist[i], xlist[j]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				open("data/fes_$(i)$(j)_$(count).out", "w") do file
+				open("data/fes_$(i)$(j)_$(count).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
 							write(file, "$(pdf(ik, x, y)) ")

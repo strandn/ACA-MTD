@@ -130,7 +130,7 @@ end
 function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::Float64)
     d = length(M);
     N = size(M[1], 1);
-    rc = linkdim(coeff, 1)
+    rs = linkdims(coeff)
     L = deepcopy(coeff)
 
     for i in 1:d
@@ -141,8 +141,10 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
     envi_L[2] = matrix(L[1], is[1], linkind(coeff, 1))
     for i in 3:d
         L_arr = array(L[i - 1], linkind(coeff, i - 2), is[i - 1], linkind(coeff, i - 1))
-        envi_L[i] = zeros(N, rc)
+        envi_L[i] = zeros(N, rs[i - 1])
         for j in 1:N
+            # display(envi_L[i - 1][j, :]')
+            # display(L_arr[:, j, :])
             envi_L[i][j, :] = envi_L[i - 1][j, :]' * L_arr[:, j, :]
         end
     end
@@ -150,8 +152,8 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
     envi_R = Vector{Matrix}(undef, d)
     envi_R[d - 1] = matrix(L[d], is[d], linkind(coeff, d - 1))
     for i in d-2:-1:1
-        L_arr = array(L[i + 1], linkind(coeff, i), is[i + 1], linkind(coeff, i + 1))
-        envi_R[i] = zeros(N, rc)
+        L_arr = array(L[i + 1], linkind(coeff, i + 1), is[i + 1], linkind(coeff, i))
+        envi_R[i] = zeros(N, rs[i])
         for j in 1:N
             envi_R[i][j, :] = envi_R[i + 1][j, :]' * L_arr[:, j, :]
         end
@@ -167,8 +169,8 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
             B[d] = ITensor(envi_L[d], is[d], linkind(coeff, d - 1)) * M[d]
         else
             B[core_id] = ITensor(linkind(coeff, core_id - 1), is[core_id], linkind(coeff, core_id))
-            for i in 1:rc
-                for j in 1:rc
+            for i in 1:rs[core_id - 1]
+                for j in 1:rs[core_id]
                     B[core_id][i, :, j] = envi_L[core_id][:, i] .* envi_R[core_id][:, j]
                 end
             end
@@ -313,6 +315,7 @@ end
 # end
 
 # G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
+# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 10, 0.05, 5, [1.0, 1.0, 1.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
