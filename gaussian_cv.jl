@@ -36,7 +36,7 @@ for i in 1:nbins-1
 		else
 			0.0
 		end
-		rho, error = hcubature(x->f(x[1], x[2], x[3], x[4]), [domain[k][1] for k in 1:4], [domain[k][2] for k in 1:4]; rtol = 10^-4, initdiv = 100)
+		rho, error = hcubature(x->f(x[1], x[2], x[3], x[4]), [domain[k][1] for k in 1:4], [domain[k][2] for k in 1:4]; rtol = 10^-4, initdiv = 20)
 		# rho = max(rho, 10^-10)
 		global rho_total += rho
 		G[i, j] = -log(rho) / beta
