@@ -217,6 +217,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             _, _, V[core_id] = svd(ITensor(A, l', l), l', maxdim = r, righttags = tags(l))
         end
     end
+    println(linkinds(MPS(G)))
 
     for core_id in 1:d
         if basis_type == "gaussian"
@@ -241,6 +242,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             G[core_id] *= V[core_id + 1]
         end
     end
+    println(linkinds(MPS(G)))
 
     return MPS(G), basis, basis_d
 end
