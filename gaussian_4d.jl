@@ -195,7 +195,7 @@ function sketch_mtd()
 		println(domain_small)
         println("Forming TT...")
         flush(stdout)
-		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
 
 		push!(rholist, G)
 		update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
@@ -210,7 +210,7 @@ function sketch_mtd()
 		nbins = 1000
 		ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 		for i in 1:4
-			bw = 0.02 .* (domain[i][2] - domain[i][1])
+			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
 			open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
