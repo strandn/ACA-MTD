@@ -225,7 +225,7 @@ function sketch_mtd()
 		ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 		for i in 1:4
 			for j in i+1:4
-				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
+				bw = 0.01 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
 				open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
