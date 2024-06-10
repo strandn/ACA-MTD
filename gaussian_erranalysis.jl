@@ -53,7 +53,7 @@ function gaussian_erranalysis()
                 for jpos in 1:nbins
                     dy = (domain[j][2] - domain[j][1]) / (nbins - 1)
                     y = (jpos - 1) * dy + domain[j][1]
-                    pos = (ipos - 1) * nbins + jpos
+                    pos = (jpos - 1) * nbins + ipos
                     dens = pdf(ik, x, y)
                     if dens > 1.0e-10
                         push!(result, -log(dens) / kT)
