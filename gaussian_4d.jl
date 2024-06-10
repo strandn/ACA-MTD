@@ -128,7 +128,7 @@ function sketch_mtd()
 	dt = 1.0e-4
 	steps = nsamples * 1e6
 	stride = 100
-	nbiasupdates = 20
+	nbiasupdates = 15
 
 	x1 = rand(Normal(-1.0, 0.1))
 	x2 = rand(Normal(-1.0, 0.1))
