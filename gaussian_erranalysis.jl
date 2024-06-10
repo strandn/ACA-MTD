@@ -20,24 +20,29 @@ function gaussian_erranalysis()
     ranges = [LinRange(d[1], d[2], nbins) for d in domain]
     for i in 1:4
         correct = readdlm("fes_correct_$i.txt", Float64)
-        result = zeros(nbins)
+        result = []
+        idx = []
         bw = w1 .* (domain[i][2] - domain[i][1])
         kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
         ik = InterpKDE(kde_result)
-        for ipos in 1:nbins
+        for pos in 1:nbins
             dx = (domain[i][2] - domain[i][1]) / (nbins - 1)
-            x = (ipos - 1) * dx + domain[i][1]
-            result[ipos] = pdf(ik, x)
+            x = (pos - 1) * dx + domain[i][1]
+            dens = pdf(ik, x)
+            if dens > 1.0e-10
+                push!(result, -log(dens) / kT)
+                push!(idx, pos)
+            end
         end
-        offset = meanad(result, correct)
-        println(rmsd(result .- offset, correct))
+        offset = meanad(result, correct[idx])
+        println(rmsd(result .- offset, correct[idx]))
     end
     nbins = 100
     ranges = [LinRange(d[1], d[2], nbins) for d in domain]
     for i in 1:4
         for j in i+1:4
-            correct = readdlm("fes_correct_$i$j.txt", Float64)
-            result = zeros(nbins, nbins)
+            correct = reshape(readdlm("fes_correct_$i$j.txt", Float64), nbins ^ 2)
+            result = []
             bw = w2 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
             kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
             ik = InterpKDE(kde_result)
@@ -47,11 +52,16 @@ function gaussian_erranalysis()
                 for jpos in 1:nbins
                     dy = (domain[j][2] - domain[j][1]) / (nbins - 1)
                     y = (jpos - 1) * dy + domain[j][1]
-                    result[ipos, jpos] = pdf(ik, x, y)
+                    pos = (ipos - 1) * nbins + jpos
+                    dens = pdf(ik, x, y)
+                    if dens > 1.0e-10
+                        push!(result, -log(dens) / kT)
+                        push!(idx, pos)
+                    end
                 end
             end
-            offset = meanad(result, correct)
-            println(rmsd(result .- offset, correct))
+            offset = meanad(result, correct[idx])
+            println(rmsd(result .- offset, correct[idx]))
         end
     end
 end
