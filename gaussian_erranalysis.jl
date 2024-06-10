@@ -43,6 +43,7 @@ function gaussian_erranalysis()
         for j in i+1:4
             correct = reshape(readdlm("fes_correct_$i$j.txt", Float64), nbins ^ 2)
             result = Float64[]
+            idx = []
             bw = w2 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
             kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
             ik = InterpKDE(kde_result)
