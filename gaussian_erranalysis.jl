@@ -20,7 +20,7 @@ function gaussian_erranalysis()
     ranges = [LinRange(d[1], d[2], nbins) for d in domain]
     for i in 1:4
         correct = readdlm("fes_correct_$i.txt", Float64)
-        result = []
+        result = Float64[]
         idx = []
         bw = w1 .* (domain[i][2] - domain[i][1])
         kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
@@ -42,7 +42,7 @@ function gaussian_erranalysis()
     for i in 1:4
         for j in i+1:4
             correct = reshape(readdlm("fes_correct_$i$j.txt", Float64), nbins ^ 2)
-            result = []
+            result = Float64[]
             bw = w2 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
             kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
             ik = InterpKDE(kde_result)
