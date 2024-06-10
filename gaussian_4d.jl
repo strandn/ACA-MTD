@@ -213,6 +213,7 @@ function sketch_mtd()
 
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
+		println()
 		println("Vtop = $Vpeak Vshift = $Vshift")
 		println()
 		flush(stdout)
