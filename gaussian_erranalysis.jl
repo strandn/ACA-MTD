@@ -18,6 +18,7 @@ function gaussian_erranalysis()
     end
     nbins = 1000
     ranges = [LinRange(d[1], d[2], nbins) for d in domain]
+    errlist = []
     for i in 1:4
         correct = readdlm("fes_correct_$i.txt", Float64)
         result = Float64[]
@@ -35,7 +36,9 @@ function gaussian_erranalysis()
             end
         end
         offset = meanad(result, correct[idx])
-        println(rmsd(result .- offset, correct[idx]))
+        err = rmsd(result .- offset, correct[idx])
+        println(err)
+        push!(errlist, err)
     end
     nbins = 100
     ranges = [LinRange(d[1], d[2], nbins) for d in domain]
@@ -62,9 +65,12 @@ function gaussian_erranalysis()
                 end
             end
             offset = meanad(result, correct[idx])
-            println(rmsd(result .- offset, correct[idx]))
+            err = rmsd(result .- offset, correct[idx])
+            println(err)
+            push!(errlist, err)
         end
     end
+    println("Mean: $(mean(errlist))")
 end
 
 r = parse(Int64, ARGS[1])
