@@ -105,6 +105,20 @@ function grad_V(r, rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
 	return grad
 end
 
+function gradtop(rholist, rhomaxlist, basislist, basisdlist, kT, samples, Vshift)
+	dim = length(samples[1])
+	max = zeros(dim)
+	for r in samples
+		result = grad_V(r, rholist, rhomaxlist, basislist, basisdlist, kT, Vshift)
+		for i in 1:dim
+			if result[i] > abs(max[i])
+				max[i] = abs(result[i])
+			end
+		end
+	end
+	return max
+end
+
 function sketch_mtd()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	nbins = 100
@@ -166,10 +180,10 @@ function sketch_mtd()
 			x3 = clamp(x3, domain[3][1], domain[3][2])
 			x4 = clamp(x4, domain[4][1], domain[4][2])
 
-			if any(abs.(grad) .> 100)
-				println("$t $old $([x1, x2, x3, x4]) $grad")
-				flush(stdout)
-			end
+			# if any(abs.(grad) .> 100)
+			# 	println("$t $old $([x1, x2, x3, x4]) $grad")
+			# 	flush(stdout)
+			# end
 
 			t += dt
 
@@ -186,10 +200,6 @@ function sketch_mtd()
 			end
 		end
 
-		# x1list = [step[2] for step in traj]
-		# x2list = [step[3] for step in traj]
-		# x3list = [step[4] for step in traj]
-		# x4list = [step[5] for step in traj]
 		xlist = [[step[i] for step in traj] for i in 2:5]
 		domain_small = [(minimum(xlist), maximum(xlist)) for xlist in xlist]
 		println(domain_small)
@@ -204,6 +214,11 @@ function sketch_mtd()
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
 		println("Vtop = $Vpeak Vshift = $Vshift")
+		println()
+		flush(stdout)
+
+		gradpeak = gradtop(rholist, rhomaxlist, basislist, basisdlist, kb * T, samples, Vshift)
+		println("maxgrad = $gradpeak")
 		println()
 		flush(stdout)
 
