@@ -144,7 +144,7 @@ function sketch_mtd()
     rhomaxlist = []
 	basislist = []
     basisdlist = []
-	Vmax = 30 * kb * T
+	Vmax = 20 * kb * T
 	samples = []
 	weights = []
 	Vshift = 0.0
