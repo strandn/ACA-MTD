@@ -250,7 +250,9 @@ function update_sketch(G::MPS, Ginc::MPS)
     for i in eachindex(sites)
         Ginc[i] *= delta(sites_inc[i], sites[i])
     end
-    Gnew = add(G, Ginc; cutoff = 1e-8)
+    # Gnew = add(G, Ginc; cutoff = 1.0e-8)
+    Gnew = add(G, Ginc)
+    truncate!(Gnew; cutoff = 1.0e-8)
     println(linkinds(Gnew))
     return Gnew
 end
