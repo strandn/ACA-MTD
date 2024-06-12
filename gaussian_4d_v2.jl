@@ -4,7 +4,7 @@ using KernelDensity
 using ForwardDiff
 using Interpolations
 
-include("tt_sketch.jl")
+include("tt_sketch_v2.jl")
 
 function V(r)
 	x1, x2, x3, x4 = r
@@ -26,7 +26,19 @@ end
 # 	return -kT * log(rho_adj)
 # end
 
+# function Vbias(r, rholist, rhomaxlist, basislist, kT)
+# 	result = 0.0
+# 	for i in eachindex(rholist)
+#         rho = dens_eval(rholist[i], basislist[i], r)
+#         result -= fes(rho, rhomaxlist[i], kT)
+# 	end
+# 	return result
+# end
+
 function Vbias(r, rho, basis)
+	if rho == []
+		return 0.0
+	end
 	return dens_eval(rho, basis, r)
 end
 
@@ -37,7 +49,7 @@ function Vtop(rho, basis, samples)
 	max = 0.0
 	for r in samples
 		# result = Vbias(r, rholist, rhomaxlist, basislist, kT)
-		result = Vbias(rho, basis, r)
+		result = Vbias(r, rho, basis)
 		if result > max
 			max = result
 		end
@@ -90,7 +102,7 @@ end
 
 function grad_V(r, rho, basis, basisd, Vshift)
 	grad = ForwardDiff.gradient(V, r)
-	if rholist == []
+	if rho == []
 		return grad
 	end
 	grad += dVbias(r, rho, basis, basisd, Vshift)
@@ -185,7 +197,7 @@ function sketch_mtd()
 				push!(samples, [x1, x2, x3, x4])
 			end
 		end
-		open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
+		open("data/colvar_$(count)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4]) $(step[5]) $(step[6])\n")
 			end
@@ -196,19 +208,17 @@ function sketch_mtd()
 		println(domain_small)
         println("Forming TT...")
         flush(stdout)
-		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
 
 		# push!(rholist, G)
 		# update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
 		# push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))]))
-		rhomax = maximum([dens_eval(G, last(basislist), [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))])
-		G *= Vinc / rhomax
 		if count == 1
 			convbasis, convbasisd = convolution(basis, domain, nbins, nbasis)
-			rho = G
-		else
-			rho = update_sketch(rho, G)
 		end
+		rhomax = maximum([dens_eval(G, convbasis, [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))])
+		G *= Vinc / rhomax
+		rho = count == 1 ? G : update_sketch(rho, G)
 
 		Vpeak = Vtop(rho, convbasis, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
@@ -228,7 +238,7 @@ function sketch_mtd()
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
 				end
@@ -243,7 +253,7 @@ function sketch_mtd()
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
 							write(file, "$(pdf(ik, x, y)) ")
@@ -258,8 +268,7 @@ end
 
 println(ARGS)
 flush(stdout)
-r = parse(Int64, ARGS[1])
-rc = parse(Int64, ARGS[2])
-nbasis = parse(Int64, ARGS[3])
-nsamples = parse(Int64, ARGS[4])
+rc = parse(Int64, ARGS[1])
+nbasis = parse(Int64, ARGS[2])
+nsamples = parse(Int64, ARGS[3])
 sketch_mtd()

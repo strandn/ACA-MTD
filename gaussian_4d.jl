@@ -190,7 +190,7 @@ function sketch_mtd()
 				push!(samples, [x1, x2, x3, x4])
 			end
 		end
-		open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
+		open("data/colvar_$(count)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4]) $(step[5]) $(step[6])\n")
 			end
@@ -226,7 +226,7 @@ function sketch_mtd()
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
 				end
@@ -241,7 +241,7 @@ function sketch_mtd()
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
 							write(file, "$(pdf(ik, x, y)) ")

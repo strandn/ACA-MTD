@@ -189,7 +189,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             A = envi_L[core_id]' * envi_R[core_id - 1]
             G[core_id] = ITensor(pinv(A), l', l) * Bemp[core_id]
             noprime!(G[core_id])
-            _, _, V[core_id] = svd(ITensor(A, l', l), l', cutoff = 1.0e-10, righttags = tags(l))
+            _, _, V[core_id] = svd(ITensor(A, l', l), l', cutoff = 1.0e-8, righttags = tags(l))
         end
     end
     println(linkinds(MPS(G)))
@@ -244,7 +244,16 @@ function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     return grad
 end
 
-update_sketch(G::MPS, Ginc::MPS) = add(G, Ginc; cutoff = 1e-10)
+function update_sketch(G::MPS, Ginc::MPS)
+    sites = siteinds(G)
+    sites_inc = siteinds(Ginc)
+    for i in eachindex(sites)
+        Ginc[i] *= delta(sites_inc[i], sites[i])
+    end
+    Gnew = add(G, Ginc; cutoff = 1e-8)
+    println(linkinds(Gnew))
+    return Gnew
+end
 
 # G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
 # G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 10, 0.05, 5, [1.0, 1.0, 1.0])
