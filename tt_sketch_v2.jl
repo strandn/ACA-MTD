@@ -189,7 +189,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             A = envi_L[core_id]' * envi_R[core_id - 1]
             G[core_id] = ITensor(pinv(A), l', l) * Bemp[core_id]
             noprime!(G[core_id])
-            _, _, V[core_id] = svd(ITensor(A, l', l), l', cutoff = 1.0e-8, righttags = tags(l))
+            _, _, V[core_id] = svd(ITensor(A, l', l), l', cutoff = 1.0e-6, righttags = tags(l))
         end
     end
     println(linkinds(MPS(G)))
@@ -252,7 +252,7 @@ function update_sketch(G::MPS, Ginc::MPS)
     end
     # Gnew = add(G, Ginc; cutoff = 1.0e-8)
     Gnew = add(G, Ginc)
-    truncate!(Gnew; cutoff = 1.0e-6)
+    truncate!(Gnew; cutoff = 1.0e-8)
     println(linkinds(Gnew))
     return Gnew
 end
