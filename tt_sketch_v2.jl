@@ -252,7 +252,7 @@ function update_sketch(G::MPS, Ginc::MPS)
     end
     # Gnew = add(G, Ginc; cutoff = 1.0e-8)
     Gnew = add(G, Ginc)
-    truncate!(Gnew; cutoff = 1.0e-8)
+    truncate!(Gnew; cutoff = 1.0e-6)
     println(linkinds(Gnew))
     return Gnew
 end
