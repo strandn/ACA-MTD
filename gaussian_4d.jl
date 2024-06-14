@@ -4,8 +4,8 @@ using KernelDensity
 using ForwardDiff
 using Interpolations
 
-include("tt_sketch.jl")
-# include("tt_sketch_v2.jl")
+# include("tt_sketch.jl")
+include("tt_sketch_v2.jl")
 
 function V(r)
 	x1, x2, x3, x4 = r
@@ -201,8 +201,8 @@ function sketch_mtd()
 		println(domain_small)
         println("Forming TT...")
         flush(stdout)
-		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
-		# G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
+		# G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
 
 		push!(rholist, G)
 		update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
@@ -226,8 +226,8 @@ function sketch_mtd()
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
-			# open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
+			# open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
 				end
@@ -242,8 +242,8 @@ function sketch_mtd()
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
-				# open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+				# open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
+				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
 							write(file, "$(pdf(ik, x, y)) ")
@@ -258,11 +258,11 @@ end
 
 println(ARGS)
 flush(stdout)
-r = parse(Int64, ARGS[1])
-rc = parse(Int64, ARGS[2])
-nbasis = parse(Int64, ARGS[3])
-nsamples = parse(Int64, ARGS[4])
-# rc = parse(Int64, ARGS[1])
-# nbasis = parse(Int64, ARGS[2])
-# nsamples = parse(Int64, ARGS[3])
+# r = parse(Int64, ARGS[1])
+# rc = parse(Int64, ARGS[2])
+# nbasis = parse(Int64, ARGS[3])
+# nsamples = parse(Int64, ARGS[4])
+rc = parse(Int64, ARGS[1])
+nbasis = parse(Int64, ARGS[2])
+nsamples = parse(Int64, ARGS[3])
 sketch_mtd()
