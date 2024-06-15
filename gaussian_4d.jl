@@ -190,7 +190,8 @@ function sketch_mtd()
 				push!(samples, [x1, x2, x3, x4])
 			end
 		end
-		open("data/colvar_$(count)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
+		open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
+		# open("data/colvar_$(count)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4]) $(step[5]) $(step[6])\n")
 			end
