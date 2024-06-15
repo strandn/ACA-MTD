@@ -20,7 +20,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=20G
+#SBATCH --mem=50G
  
 #SBATCH --export=NONE
 
@@ -36,4 +36,5 @@ echo $SLURM_JOB_NODELIST
 # mpiexecjl -n 10 julia gaussian_knn.jl $RANK $K
 # julia gaussian_sketch.jl $R $RC $NBASIS 5
 # julia gaussian_marginals.jl
+# julia gaussian_4d.jl $R $RC $NBASIS 2
 julia gaussian_4d.jl $RC $NBASIS $NSAMPLES
