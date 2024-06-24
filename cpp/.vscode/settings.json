@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "cstdlib": "cpp",
+        "xtr1common": "cpp"
     }
 }

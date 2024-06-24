@@ -10,7 +10,7 @@ class BasisFunc
     private:
     std::pair<Real, Real> dom_;
     int nbasis_;
-    std::vector<vector<Real>> grid_,
+    std::vector<std::vector<Real>> grid_,
         gridd_;
     bool conv_;
     int nbins_;
@@ -22,13 +22,33 @@ class BasisFunc
 
     BasisFunc(std::pair<Real, Real> dom, int nbasis);
 
+    Real fourier(Real x, int pos) const;
+
     Real operator()(Real x, int pos) const;
 
     Real grad(Real x, int pos) const;
 
-    void set_conv(bool status) { conv_ = status; }
+    void setConv(bool status) { conv_ = status; }
+
+    Real f(Real x, void* params) const;
+
+    Real df(Real x, void* params) const;
+
+    Real interpolate(Real x, int pos, bool grad) const;
 
     } // class BasisFunc
+
+MPS
+paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc, int nb);
+
+MPS
+createTTCoeff(int n, int d, int r);
+
+std::pair<std::vector<ITensor>, IndexSet>
+intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, IndexSet const& is, int nb);
+
+std::tuple<MPS, ITensor, ITensor>
+formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const& is);
 
 } // namespace itensor
 
