@@ -36,16 +36,18 @@ class BasisFunc
 
     Real interpolate(Real x, int pos, bool grad) const;
 
+    int nbasis() const { return this->nbasis_; }
+
     } // class BasisFunc
 
 MPS
-paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc, int nb);
+paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc);
 
 MPS
 createTTCoeff(int n, int d, int r);
 
 std::pair<std::vector<ITensor>, IndexSet>
-intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, IndexSet const& is, int nb);
+intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, IndexSet const& is);
 
 std::tuple<MPS, ITensor, ITensor>
 formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const& is);
