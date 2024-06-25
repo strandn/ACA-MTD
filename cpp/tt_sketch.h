@@ -34,7 +34,9 @@ class BasisFunc
 
     int nbasis() const { return this->nbasis_; }
 
-    std::pair<Real, Real>& dom() const { return this->dom_; }
+    std::pair<Real, Real> const& dom() const { return this->dom_; }
+
+    int nbins() const { return this->nbins_; }
 
     }; // class BasisFunc
 
