@@ -25,8 +25,8 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     nbasis_(nbasis),
     conv_(false),
     nbins_(100),
-    L_((dom[1] - dom[0]) / 2),
-    shift_((dom[1] + dom[0]) / 2)
+    L_((dom.second - dom.first) / 2),
+    shift_((dom.second + dom.first) / 2)
     {
     grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
@@ -36,16 +36,16 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
         {
         for(auto k : range(nbins_))
             {
-            int jk[2] = {j, k}
+            int jk[2] = {j, k};
             gsl_function F;
-            F.function = &f;
+            F.function = &BasisFunc::f;
             F.params = &jk;
-            gsl_integration_qag(&F, dom[0], dom[1], 0, 1e-7, 1000, 6, workspace, &result, &error);
+            gsl_integration_qag(&F, dom.first, dom.second, 0, 1e-7, 1000, 6, workspace, &result, &error);
             grid_[j][k] = result;
             gsl_function DF;
-            F.function = &df;
+            F.function = &BasisFunc::df;
             F.params = &jk;
-            gsl_integration_qag(&DF, dom[0], dom[1], 0, 1e-7, 1000, 6, workspace, &result, &error);
+            gsl_integration_qag(&DF, dom.first, dom.second, 0, 1e-7, 1000, 6, workspace, &result, &error);
             gridd_[j][k] = result;
             }
         }
@@ -54,21 +54,21 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
 Real BasisFunc::
 fourier(Real x, int pos) const
     {
-    if(x < dom_[0] || x > dom_[1])
+    if(x < dom_.first || x > dom_.second)
         {
         return 0.0;
         }
     if(pos == 0)
         {
-        return 1 / sqrt(2 * L_);
+        return 1 / std::sqrt(2 * L_);
         }
     else if(pos % 2 == 0)
         {
-        return sqrt(1 / L_) * sin(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
+        return std::sqrt(1 / L_) * sin(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
         }
     else
         {
-        return sqrt(1 / L_) * cos(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
+        return std::sqrt(1 / L_) * cos(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
         }
     }
 
@@ -81,7 +81,7 @@ operator()(Real x, int pos) const
         }
     else
         {
-        return fourier(x, pos)
+        return fourier(x, pos);
         }
     }
 
@@ -94,13 +94,13 @@ grad(Real x, int pos) const
         }
     else
         {
-        if(x < dom_[0] || x > dom_[1])
+        if(x < dom_.first || x > dom_.second)
             {
             return 0.0;
             }
         if(pos == 0)
             {
-            return 1 / sqrt(2 * L_);
+            return 1 / std::sqrt(2 * L_);
             }
         else if(pos % 2 == 0)
             {
@@ -119,10 +119,10 @@ f(Real x, void* params) const
     int* jk = (int*)params;
     int j = jk[0];
     int k = jk[1];
-    w = 0.02;
-    sigma = w * (dom_[1] - dom_[0]);
-    s = dom_[0] + k * (dom_[1] - dom_[0]) / (nbins_ - 1);
-    return fourier(x, j) * (1 / (sqrt(2 * M_PI) * sigma)) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
+    Real w = 0.02;
+    Real sigma = w * (dom_.second - dom_.first);
+    Real s = dom_.first + k * (dom_.second - dom_.first) / (nbins_ - 1);
+    return fourier(x, j) * (1 / (std::sqrt(2 * M_PI) * sigma)) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
     }
 
 Real BasisFunc::
@@ -132,9 +132,9 @@ df(Real x, void* params) const
     int j = jk[0];
     int k = jk[1];
     w = 0.02;
-    sigma = w * (dom_[1] - dom_[0]);
-    s = dom_[0] + k * (dom_[1] - dom_[0]) / (nbins_ - 1);
-    return fourier(x, j) * ((x - s) / (sqrt(2 * M_PI) * pow(sigma, 3))) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
+    sigma = w * (dom_.second - dom_.first);
+    s = dom_.first + k * (dom_.second - dom_.first) / (nbins_ - 1);
+    return fourier(x, j) * ((x - s) / (std::sqrt(2 * M_PI) * pow(sigma, 3))) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
     }
 
 Real BasisFunc::
@@ -143,12 +143,12 @@ interpolate(Real x, int pos, bool grad) const
     std::vector<Real> xdata(nbins_, 0.0);
     for(auto i : range(nbins_))
         {
-        xdata[i] = dom_[0] + i * (dom_[1] - dom_[0]) / (nbins_ - 1);
+        xdata[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
         }
     int i = 0;
-    if(x >= xdata[size - 2])
+    if(x >= xdata[nbins_ - 2])
         {
-        i = size - 2;
+        i = nbins_ - 2;
         }
     else
         {
@@ -170,9 +170,10 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
     int N = samples.size();
     int d = samples[0].size();
     
-    int nb = basis.nbasis();
+    assert(basis.size() > 0);
+    int nb = basis[0].nbasis();
     auto coeff = createTTCoeff(nb, d, rc);
-    auto result1 = intBasisSample(basis, samples, siteinds(coeff));
+    auto result1 = intBasisSample(basis, samples, siteInds(coeff));
     auto M = result1.first;
     auto is = result1.second;
     MPS G(d);
@@ -212,10 +213,9 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
                     Pinv.set(prime(links(core_id - 1)) = i, links(core_id - 1) = j, PMat(i - 1, j - 1));
                     }
                 }
-            G.ref(core_id) = Pinv * Bemp(core_id);
-            noprime(G.ref(core_id));
+            G.ref(core_id) = noPrime(Pinv * Bemp(core_id));
             auto original_link_tags = tags(links(core_id - 1));
-            ITensor U, S, V(bnd);
+            ITensor U, S, V(links(core_id - 1));
             svd(A, U, S, V, {"Cutoff=", 1.0e-6, "LeftTags=", original_link_tags});
         }
     PrintData(linkInds(G));
@@ -224,16 +224,16 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
         {
         if(core_id == 1)
             {
-            G.ref(1) *= V(2);
+            G.ref(1) *= V[1];
             }
         else if(core_id == d)
             {
-            G.ref(d) *= V(d);
+            G.ref(d) *= V[d - 1];
             }
         else
             {
-            G.ref(core_id) *= V(core_id);
-            G.ref(core_id) *= V(core_id + 1);
+            G.ref(core_id) *= V[core_id - 1];
+            G.ref(core_id) *= V[core_id];
             }
         }
     PrintData(linkInds(G));
@@ -249,12 +249,13 @@ createTTCoeff(int n, int d, int r)
     Real alpha = 0.05;
     for(auto i : range1(d))
         {
+        coeff.ref(i).fill(0.5);
         auto s = sites(i);
         auto sp = prime(s);
         auto A = diagITensor(std::vector<Real>(n, alpha), s, sp);
         A.set(s = 1, sp = 1, 1.0);
         coeff.ref(i) *= A;
-        noprime(coeff.ref(i));
+        coeff.ref(i) = noPrime(coeff(i));
         }
     return coeff;
     }
@@ -264,7 +265,7 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
     {
     int N = samples.size();
     int d = samples[0].size();
-    int nb = basis.nbasis();
+    int nb = basis[0].nbasis();
     auto sites_new = SiteSet(N, d);
     std::vector<ITensor> M;
     std::vector<Index> is_new;
@@ -280,7 +281,7 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
     return make_pair(M, IndexSet(is_new));
     }
 
-std::tuple<MPS, Matrix, Matrix>
+std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>>
 formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const& is)
     {
     int d = M.size();
@@ -291,7 +292,7 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
 
     for(auto i : range1(d))
         {
-        L.ref(i) *= M(i);
+        L.ref(i) *= M[i - 1];
         }
 
     std::vector<ITensor> envi_L(d);
@@ -309,8 +310,8 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                     LHS.set(links(i - 1) = ii, envi_L[i - 1].elt(is(i - 1) = j, links(i - 1) = ii));
                     RHS.set(links(i - 1) = ii, L(i).elt(links(i - 1) = ii, is(i) = j, links(i) = k));
                     }
-                }
                 envi_L[i].set(is(i) = j, links(i) = k, elt(LHS * RHS));
+                }
             }
         }
 
@@ -329,8 +330,8 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                     LHS.set(links(i + 2) = ii, envi_R[i + 1].elt(is(i + 3) = j, links(i + 2) = ii));
                     RHS.set(links(i + 2) = ii, L(i + 2).elt(links(i + 2) = ii, is(i + 2) = j, links(i + 1) = k));
                     }
-                }
                 envi_R[i].set(is(i + 2) = j, links(i + 1) = k, elt(LHS * RHS));
+                }
             }
         }
 
@@ -339,11 +340,11 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
         {
         if(core_id == 1)
             {
-            B.ref(1) = envi_R(1) * M[0];
+            B.ref(1) = envi_R[0] * M[0];
             }
         else if(core_id == d)
             {
-            B.ref(d) = envi_L(d) * M[d - 1];
+            B.ref(d) = envi_L[d - 1] * M[d - 1];
             }
         else
             {

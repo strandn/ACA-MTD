@@ -38,7 +38,7 @@ class BasisFunc
 
     int nbasis() const { return this->nbasis_; }
 
-    } // class BasisFunc
+    }; // class BasisFunc
 
 MPS
 paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc);
@@ -49,7 +49,7 @@ createTTCoeff(int n, int d, int r);
 std::pair<std::vector<ITensor>, IndexSet>
 intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, IndexSet const& is);
 
-std::tuple<MPS, ITensor, ITensor>
+std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>>
 formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const& is);
 
 } // namespace itensor

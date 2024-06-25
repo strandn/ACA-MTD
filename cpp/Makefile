@@ -6,8 +6,8 @@ include /home/nstrand/ITensor/options.mk
 TENSOR_HEADERS=$(PREFIX)/itensor/all.h
 CCFLAGS= -I. $(ITENSOR_INCLUDEFLAGS) $(CPPFLAGS) $(OPTIMIZATIONS)
 CCGFLAGS= -I. $(ITENSOR_INCLUDEFLAGS) $(DEBUGFLAGS)
-LIBFLAGS=-L'$(ITENSOR_LIBDIR)' $(ITENSOR_LIBFLAGS) -lgsl -lgslcblas
-LIBGFLAGS=-L'$(ITENSOR_LIBDIR)' $(ITENSOR_LIBGFLAGS) -lgsl -lgslcblas
+LIBFLAGS=-L'$(ITENSOR_LIBDIR)' $(ITENSOR_LIBFLAGS) #-lgsl -lgslcblas
+LIBGFLAGS=-L'$(ITENSOR_LIBDIR)' $(ITENSOR_LIBGFLAGS) #-lgsl -lgslcblas
 
 #Rules ------------------
 
