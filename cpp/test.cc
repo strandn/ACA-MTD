@@ -19,6 +19,6 @@ main()
     domain.push_back(make_pair(-1.0, 1.0));
     domain.push_back(make_pair(-1.0, 1.0));
     domain.push_back(make_pair(-1.0, 1.0));
-    vector<BasisFunc> basis(3, BasisFunc(make_pair(-1.0, -1.0), 5));
-    auto G = paraSketch(samples, domain, basis, 10);
+    vector<BasisFunc> basis(3, BasisFunc(make_pair(-1.0, -1.0), 10));
+    auto G = paraSketch(samples, domain, basis, 5);
     }

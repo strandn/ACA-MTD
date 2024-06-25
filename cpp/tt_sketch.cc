@@ -30,6 +30,10 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     L_((dom.second - dom.first) / 2),
     shift_((dom.second + dom.first) / 2)
     {
+    for(auto i : range1(10))
+        {
+        println(fourier(0.25, i));
+        }
     grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gsl_integration_workspace* workspace = gsl_integration_workspace_alloc(1000);
@@ -38,7 +42,6 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
         {
         for(auto k : range(nbins_))
             {
-            // int jk[2] = {j, k};
             GSLParams gsl_params = { this, j, k };
             gsl_function F;
             F.function = &f;
@@ -146,7 +149,8 @@ Real
 f(Real x, void* params)
     {
     GSLParams* gsl_params = (GSLParams*)params;
-    println(*gsl_params->instance);
+    // println(*gsl_params->instance);
+    println(x)
     println(gsl_params->j);
     println(gsl_params->k);
     println();
