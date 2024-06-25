@@ -30,15 +30,17 @@ class BasisFunc
 
     void setConv(bool status) { conv_ = status; }
 
-    Real f(Real x, void* params) const;
-
-    Real df(Real x, void* params) const;
-
     Real interpolate(Real x, int pos, bool grad) const;
 
     int nbasis() const { return this->nbasis_; }
 
+    std::pair<Real, Real>& dom() const { return this->dom_; }
+
     }; // class BasisFunc
+
+Real f(Real x, void* params);
+
+Real df(Real x, void* params);
 
 MPS
 paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc);

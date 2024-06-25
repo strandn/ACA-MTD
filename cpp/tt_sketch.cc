@@ -7,6 +7,8 @@
 
 namespace itensor {
 
+struct GSLParams { BasisFunc* instance; int j; int k; };
+
 BasisFunc::
 BasisFunc() 
     : 
@@ -36,15 +38,16 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
         {
         for(auto k : range(nbins_))
             {
-            int jk[2] = {j, k};
+            // int jk[2] = {j, k};
+            GSLParams gsl_params = { this, j, k };
             gsl_function F;
             F.function = &BasisFunc::f;
-            F.params = &jk;
+            F.params = &gsl_params;
             gsl_integration_qag(&F, dom.first, dom.second, 0, 1e-7, 1000, 6, workspace, &result, &error);
             grid_[j][k] = result;
             gsl_function DF;
             F.function = &BasisFunc::df;
-            F.params = &jk;
+            F.params = &gsl_params;
             gsl_integration_qag(&DF, dom.first, dom.second, 0, 1e-7, 1000, 6, workspace, &result, &error);
             gridd_[j][k] = result;
             }
@@ -114,30 +117,6 @@ grad(Real x, int pos) const
     }
 
 Real BasisFunc::
-f(Real x, void* params) const
-    {
-    int* jk = (int*)params;
-    int j = jk[0];
-    int k = jk[1];
-    Real w = 0.02;
-    Real sigma = w * (dom_.second - dom_.first);
-    Real s = dom_.first + k * (dom_.second - dom_.first) / (nbins_ - 1);
-    return fourier(x, j) * (1 / (std::sqrt(2 * M_PI) * sigma)) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
-    }
-
-Real BasisFunc::
-df(Real x, void* params) const
-    {
-    int* jk = (int*)params;
-    int j = jk[0];
-    int k = jk[1];
-    w = 0.02;
-    sigma = w * (dom_.second - dom_.first);
-    s = dom_.first + k * (dom_.second - dom_.first) / (nbins_ - 1);
-    return fourier(x, j) * ((x - s) / (std::sqrt(2 * M_PI) * pow(sigma, 3))) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
-    }
-
-Real BasisFunc::
 interpolate(Real x, int pos, bool grad) const
     {
     std::vector<Real> xdata(nbins_, 0.0);
@@ -161,6 +140,26 @@ interpolate(Real x, int pos, bool grad) const
     assert(x >= xL && x <= xR);
     Real dydx = (yR - yL) / (xR - xL);
     return yL + dydx * (x - xL);
+    }
+
+Real
+f(Real x, void* params) const
+    {
+    GSLParams* gsl_params = (GSLParams*)params
+    Real w = 0.02;
+    Real sigma = w * (gsl_params->instance->dom().second - gsl_params->instance->dom().first);
+    Real s = gsl_params->instance->dom().first + gsl_params->k * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (nbins_ - 1);
+    return fourier(x, gsl_params->j) * (1 / (std::sqrt(2 * M_PI) * sigma)) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
+    }
+
+Real
+df(Real x, void* params) const
+    {
+    GSLParams* gsl_params = (GSLParams*)params
+    Real w = 0.02;
+    Real sigma = w * (gsl_params->instance->dom().second - gsl_params->instance->dom().first);
+    Real s = gsl_params->instance->dom().first + gsl_params->k * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (nbins_ - 1);
+    return fourier(x, gsl_params->j) * ((x - s) / (std::sqrt(2 * M_PI) * pow(sigma, 3))) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
     }
 
 MPS
@@ -197,8 +196,8 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
                 {
                 for(auto j : range1(rc))
                     {
-                    LMat(i - 1, j - 1) = envi_L(core_id).elt(is(core_id - 1) = i, links(core_id - 1) = j);
-                    RMat(i - 1, j - 1) = envi_R(core_id - 1).elt(is(core_id) = i, links(core_id - 1) = j);
+                    LMat(i - 1, j - 1) = envi_L[core_id - 1].elt(is(core_id - 1) = i, links(core_id - 1) = j);
+                    RMat(i - 1, j - 1) = envi_R[core_id - 2].elt(is(core_id) = i, links(core_id - 1) = j);
                     }
                 }
             }
