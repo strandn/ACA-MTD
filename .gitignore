@@ -4,3 +4,7 @@
 *.nb
 *.xlsx
 *.toml
+cpp/*.o
+cpp/.debug_objs/*
+test
+test-g
