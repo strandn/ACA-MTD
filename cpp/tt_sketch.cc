@@ -153,7 +153,6 @@ f(Real x, void* params)
     Real w = 0.02;
     Real sigma = w * (gsl_params->instance->dom().second - gsl_params->instance->dom().first);
     Real s = gsl_params->instance->dom().first + gsl_params->k * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (gsl_params->instance->nbins() - 1);
-    printfln()
     return gsl_params->instance->fourier(x, gsl_params->j) * (1 / (std::sqrt(2 * M_PI) * sigma)) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
     }
 
