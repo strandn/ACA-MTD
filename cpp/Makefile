@@ -25,11 +25,11 @@ debug: test-g
 
 all: test
 
-test: test.o tt_sketch.o $(ITENSOR_LIBS) $(TENSOR_HEADERS)
-	$(CCCOM) $(CCFLAGS) test.o tt_sketch.o -o test $(LIBFLAGS)
+test: tt_sketch.o test.o $(ITENSOR_LIBS) $(TENSOR_HEADERS)
+	$(CCCOM) $(CCFLAGS) tt_sketch.o test.o -o test $(LIBFLAGS)
 
-test-g: mkdebugdir .debug_objs/test.o .debug_objs/tt_sketch.o $(ITENSOR_GLIBS) $(TENSOR_HEADERS)
-	$(CCCOM) $(CCGFLAGS) .debug_objs/test.o .debug_objs/tt_sketch.o -o test-g $(LIBGFLAGS)
+test-g: mkdebugdir .debug_objs/tt_sketch.o .debug_objs/test.o $(ITENSOR_GLIBS) $(TENSOR_HEADERS)
+	$(CCCOM) $(CCGFLAGS) .debug_objs/tt_sketch.o .debug_objs/test.o -o test-g $(LIBGFLAGS)
 
 mkdebugdir:
 	mkdir -p .debug_objs
