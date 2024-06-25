@@ -146,7 +146,7 @@ Real
 f(Real x, void* params)
     {
     GSLParams* gsl_params = (GSLParams*)params;
-    println(gsl_params->instance);
+    println(*gsl_params->instance);
     println(gsl_params->j);
     println(gsl_params->k);
     println();
