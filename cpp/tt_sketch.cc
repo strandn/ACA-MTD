@@ -270,7 +270,7 @@ createTTCoeff(int n, int d, int r)
         Avec[0] = 1.0;
         auto A = diagITensor(Avec, s, sp);
         coeff.ref(i) *= A;
-        coeff.ref(i) = noPrime(coeff(i));
+        coeff.ref(i).noPrime();
         }
     // PrintData(coeff);
     return coeff;
