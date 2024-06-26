@@ -2,6 +2,7 @@ using LegendrePolynomials
 using ITensors
 using LinearAlgebra
 using QuadGK
+using Interpolations
 
 function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
     if x < dom[1] || x > dom[2]
@@ -264,6 +265,7 @@ function update_sketch(G::MPS, Ginc::MPS)
 end
 
 # G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 5, 0.05, 10, [1.0, 1.0, 1.0])
+
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
@@ -300,6 +302,7 @@ end
 #     for j in 1:nbasis
 # ]
 # conv_d(x, pos) = vec_d[pos](x)
+
 # for j in 1:nbasis
 #     for k in 1:nbins
 #         print("$(gridpoints[j][k]) ")
@@ -317,3 +320,12 @@ end
 # for j in 1:nbasis
 #     println("$(conv(0.12345, j)) $(conv_d(0.12345, j))")
 # end
+
+# result = dens_eval(G, [conv, conv, conv], [-0.9, -0.8, -0.6])
+# println(result)
+# result = dens_eval(G, [conv, conv, conv], [-0.95, -0.85, -0.65])
+# println(result)
+# result = dens_grad(G, [conv, conv, conv], [conv_d, conv_d, conv_d], [-0.9, -0.8, -0.6])
+# println(result)
+# result = dens_grad(G, [conv, conv, conv], [conv_d, conv_d, conv_d], [-0.95, -0.85, -0.65])
+# println(result)
