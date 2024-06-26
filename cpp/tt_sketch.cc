@@ -28,10 +28,12 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     conv_(false),
     nbins_(100),
     L_((dom.second - dom.first) / 2),
-    shift_((dom.second + dom.first) / 2)
+    shift_((dom.second + dom.first) / 2),
+    grid_(100, std::vector<Real>(nbasis, 0.0)),
+    gridd_(100, std::vector<Real>(nbasis, 0.0))
     {
-    grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
-    gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
+    // grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
+    // gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gsl_integration_workspace* workspace = gsl_integration_workspace_alloc(1000);
     Real result, error;
     for(auto j : range(nbasis_))
@@ -44,17 +46,18 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
             gsl_function F;
             F.function = &f;
             F.params = &gsl_params;
-            gsl_integration_qag(&F, dom.first, dom.second, 1.0e-8, 1.0e-8, 1000, 6, workspace, &result, &error);
+            gsl_integration_qag(&F, dom.first, dom.second, 1.0e-10, 1.0e-6, 1000, 2, workspace, &result, &error);
             grid_[j][k] = result;
             // println("grad");
             // println();
             gsl_function DF;
             DF.function = &df;
             DF.params = &gsl_params;
-            gsl_integration_qag(&DF, dom.first, dom.second, 1.0e-8, 1.0e-8, 1000, 6, workspace, &result, &error);
+            gsl_integration_qag(&DF, dom.first, dom.second, 1.0e-10, 1.0e-6, 1000, 2, workspace, &result, &error);
             gridd_[j][k] = result;
             }
         }
+    gsl_integration_workspace_free(workspace);
     }
 
 Real BasisFunc::

@@ -10,12 +10,12 @@ class BasisFunc
     private:
     std::pair<Real, Real> dom_;
     int nbasis_;
-    std::vector<std::vector<Real>> grid_,
-        gridd_;
     bool conv_;
     int nbins_;
     Real L_;
     Real shift_;
+    std::vector<std::vector<Real>> grid_,
+        gridd_;
     public:
 
     BasisFunc();
