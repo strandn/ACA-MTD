@@ -33,8 +33,6 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     gridd_(nbasis, std::vector<Real>(100, 0.0)),
     xdata_(100, 0.0)
     {
-    // grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
-    // gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gsl_integration_workspace* workspace = gsl_integration_workspace_alloc(1000);
     Real result, error;
     for(auto j : range(nbasis_))
@@ -131,11 +129,6 @@ grad(Real x, int pos) const
 Real BasisFunc::
 interpolate(Real x, int pos, bool grad) const
     {
-    // std::vector<Real> xdata(nbins_, 0.0);
-    // for(auto i : range(nbins_))
-    //     {
-    //     xdata[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
-    //     }
     int i = 0;
     if(x >= xdata_[nbins_ - 2])
         {
@@ -212,8 +205,8 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
                 {
                 for(auto j : range1(rc))
                     {
-                    LMat(i - 1, j - 1) = envi_L[core_id - 1].elt(is(core_id - 1) = i, links(core_id - 1) = j);
-                    RMat(i - 1, j - 1) = envi_R[core_id - 2].elt(is(core_id) = i, links(core_id - 1) = j);
+                    LMat(i - 1, j - 1) = envi_L[core_id - 1].elt(is(core_id) = i, links(core_id - 1) = j);
+                    RMat(i - 1, j - 1) = envi_R[core_id - 2].elt(is(core_id - 1) = i, links(core_id - 1) = j);
                     }
                 }
             Eigen::MatrixXd AMat = LMat.transpose() * RMat;
@@ -229,11 +222,15 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
                 }
             G.ref(core_id) = noPrime(Pinv * Bemp(core_id));
             auto original_link_tags = tags(links(core_id - 1));
-            ITensor U, S, V(links(core_id - 1));
-            svd(A, U, S, V, {"Cutoff=", 1.0e-6, "LeftTags=", original_link_tags});
+            ITensor U, S;
+            V[core_id - 1] = ITensor(links(core_id - 1));
+            svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightTags=", original_link_tags});
             }
+        println(core_id);
+        PrintData(V[core_id - 1]);
         }
     PrintData(linkInds(G));
+    PrintData(G);
 
     for(auto core_id : range1(d))
         {
@@ -252,6 +249,7 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
             }
         }
     PrintData(linkInds(G));
+    PrintData(G);
 
     return G;
     }
@@ -271,7 +269,6 @@ createTTCoeff(int n, int d, int r)
         std::vector<Real> Avec(n, alpha);
         Avec[0] = 1.0;
         auto A = diagITensor(Avec, s, sp);
-        // A.set(s = 1, sp = 1, 1.0);
         coeff.ref(i) *= A;
         coeff.ref(i) = noPrime(coeff(i));
         }
@@ -294,11 +291,11 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
         is_new.push_back(sites_new(i));
         for(auto j : range1(N))
             {
-            for(auto k : range1(nb)) M.back().set(sites_new(i) = j, is(i) = k, pow(1.0 / N, 1 / d) * basis[i - 1](samples[j - 1][i - 1], k));
+            for(auto k : range1(nb)) M.back().set(sites_new(i) = j, is(i) = k, pow(1.0 / N, 1.0 / d) * basis[i - 1](samples[j - 1][i - 1], k));
             }
-        println(i);
-        PrintData(M.back());
-        PrintData(is_new.back());
+        // println(i);
+        // PrintData(M.back());
+        // PrintData(is_new.back());
         }
     return make_pair(M, IndexSet(is_new));
     }
@@ -318,10 +315,10 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
         }
 
     std::vector<ITensor> envi_L(d);
-    envi_L[1] = L(1);
+    envi_L[1] = L(1) * delta(is(1), is(2));
     for(int i = 2; i < d; ++i)
         {
-        envi_L[i] = ITensor(is(i), links(i));
+        envi_L[i] = ITensor(is(i + 1), links(i));
         for(auto j : range1(N))
             {
             for(auto k : range1(r))
@@ -329,19 +326,19 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                 ITensor LHS(links(i - 1)), RHS(links(i - 1));
                 for(auto ii : range1(r))
                     {
-                    LHS.set(links(i - 1) = ii, envi_L[i - 1].elt(is(i - 1) = j, links(i - 1) = ii));
+                    LHS.set(links(i - 1) = ii, envi_L[i - 1].elt(is(i) = j, links(i - 1) = ii));
                     RHS.set(links(i - 1) = ii, L(i).elt(links(i - 1) = ii, is(i) = j, links(i) = k));
                     }
-                envi_L[i].set(is(i) = j, links(i) = k, elt(LHS * RHS));
+                envi_L[i].set(is(i + 1) = j, links(i) = k, elt(LHS * RHS));
                 }
             }
         }
 
     std::vector<ITensor> envi_R(d);
-    envi_R[d - 2] = L(d);
+    envi_R[d - 2] = L(d) * delta(is(d), is(d - 1));
     for(int i = d - 3; i >= 0; --i)
         {
-        envi_R[i] = ITensor(is(i + 2), links(i + 1));
+        envi_R[i] = ITensor(is(i + 1), links(i + 1));
         for(auto j : range1(N))
             {
             for(auto k : range1(r))
@@ -349,10 +346,10 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                 ITensor LHS(links(i + 2)), RHS(links(i + 2));
                 for(auto ii : range1(r))
                     {
-                    LHS.set(links(i + 2) = ii, envi_R[i + 1].elt(is(i + 3) = j, links(i + 2) = ii));
+                    LHS.set(links(i + 2) = ii, envi_R[i + 1].elt(is(i + 2) = j, links(i + 2) = ii));
                     RHS.set(links(i + 2) = ii, L(i + 2).elt(links(i + 2) = ii, is(i + 2) = j, links(i + 1) = k));
                     }
-                envi_R[i].set(is(i + 2) = j, links(i + 1) = k, elt(LHS * RHS));
+                envi_R[i].set(is(i + 1) = j, links(i + 1) = k, elt(LHS * RHS));
                 }
             }
         }
@@ -362,10 +359,14 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
         {
         if(core_id == 1)
             {
+            // PrintData(envi_R[0]);
+            // PrintData(M[0]);
             B.ref(1) = envi_R[0] * M[0];
             }
         else if(core_id == d)
             {
+            // PrintData(envi_L[d - 1]);
+            // PrintData(M[d - 1]);
             B.ref(d) = envi_L[d - 1] * M[d - 1];
             }
         else
@@ -377,16 +378,20 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                     {
                     for(auto k : range1(N))
                         {
-                        Real Lelt = envi_L[core_id - 1].elt(is(core_id - 1) = k, links(core_id - 1) = i);
-                        Real Relt = envi_R[core_id - 1].elt(is(core_id + 1) = k, links(core_id) = j);
+                        Real Lelt = envi_L[core_id - 1].elt(is(core_id) = k, links(core_id - 1) = i);
+                        Real Relt = envi_R[core_id - 1].elt(is(core_id) = k, links(core_id) = j);
                         B.ref(core_id).set(links(core_id - 1) = i, is(core_id) = k, links(core_id) = j, Lelt * Relt);
                         }
                     }
                 }
             B.ref(core_id) *= M[core_id - 1];
             }
+        // println(core_id);
+        // PrintData(envi_L[core_id - 1]);
+        // PrintData(envi_R[core_id - 1]);
         }
     
+    // PrintData(B);
     return std::make_tuple(B, envi_L, envi_R);
     }
 
