@@ -259,19 +259,23 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
 MPS
 createTTCoeff(int n, int d, int r)
     {
-    auto sites = SiteSet(n, d);
-    auto coeff = randomMPS(sites);
+    auto sites = SiteSet(d, n);
+    auto coeff = randomMPS(sites, r);
+    // PrintData(coeff);
     Real alpha = 0.05;
     for(auto i : range1(d))
         {
         coeff.ref(i).fill(0.5);
         auto s = sites(i);
         auto sp = prime(s);
-        auto A = diagITensor(std::vector<Real>(n, alpha), s, sp);
-        A.set(s = 1, sp = 1, 1.0);
+        std::vector<Real> Avec(n, alpha);
+        Avec[0] = 1.0;
+        auto A = diagITensor(Avec, s, sp);
+        // A.set(s = 1, sp = 1, 1.0);
         coeff.ref(i) *= A;
         coeff.ref(i) = noPrime(coeff(i));
         }
+    // PrintData(coeff);
     return coeff;
     }
 
@@ -281,7 +285,7 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
     int N = samples.size();
     int d = samples[0].size();
     int nb = basis[0].nbasis();
-    auto sites_new = SiteSet(N, d);
+    auto sites_new = SiteSet(d, N);
     std::vector<ITensor> M;
     std::vector<Index> is_new;
     for(auto i : range1(d))
@@ -290,8 +294,11 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
         is_new.push_back(sites_new(i));
         for(auto j : range1(N))
             {
-            for(auto k : range1(nb)) M.back().set(sites_new(i) = j, is(i) = k, pow(1.0 / N, 1 / d) * basis[i - 1](samples[j][i], k));
+            for(auto k : range1(nb)) M.back().set(sites_new(i) = j, is(i) = k, pow(1.0 / N, 1 / d) * basis[i - 1](samples[j - 1][i - 1], k));
             }
+        println(i);
+        PrintData(M.back());
+        PrintData(is_new.back());
         }
     return make_pair(M, IndexSet(is_new));
     }
