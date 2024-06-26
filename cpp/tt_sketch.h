@@ -60,7 +60,7 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
 Real
 densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements);
 
-Real
+std::vector<Real>
 densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements);
 
 } // namespace itensor

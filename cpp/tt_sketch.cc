@@ -399,29 +399,33 @@ densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> co
         {
         basis_evals[i - 1] = ITensor(s(i));
         for(auto j : range1(dim(s(i)))) basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j));
+        // println(i);
+        // PrintData(basis_evals[i - 1]);
         }
     auto result = G(1) * basis_evals[0];
-    for(auto i : range1(d)) result *= G(i) * basis_evals[i - 1];
+    for(int i = 2; i <= d; ++i) result *= G(i) * basis_evals[i - 1];
+    // PrintData(G);
+    // PrintData(result);
     return elt(result);
     }
 
-Real
+std::vector<Real>
 densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements)
     {
     int d = elements.size();
     auto s = siteInds(G);
-    std::vector<Real>(d, 0.0);
+    std::vector<Real> grad(d, 0.0);
     std::vector<ITensor> basis_evals(d), basisd_evals(d);
     for(auto i : range1(d))
         {
-        basis_evals[i - 1] = ITensor(s(i));
+        basis_evals[i - 1] = basisd_evals[i - 1] = ITensor(s(i));
         for(auto j : range1(dim(s(i)))) basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j));
         for(auto j : range1(dim(s(i)))) basisd_evals[i - 1].set(s(i) = j, basis[i - 1].grad(elements[i - 1], j));
         }
     for(auto k : range1(d))
         {
         auto result = G(1) * (k == 1 ? basisd_evals[0] : basis_evals[0]);
-        for(auto i : range1(d)) result *= G(i) * (k == i ? basisd_evals[i - 1] : basis_evals[i - 1]);
+        for(int i = 2; i <= d; ++i) result *= G(i) * (k == i ? basisd_evals[i - 1] : basis_evals[i - 1]);
         grad[k - 1] = elt(result);
         }
     return grad;
