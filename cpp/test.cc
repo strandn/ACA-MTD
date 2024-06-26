@@ -6,6 +6,7 @@ using namespace itensor;
 int
 main()
     {
+    srand(time(NULL));
     vector<vector<Real>> samples(3, vector<Real>(3, 0.0));
     samples[0][0] = -0.9;
     samples[0][1] = -0.8;
@@ -22,6 +23,9 @@ main()
     domain.push_back(make_pair(-1.0, 1.0));
     vector<BasisFunc> basis(3, BasisFunc(make_pair(-1.0, 1.0), 10));
     auto G = paraSketch(samples, domain, basis, 5);
+    // basis[0].setConv(true);
+    // basis[1].setConv(true);
+    // basis[2].setConv(true);
     cout << densEval(G, basis, { -0.9, -0.8, -0.6 }) << endl;
     cout << densEval(G, basis, { -0.95, -0.85, -0.65 }) << endl;
     vector<Real> dens_grad1 = densGrad(G, basis, { -0.9, -0.8, -0.6 });
