@@ -2,6 +2,8 @@
     "files.associations": {
         "cmath": "cpp",
         "cstdlib": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "iostream": "cpp",
+        "ostream": "cpp"
     }
 }

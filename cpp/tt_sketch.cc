@@ -15,7 +15,7 @@ BasisFunc()
     dom_(std::make_pair(-1.0, 1.0)),
     nbasis_(20),
     conv_(false),
-    nbins_(0),
+    nbins_(100),
     L_(1.0),
     shift_(0.0)
     { }
@@ -58,10 +58,7 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
         }
     gsl_integration_workspace_free(workspace);
 
-    for(auto i : range(nbins_))
-        {
-        xdata_[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
-        }
+    for(auto i : range(nbins_)) xdata_[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
     }
 
 Real BasisFunc::
@@ -226,11 +223,11 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
             V[core_id - 1] = ITensor(links(core_id - 1));
             svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightTags=", original_link_tags});
             }
-        println(core_id);
-        PrintData(V[core_id - 1]);
+        // println(core_id);
+        // PrintData(V[core_id - 1]);
         }
     PrintData(linkInds(G));
-    PrintData(G);
+    // PrintData(G);
 
     for(auto core_id : range1(d))
         {
@@ -249,7 +246,7 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<
             }
         }
     PrintData(linkInds(G));
-    PrintData(G);
+    // PrintData(G);
 
     return G;
     }
@@ -309,10 +306,7 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
     int r = dim(links(1));
     auto L = coeff;
 
-    for(auto i : range1(d))
-        {
-        L.ref(i) *= M[i - 1];
-        }
+    for(auto i : range1(d)) L.ref(i) *= M[i - 1];
 
     std::vector<ITensor> envi_L(d);
     envi_L[1] = L(1) * delta(is(1), is(2));
@@ -393,6 +387,44 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
     
     // PrintData(B);
     return std::make_tuple(B, envi_L, envi_R);
+    }
+
+Real
+densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements)
+    {
+    int d = elements.size();
+    auto s = siteInds(G);
+    std::vector<ITensor> basis_evals(d);
+    for(auto i : range1(d))
+        {
+        basis_evals[i - 1] = ITensor(s(i));
+        for(auto j : range1(dim(s(i)))) basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j));
+        }
+    auto result = G(1) * basis_evals[0];
+    for(auto i : range1(d)) result *= G(i) * basis_evals[i - 1];
+    return elt(result);
+    }
+
+Real
+densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements)
+    {
+    int d = elements.size();
+    auto s = siteInds(G);
+    std::vector<Real>(d, 0.0);
+    std::vector<ITensor> basis_evals(d), basisd_evals(d);
+    for(auto i : range1(d))
+        {
+        basis_evals[i - 1] = ITensor(s(i));
+        for(auto j : range1(dim(s(i)))) basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j));
+        for(auto j : range1(dim(s(i)))) basisd_evals[i - 1].set(s(i) = j, basis[i - 1].grad(elements[i - 1], j));
+        }
+    for(auto k : range1(d))
+        {
+        auto result = G(1) * (k == 1 ? basisd_evals[0] : basis_evals[0]);
+        for(auto i : range1(d)) result *= G(i) * (k == i ? basisd_evals[i - 1] : basis_evals[i - 1]);
+        grad[k - 1] = elt(result);
+        }
+    return grad;
     }
 
 } // namespace itensor

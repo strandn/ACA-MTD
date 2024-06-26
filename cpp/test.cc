@@ -1,3 +1,4 @@
+#include <iostream>
 #include "tt_sketch.h"
 using namespace std;
 using namespace itensor;
@@ -21,4 +22,10 @@ main()
     domain.push_back(make_pair(-1.0, 1.0));
     vector<BasisFunc> basis(3, BasisFunc(make_pair(-1.0, 1.0), 10));
     auto G = paraSketch(samples, domain, basis, 5);
+    cout << densEval(G, basis, { -0.9, -0.8, -0.6 }) << endl;
+    cout << densEval(G, basis, { -0.95, -0.85, -0.65 }) << endl;
+    vector<Real> dens_grad1 = densGrad(G, basis, { -0.9, -0.8, -0.6 });
+    vector<Real> dens_grad2 = densGrad(G, basis, { -0.95, -0.85, -0.65 });
+    cout << dens_grad1 << endl;
+    cout << dens_grad2 << endl;
     }

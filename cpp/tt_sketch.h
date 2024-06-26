@@ -57,6 +57,12 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
 std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>>
 formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const& is);
 
+Real
+densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements);
+
+Real
+densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements);
+
 } // namespace itensor
 
 #endif //__TT_SKETCH_
