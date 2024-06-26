@@ -29,8 +29,8 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     nbins_(100),
     L_((dom.second - dom.first) / 2),
     shift_((dom.second + dom.first) / 2),
-    grid_(100, std::vector<Real>(nbasis, 0.0)),
-    gridd_(100, std::vector<Real>(nbasis, 0.0))
+    grid_(nbasis, std::vector<Real>(100, 0.0)),
+    gridd_(nbasis, std::vector<Real>(100, 0.0))
     {
     // grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     // gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
