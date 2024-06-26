@@ -30,10 +30,6 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     L_((dom.second - dom.first) / 2),
     shift_((dom.second + dom.first) / 2)
     {
-    for(auto i : range1(10))
-        {
-        println(fourier(0.25, i));
-        }
     grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     gsl_integration_workspace* workspace = gsl_integration_workspace_alloc(1000);
@@ -42,16 +38,20 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
         {
         for(auto k : range(nbins_))
             {
-            GSLParams gsl_params = { this, j, k };
+            // println(j);
+            // println(k);
+            GSLParams gsl_params = { this, j + 1, k + 1 };
             gsl_function F;
             F.function = &f;
             F.params = &gsl_params;
-            gsl_integration_qag(&F, dom.first, dom.second, 0, 1e-7, 1000, 6, workspace, &result, &error);
+            gsl_integration_qag(&F, dom.first, dom.second, 1.0e-8, 1.0e-8, 1000, 6, workspace, &result, &error);
             grid_[j][k] = result;
+            // println("grad");
+            // println();
             gsl_function DF;
-            F.function = &df;
-            F.params = &gsl_params;
-            gsl_integration_qag(&DF, dom.first, dom.second, 0, 1e-7, 1000, 6, workspace, &result, &error);
+            DF.function = &df;
+            DF.params = &gsl_params;
+            gsl_integration_qag(&DF, dom.first, dom.second, 1.0e-8, 1.0e-8, 1000, 6, workspace, &result, &error);
             gridd_[j][k] = result;
             }
         }
@@ -64,17 +64,17 @@ fourier(Real x, int pos) const
         {
         return 0.0;
         }
-    if(pos == 0)
+    if(pos == 1)
         {
         return 1 / std::sqrt(2 * L_);
         }
     else if(pos % 2 == 0)
         {
-        return std::sqrt(1 / L_) * sin(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
+        return std::sqrt(1 / L_) * cos(M_PI * (x - shift_) * (pos / 2) / L_);
         }
     else
         {
-        return std::sqrt(1 / L_) * cos(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
+        return std::sqrt(1 / L_) * sin(M_PI * (x - shift_) * (pos / 2) / L_);
         }
     }
 
@@ -104,17 +104,17 @@ grad(Real x, int pos) const
             {
             return 0.0;
             }
-        if(pos == 0)
+        if(pos == 1)
             {
-            return 1 / std::sqrt(2 * L_);
+            return 0.0;
             }
         else if(pos % 2 == 0)
             {
-            return pow(1 / L_, 3 / 2) * M_PI * ((pos + 1) / 2) * cos(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
+            return -pow(1 / L_, 3 / 2) * M_PI * (pos / 2) * sin(M_PI * (x - shift_) * (pos / 2) / L_);
             }
         else
             {
-            return -pow(1 / L_, 3 / 2) * M_PI * ((pos + 1) / 2) * sin(M_PI * (x - shift_) * ((pos + 1) / 2) / L_);
+            return pow(1 / L_, 3 / 2) * M_PI * (pos / 2) * cos(M_PI * (x - shift_) * (pos / 2) / L_);
             }
         }
     }
@@ -149,14 +149,13 @@ Real
 f(Real x, void* params)
     {
     GSLParams* gsl_params = (GSLParams*)params;
-    // println(*gsl_params->instance);
-    println(x)
-    println(gsl_params->j);
-    println(gsl_params->k);
-    println();
+    // println(x);
+    // println(gsl_params->j);
+    // println(gsl_params->k);
+    // println();
     Real w = 0.02;
     Real sigma = w * (gsl_params->instance->dom().second - gsl_params->instance->dom().first);
-    Real s = gsl_params->instance->dom().first + gsl_params->k * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (gsl_params->instance->nbins() - 1);
+    Real s = gsl_params->instance->dom().first + (gsl_params->k - 1) * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (gsl_params->instance->nbins() - 1);
     return gsl_params->instance->fourier(x, gsl_params->j) * (1 / (std::sqrt(2 * M_PI) * sigma)) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
     }
 
@@ -166,7 +165,7 @@ df(Real x, void* params)
     GSLParams* gsl_params = (GSLParams*)params;
     Real w = 0.02;
     Real sigma = w * (gsl_params->instance->dom().second - gsl_params->instance->dom().first);
-    Real s = gsl_params->instance->dom().first + gsl_params->k * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (gsl_params->instance->nbins() - 1);
+    Real s = gsl_params->instance->dom().first + (gsl_params->k - 1) * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (gsl_params->instance->nbins() - 1);
     return gsl_params->instance->fourier(x, gsl_params->j) * ((x - s) / (std::sqrt(2 * M_PI) * pow(sigma, 3))) * exp(-pow(s - x, 2) / (2 * pow(sigma, 2)));
     }
 
