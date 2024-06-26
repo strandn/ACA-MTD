@@ -16,6 +16,7 @@ class BasisFunc
     Real shift_;
     std::vector<std::vector<Real>> grid_,
         gridd_;
+    std::vector<Real> xdata_;
     public:
 
     BasisFunc();

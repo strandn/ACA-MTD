@@ -30,7 +30,8 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
     L_((dom.second - dom.first) / 2),
     shift_((dom.second + dom.first) / 2),
     grid_(nbasis, std::vector<Real>(100, 0.0)),
-    gridd_(nbasis, std::vector<Real>(100, 0.0))
+    gridd_(nbasis, std::vector<Real>(100, 0.0)),
+    xdata_(100, 0.0)
     {
     // grid_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
     // gridd_.resize(nbins_, std::vector<Real>(nbasis_, 0.0));
@@ -58,6 +59,11 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
             }
         }
     gsl_integration_workspace_free(workspace);
+
+    for(auto i : range(nbins_))
+        {
+        xdata_[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
+        }
     }
 
 Real BasisFunc::
@@ -125,24 +131,24 @@ grad(Real x, int pos) const
 Real BasisFunc::
 interpolate(Real x, int pos, bool grad) const
     {
-    std::vector<Real> xdata(nbins_, 0.0);
-    for(auto i : range(nbins_))
-        {
-        xdata[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
-        }
+    // std::vector<Real> xdata(nbins_, 0.0);
+    // for(auto i : range(nbins_))
+    //     {
+    //     xdata[i] = dom_.first + i * (dom_.second - dom_.first) / (nbins_ - 1);
+    //     }
     int i = 0;
-    if(x >= xdata[nbins_ - 2])
+    if(x >= xdata_[nbins_ - 2])
         {
         i = nbins_ - 2;
         }
     else
         {
-        while(x > xdata[i + 1]) ++i;
+        while(x > xdata_[i + 1]) ++i;
         }
-    Real xL = xdata[i];
-    Real yL = grad ? gridd_[pos][i] : grid_[pos][i];
-    Real xR = xdata[i + 1];
-    Real yR = grad ? gridd_[pos][i + 1] : grid_[pos][i + 1];
+    Real xL = xdata_[i];
+    Real yL = grad ? gridd_[pos - 1][i] : grid_[pos - 1][i];
+    Real xR = xdata_[i + 1];
+    Real yR = grad ? gridd_[pos - 1][i + 1] : grid_[pos - 1][i + 1];
     assert(x >= xL && x <= xR);
     Real dydx = (yR - yL) / (xR - xL);
     return yL + dydx * (x - xL);
