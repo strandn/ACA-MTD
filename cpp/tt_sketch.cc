@@ -260,7 +260,7 @@ createTTCoeff(int n, int d, int r)
     Real alpha = 0.05;
     for(auto i : range1(d))
         {
-        coeff.ref(i).fill(0.5);
+        // coeff.ref(i).fill(0.5);
         auto s = sites(i);
         auto sp = prime(s);
         std::vector<Real> Avec(n, alpha);

@@ -97,6 +97,13 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
     for i in 1:d
+        # if i == 1
+        #     coeff[1][:, :] = 0.5 * ones(n, r)
+        # elseif i == d
+        #     coeff[d][:, :] = 0.5 * ones(r, n)
+        # else
+        #     coeff[i][:, :, :] = 0.5 * ones(r, n, r)
+        # end
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
@@ -250,15 +257,13 @@ function update_sketch(G::MPS, Ginc::MPS)
     for i in eachindex(sites)
         Ginc[i] *= delta(sites_inc[i], sites[i])
     end
-    # Gnew = add(G, Ginc; cutoff = 1.0e-8)
     Gnew = add(G, Ginc)
     truncate!(Gnew; cutoff = 1.0e-8)
     println(linkinds(Gnew))
     return Gnew
 end
 
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 10, 0.05, 5, [1.0, 1.0, 1.0])
+# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 5, 0.05, 10, [1.0, 1.0, 1.0])
 # result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
 # println(result)
 # result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
@@ -267,3 +272,48 @@ end
 # println(result)
 # result = dens_grad(G, basis, basis_d, [-0.95, -0.85, -0.65])
 # println(result)
+
+# domain = [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)]
+# nbins = 100
+# nbasis = 10
+# ranges = [LinRange(d[1], d[2], nbins) for d in domain]
+# gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
+# gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
+# for j in 1:nbasis
+#     for k in 1:nbins
+#         w = 0.02
+#         sigma = w * (domain[1][2] - domain[1][1])
+#         s = domain[1][1] + (k - 1) * (domain[1][2] - domain[1][1]) / (nbins - 1)
+#         f(x) = basis[1](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
+#         df(x) = basis[1](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
+#         gridpoints[j][k] = quadgk(f, domain[1]...)[1]
+#         gridpoints_d[j][k] = quadgk(df, domain[1]...)[1]
+#     end
+# end
+# vec = [
+#     linear_interpolation(ranges[1], [gridpoints[j][k] for k in 1:nbins])
+#     for j in 1:nbasis
+# ]
+# conv(x, pos) = vec[pos](x)
+# vec_d = [
+#     linear_interpolation(ranges[1], [gridpoints_d[j][k] for k in 1:nbins])
+#     for j in 1:nbasis
+# ]
+# conv_d(x, pos) = vec_d[pos](x)
+# for j in 1:nbasis
+#     for k in 1:nbins
+#         print("$(gridpoints[j][k]) ")
+#     end
+#     println()
+# end
+# println()
+# for j in 1:nbasis
+#     for k in 1:nbins
+#         print("$(gridpoints_d[j][k]) ")
+#     end
+#     println()
+# end
+# println()
+# for j in 1:nbasis
+#     println("$(conv(0.12345, j)) $(conv_d(0.12345, j))")
+# end
