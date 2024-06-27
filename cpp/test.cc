@@ -17,12 +17,12 @@ main()
     samples[2][0] = -0.4;
     samples[2][1] = 0.3;
     samples[2][2] = -0.7;
-    vector<pair<Real, Real>> domain;
-    domain.push_back(make_pair(-1.0, 1.0));
-    domain.push_back(make_pair(-1.0, 1.0));
-    domain.push_back(make_pair(-1.0, 1.0));
+    // vector<pair<Real, Real>> domain;
+    // domain.push_back(make_pair(-1.0, 1.0));
+    // domain.push_back(make_pair(-1.0, 1.0));
+    // domain.push_back(make_pair(-1.0, 1.0));
     vector<BasisFunc> basis(3, BasisFunc(make_pair(-1.0, 1.0), 10));
-    auto G = paraSketch(samples, domain, basis, 5);
+    auto G = paraSketch(samples, basis, 5);
     // basis[0].setConv(true);
     // basis[1].setConv(true);
     // basis[2].setConv(true);

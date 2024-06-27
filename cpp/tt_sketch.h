@@ -46,7 +46,7 @@ Real f(Real x, void* params);
 Real df(Real x, void* params);
 
 MPS
-paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc);
+paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc> const& basis, int rc);
 
 MPS
 createTTCoeff(int n, int d, int r);

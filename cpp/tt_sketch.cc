@@ -169,7 +169,7 @@ df(Real x, void* params)
     }
 
 MPS
-paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<std::pair<Real, Real>> const& domain, std::vector<BasisFunc> const& basis, int rc)
+paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc> const& basis, int rc)
     {
     assert(samples.size() > 0);
     int N = samples.size();
