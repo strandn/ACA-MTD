@@ -5,6 +5,8 @@
 #include "itensor/util/print_macro.h"
 #include "tt_sketch.h"
 
+namespace itensor {
+
 struct GSLParams { BasisFunc* instance; int j; int k; };
 
 BasisFunc::
@@ -398,3 +400,5 @@ densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> co
         }
     return grad;
     }
+
+} // namespace itensor
