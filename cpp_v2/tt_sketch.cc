@@ -5,8 +5,6 @@
 #include "itensor/util/print_macro.h"
 #include "tt_sketch.h"
 
-namespace itensor {
-
 struct GSLParams { BasisFunc* instance; int j; int k; };
 
 BasisFunc::
@@ -39,16 +37,12 @@ BasisFunc(std::pair<Real, Real> dom, int nbasis)
         {
         for(auto k : range(nbins_))
             {
-            // println(j);
-            // println(k);
             GSLParams gsl_params = { this, j + 1, k + 1 };
             gsl_function F;
             F.function = &f;
             F.params = &gsl_params;
             gsl_integration_qag(&F, dom.first, dom.second, 1.0e-10, 1.0e-6, 1000, 2, workspace, &result, &error);
             grid_[j][k] = result;
-            // println("grad");
-            // println();
             gsl_function DF;
             DF.function = &df;
             DF.params = &gsl_params;
@@ -148,10 +142,6 @@ Real
 f(Real x, void* params)
     {
     GSLParams* gsl_params = (GSLParams*)params;
-    // println(x);
-    // println(gsl_params->j);
-    // println(gsl_params->k);
-    // println();
     Real w = 0.02;
     Real sigma = w * (gsl_params->instance->dom().second - gsl_params->instance->dom().first);
     Real s = gsl_params->instance->dom().first + (gsl_params->k - 1) * (gsl_params->instance->dom().second - gsl_params->instance->dom().first) / (gsl_params->instance->nbins() - 1);
@@ -223,11 +213,8 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
             V[core_id - 1] = ITensor(links(core_id - 1));
             svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightTags=", original_link_tags});
             }
-        // println(core_id);
-        // PrintData(V[core_id - 1]);
         }
     PrintData(linkInds(G));
-    // PrintData(G);
 
     for(auto core_id : range1(d))
         {
@@ -246,7 +233,6 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
             }
         }
     PrintData(linkInds(G));
-    // PrintData(G);
 
     return G;
     }
@@ -256,11 +242,9 @@ createTTCoeff(int n, int d, int r)
     {
     auto sites = SiteSet(d, n);
     auto coeff = randomMPS(sites, r);
-    // PrintData(coeff);
     Real alpha = 0.05;
     for(auto i : range1(d))
         {
-        // coeff.ref(i).fill(0.5);
         auto s = sites(i);
         auto sp = prime(s);
         std::vector<Real> Avec(n, alpha);
@@ -269,7 +253,6 @@ createTTCoeff(int n, int d, int r)
         coeff.ref(i) *= A;
         coeff.ref(i).noPrime();
         }
-    // PrintData(coeff);
     return coeff;
     }
 
@@ -290,9 +273,6 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
             {
             for(auto k : range1(nb)) M.back().set(sites_new(i) = j, is(i) = k, pow(1.0 / N, 1.0 / d) * basis[i - 1](samples[j - 1][i - 1], k));
             }
-        // println(i);
-        // PrintData(M.back());
-        // PrintData(is_new.back());
         }
     return make_pair(M, IndexSet(is_new));
     }
@@ -353,14 +333,10 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
         {
         if(core_id == 1)
             {
-            // PrintData(envi_R[0]);
-            // PrintData(M[0]);
             B.ref(1) = envi_R[0] * M[0];
             }
         else if(core_id == d)
             {
-            // PrintData(envi_L[d - 1]);
-            // PrintData(M[d - 1]);
             B.ref(d) = envi_L[d - 1] * M[d - 1];
             }
         else
@@ -380,12 +356,8 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                 }
             B.ref(core_id) *= M[core_id - 1];
             }
-        // println(core_id);
-        // PrintData(envi_L[core_id - 1]);
-        // PrintData(envi_R[core_id - 1]);
         }
     
-    // PrintData(B);
     return std::make_tuple(B, envi_L, envi_R);
     }
 
@@ -399,13 +371,9 @@ densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> co
         {
         basis_evals[i - 1] = ITensor(s(i));
         for(auto j : range1(dim(s(i)))) basis_evals[i - 1].set(s(i) = j, basis[i - 1](elements[i - 1], j));
-        // println(i);
-        // PrintData(basis_evals[i - 1]);
         }
     auto result = G(1) * basis_evals[0];
     for(int i = 2; i <= d; ++i) result *= G(i) * basis_evals[i - 1];
-    // PrintData(G);
-    // PrintData(result);
     return elt(result);
     }
 
@@ -430,5 +398,3 @@ densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> co
         }
     return grad;
     }
-
-} // namespace itensor
