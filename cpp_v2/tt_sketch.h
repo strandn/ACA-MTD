@@ -51,11 +51,11 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
 MPS
 createTTCoeff(int n, int d, int r);
 
-std::pair<std::vector<ITensor>, IndexSet>
-intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, IndexSet const& is);
+std::pair<std::vector<ITensor>, SiteSet>
+intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, SiteSet const& is);
 
 std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>>
-formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const& is);
+formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, SiteSet const& is);
 
 Real
 densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements);
