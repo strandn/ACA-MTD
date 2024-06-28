@@ -170,7 +170,7 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
     assert(basis.size() > 0);
     int nb = basis[0].nbasis();
     auto coeff = createTTCoeff(nb, d, rc);
-    auto result1 = intBasisSample(basis, samples, siteInds(coeff));
+    auto result1 = intBasisSample(basis, samples, coeff.sites());
     auto M = result1.first;
     auto is = result1.second;
     MPS G(d);
@@ -179,41 +179,43 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
     auto Bemp = std::get<0>(result2);
     auto envi_L = std::get<1>(result2);
     auto envi_R = std::get<2>(result2);
-    auto links = linkInds(coeff);
+    // auto links = linkInds(coeff);
     std::vector<ITensor> V(d);
     for(auto core_id : range1(d))
         {
         if(core_id == 1)
             {
-            G.ref(1) = Bemp(1);
+            G.Aref(1) = Bemp(1);
             }
         else
             {
             Eigen::MatrixXd LMat(N, rc), RMat(N, rc);
+            auto l = linkInd(coeff, core_id - 1);
             for(auto i : range1(N))
                 {
                 for(auto j : range1(rc))
                     {
-                    LMat(i - 1, j - 1) = envi_L[core_id - 1].elt(is(core_id) = i, links(core_id - 1) = j);
-                    RMat(i - 1, j - 1) = envi_R[core_id - 2].elt(is(core_id - 1) = i, links(core_id - 1) = j);
+                    LMat(i - 1, j - 1) = envi_L[core_id - 1].elt(is(core_id) = i, l = j);
+                    RMat(i - 1, j - 1) = envi_R[core_id - 2].elt(is(core_id - 1) = i, l = j);
                     }
                 }
             Eigen::MatrixXd AMat = LMat.transpose() * RMat;
             Eigen::MatrixXd PMat = AMat.completeOrthogonalDecomposition().pseudoInverse();
-            ITensor A(prime(links(core_id - 1)), links(core_id - 1)), Pinv(prime(links(core_id - 1)), links(core_id - 1));
+            ITensor A(prime(l), l), Pinv(prime(l), l);
             for(auto i : range1(rc))
                 {
                 for(auto j : range1(rc))
                     {
-                    A.set(prime(links(core_id - 1)) = i, links(core_id - 1) = j, AMat(i - 1, j - 1));
-                    Pinv.set(prime(links(core_id - 1)) = i, links(core_id - 1) = j, PMat(i - 1, j - 1));
+                    A.set(prime(l) = i, l = j, AMat(i - 1, j - 1));
+                    Pinv.set(prime(l) = i, l = j, PMat(i - 1, j - 1));
                     }
                 }
-            G.ref(core_id) = noPrime(Pinv * Bemp(core_id));
-            auto original_link_tags = tags(links(core_id - 1));
+            G.Aref(core_id) = Pinv * Bemp(core_id);
+            G.Aref(core_id) *= delta(prime(l), l);
+            auto original_link_name = l.name();
             ITensor U, S;
-            V[core_id - 1] = ITensor(links(core_id - 1));
-            svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightTags=", original_link_tags});
+            V[core_id - 1] = ITensor(l);
+            svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightIndexName=", original_link_name});
             }
         }
     PrintData(linkInds(G));
@@ -222,16 +224,16 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
         {
         if(core_id == 1)
             {
-            G.ref(1) *= V[1];
+            G.Aref(1) *= V[1];
             }
         else if(core_id == d)
             {
-            G.ref(d) *= V[d - 1];
+            G.Aref(d) *= V[d - 1];
             }
         else
             {
-            G.ref(core_id) *= V[core_id - 1];
-            G.ref(core_id) *= V[core_id];
+            G.Aref(core_id) *= V[core_id - 1];
+            G.Aref(core_id) *= V[core_id];
             }
         }
     PrintData(linkInds(G));
@@ -243,7 +245,8 @@ MPS
 createTTCoeff(int n, int d, int r)
     {
     auto sites = SiteSet(d, n);
-    auto coeff = randomMPS(sites, r);
+    // auto coeff = randomMPS(sites, r);
+    MPS coeff(sites);
     Real alpha = 0.05;
     for(auto i : range1(d))
         {
@@ -252,14 +255,14 @@ createTTCoeff(int n, int d, int r)
         std::vector<Real> Avec(n, alpha);
         Avec[0] = 1.0;
         auto A = diagITensor(Avec, s, sp);
-        coeff.ref(i) *= A;
-        coeff.ref(i).noPrime();
+        coeff.Aref(i) *= A;
+        coeff.Aref(i) *= delta(s, sp);
         }
     return coeff;
     }
 
 std::pair<std::vector<ITensor>, IndexSet>
-intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, IndexSet const& is)
+intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real>> const& samples, SiteSet const& is)
     {
     int N = samples.size();
     int d = samples[0].size();
@@ -288,7 +291,7 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
     int r = dim(links(1));
     auto L = coeff;
 
-    for(auto i : range1(d)) L.ref(i) *= M[i - 1];
+    for(auto i : range1(d)) L.Aref(i) *= M[i - 1];
 
     std::vector<ITensor> envi_L(d);
     envi_L[1] = L(1) * delta(is(1), is(2));
@@ -335,15 +338,15 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
         {
         if(core_id == 1)
             {
-            B.ref(1) = envi_R[0] * M[0];
+            B.Aref(1) = envi_R[0] * M[0];
             }
         else if(core_id == d)
             {
-            B.ref(d) = envi_L[d - 1] * M[d - 1];
+            B.Aref(d) = envi_L[d - 1] * M[d - 1];
             }
         else
             {
-            B.ref(core_id) = ITensor(links(core_id - 1), is(core_id), links(core_id));
+            B.Aref(core_id) = ITensor(links(core_id - 1), is(core_id), links(core_id));
             for(auto i : range1(r))
                 {
                 for(auto j : range1(r))
@@ -352,11 +355,11 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, IndexSet const
                         {
                         Real Lelt = envi_L[core_id - 1].elt(is(core_id) = k, links(core_id - 1) = i);
                         Real Relt = envi_R[core_id - 1].elt(is(core_id) = k, links(core_id) = j);
-                        B.ref(core_id).set(links(core_id - 1) = i, is(core_id) = k, links(core_id) = j, Lelt * Relt);
+                        B.Aref(core_id).set(links(core_id - 1) = i, is(core_id) = k, links(core_id) = j, Lelt * Relt);
                         }
                     }
                 }
-            B.ref(core_id) *= M[core_id - 1];
+            B.Aref(core_id) *= M[core_id - 1];
             }
         }
     
