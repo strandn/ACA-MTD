@@ -170,10 +170,13 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
     assert(basis.size() > 0);
     int nb = basis[0].nbasis();
     auto coeff = createTTCoeff(nb, d, rc);
+    // auto coeff = result0.first;
+    // PrintData(coeff);
+    // PrintData(result0.second);
     auto result1 = intBasisSample(basis, samples, coeff.sites());
     auto M = result1.first;
     auto is = result1.second;
-    MPS G(d);
+    MPS G(coeff.sites());
 
     auto result2 = formTensorMoment(M, coeff, is);
     auto Bemp = std::get<0>(result2);
@@ -218,9 +221,12 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
             V[core_id - 1] = ITensor(l);
             svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightIndexName=", original_link_name});
             }
+        // println(core_id);
+        // PrintData(V[core_id - 1]);
         }
     for(auto i : range1(d - 1)) print(linkInd(G, i), " ");
     println();
+    // PrintData(G);
 
     for(auto core_id : range1(d))
         {
@@ -240,6 +246,7 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
         }
     for(auto i : range1(d - 1)) print(linkInd(G, i), " ");
     println();
+    // PrintData(G);
 
     return G;
     }
@@ -249,25 +256,41 @@ createTTCoeff(int n, int d, int r)
     {
     SiteSet sites(d, n);
     // auto coeff = randomMPS(sites, r);
-    MPS coeff(d);
+    MPS coeff(sites);
     std::vector<Index> a(d - 1);
-    for(auto i : range1(d - 1)) a[i] = Index(nameint("a", i));
+    for(auto i : range1(d - 1)) a[i - 1] = Index(nameint("a", i), r);
     for(auto i : range1(d))
         {
         if(i == 1)
             {
-            coeff.Aref(1) = ITensor(sites(1), a[1]);
+            coeff.Aref(1) = ITensor(sites(1), a[0]);
+            // for(auto ii : range1(n))
+            //     {
+            //     for(auto jj : range1(r)) coeff.Aref(1).set(IndexVal(sites(1), ii), IndexVal(a[0], jj), 0.5);
+            //     }
             }
-        else if (i == d)
+        else if(i == d)
             {
-            coeff.Aref(i) = ITensor(dag(a[i - 1]), sites(i), a[i]);
+            coeff.Aref(d) = ITensor(dag(a[d - 2]), sites(d));
+            // for(auto ii : range1(r))
+            //     {
+            //     for(auto jj : range1(n)) coeff.Aref(d).set(IndexVal(a[d - 2], ii), IndexVal(sites(d), jj), 0.5);
+            //     }
             }
         else
             {
-            coeff.Aref(d) = ITensor(dag(a[d - 1]), sites(d));
+            coeff.Aref(i) = ITensor(dag(a[i - 2]), sites(i), a[i - 1]);
+            // for(auto ii : range1(r))
+            //     {
+            //     for(auto jj : range1(n))
+            //         {
+            //         for(auto kk : range1(r)) coeff.Aref(i).set(IndexVal(a[i - 2], ii), IndexVal(sites(i), jj), IndexVal(a[i - 1], kk), 0.5);
+            //         }
+            //     }
             }
         randomize(coeff.Aref(i));
         }
+    // PrintData(coeff);
     Real alpha = 0.05;
     for(auto i : range1(d))
         {
@@ -280,6 +303,7 @@ createTTCoeff(int n, int d, int r)
         // coeff.Aref(i) *= delta(s, sp);
         coeff.Aref(i).noprime();
         }
+    // PrintData(coeff);
     return coeff;
     }
 
@@ -290,22 +314,24 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
     int d = samples[0].size();
     int nb = basis[0].nbasis();
     SiteSet sites_new(d, N);
-    std::vector<ITensor> M;
-    std::vector<Index> is_new;
+    std::vector<ITensor> M(d);
+    // std::vector<Index> is_new;
     for(auto i : range1(d))
         {
-        M.push_back(ITensor(sites_new(i), is(i)));
-        is_new.push_back(sites_new(i));
+        // M.push_back(ITensor(sites_new(i), is(i)));
+        M[i - 1] = ITensor(sites_new(i), is(i));
         for(auto j : range1(N))
             {
             for(auto k : range1(nb))
                 {
                 Real basisval = pow(1.0 / N, 1.0 / d) * basis[i - 1](samples[j - 1][i - 1], k);
-                M.back().set(IndexVal(sites_new(i), j), IndexVal(is(i), k), basisval);
+                M[i - 1].set(IndexVal(sites_new(i), j), IndexVal(is(i), k), basisval);
                 }
             }
+        // println(i);
+        // PrintData(M[i - 1]);
         }
-    return std::make_pair(M, is_new);
+    return std::make_pair(M, sites_new);
     }
 
 std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>>
@@ -389,8 +415,12 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, SiteSet const&
                 }
             B.Aref(core_id) *= M[core_id - 1];
             }
+        // println(core_id);
+        // PrintData(envi_L[core_id - 1]);
+        // PrintData(envi_R[core_id - 1]);
         }
     
+    // PrintData(B);
     return std::make_tuple(B, envi_L, envi_R);
     }
 
