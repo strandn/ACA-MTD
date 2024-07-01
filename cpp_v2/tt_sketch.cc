@@ -170,9 +170,6 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
     assert(basis.size() > 0);
     int nb = basis[0].nbasis();
     auto coeff = createTTCoeff(nb, d, rc);
-    // auto coeff = result0.first;
-    // PrintData(coeff);
-    // PrintData(result0.second);
     auto result1 = intBasisSample(basis, samples, coeff.sites());
     auto M = result1.first;
     auto is = result1.second;
@@ -182,7 +179,6 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
     auto Bemp = std::get<0>(result2);
     auto envi_L = std::get<1>(result2);
     auto envi_R = std::get<2>(result2);
-    // auto links = linkInds(coeff);
     std::vector<ITensor> V(d);
     for(auto core_id : range1(d))
         {
@@ -214,19 +210,15 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
                     }
                 }
             G.Aref(core_id) = Pinv * Bemp.A(core_id);
-            // G.Aref(core_id) *= delta(prime(l), l);
             G.Aref(core_id).noprime();
             auto original_link_name = l.name();
             ITensor U, S;
             V[core_id - 1] = ITensor(l);
             svd(A, U, S, V[core_id - 1], {"Cutoff=", 1.0e-6, "RightIndexName=", original_link_name});
             }
-        // println(core_id);
-        // PrintData(V[core_id - 1]);
         }
     for(auto i : range1(d - 1)) print(linkInd(G, i), " ");
     println();
-    // PrintData(G);
 
     for(auto core_id : range1(d))
         {
@@ -246,7 +238,6 @@ paraSketch(std::vector<std::vector<Real>> const& samples, std::vector<BasisFunc>
         }
     for(auto i : range1(d - 1)) print(linkInd(G, i), " ");
     println();
-    // PrintData(G);
 
     return G;
     }
@@ -255,7 +246,6 @@ MPS
 createTTCoeff(int n, int d, int r)
     {
     SiteSet sites(d, n);
-    // auto coeff = randomMPS(sites, r);
     MPS coeff(sites);
     std::vector<Index> a(d - 1);
     for(auto i : range1(d - 1)) a[i - 1] = Index(nameint("a", i), r);
@@ -300,7 +290,6 @@ createTTCoeff(int n, int d, int r)
         Avec[0] = 1.0;
         auto A = diagTensor(Avec, s, sp);
         coeff.Aref(i) *= A;
-        // coeff.Aref(i) *= delta(s, sp);
         coeff.Aref(i).noprime();
         }
     // PrintData(coeff);
@@ -315,10 +304,8 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
     int nb = basis[0].nbasis();
     SiteSet sites_new(d, N);
     std::vector<ITensor> M(d);
-    // std::vector<Index> is_new;
     for(auto i : range1(d))
         {
-        // M.push_back(ITensor(sites_new(i), is(i)));
         M[i - 1] = ITensor(sites_new(i), is(i));
         for(auto j : range1(N))
             {
@@ -328,8 +315,6 @@ intBasisSample(std::vector<BasisFunc> const& basis, std::vector<std::vector<Real
                 M[i - 1].set(IndexVal(sites_new(i), j), IndexVal(is(i), k), basisval);
                 }
             }
-        // println(i);
-        // PrintData(M[i - 1]);
         }
     return std::make_pair(M, sites_new);
     }
@@ -339,7 +324,6 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, SiteSet const&
     {
     int d = M.size();
     int N = dim(is(1));
-    // auto links = linkInds(coeff);
     int r = dim(linkInd(coeff, 1));
     auto L = coeff;
 
@@ -415,12 +399,8 @@ formTensorMoment(std::vector<ITensor> const& M, MPS const& coeff, SiteSet const&
                 }
             B.Aref(core_id) *= M[core_id - 1];
             }
-        // println(core_id);
-        // PrintData(envi_L[core_id - 1]);
-        // PrintData(envi_R[core_id - 1]);
         }
     
-    // PrintData(B);
     return std::make_tuple(B, envi_L, envi_R);
     }
 
@@ -428,7 +408,6 @@ Real
 densEval(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements)
     {
     int d = elements.size();
-    // auto s = siteInds(G);
     std::vector<ITensor> basis_evals(d);
     for(auto i : range1(d))
         {
@@ -445,7 +424,6 @@ std::vector<Real>
 densGrad(MPS const& G, std::vector<BasisFunc> const& basis, std::vector<Real> const& elements)
     {
     int d = elements.size();
-    // auto s = siteInds(G);
     std::vector<Real> grad(d, 0.0);
     std::vector<ITensor> basis_evals(d), basisd_evals(d);
     for(auto i : range1(d))
