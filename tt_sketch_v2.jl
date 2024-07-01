@@ -105,6 +105,7 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
         # else
         #     coeff[i][:, :, :] = 0.5 * ones(r, n, r)
         # end
+        # println(norm(coeff[i]))
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
