@@ -6,5 +6,9 @@
 *.toml
 cpp/*.o
 cpp/.debug_objs/*
-test
-test-g
+cpp/test
+cpp/test-g
+cpp_v2/*.o
+cpp_v2/.debug_objs/*
+cpp_v2/test
+cpp_v2/test-g
