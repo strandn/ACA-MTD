@@ -1,4 +1,3 @@
-#include <iostream>
 #include "tt_sketch.h"
 using namespace std;
 using namespace itensor;

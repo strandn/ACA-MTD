@@ -1,8 +1,5 @@
-#include <cmath>
 #include <gsl/gsl_integration.h>
-#include <Eigen/Dense>
 #include <Eigen/QR>
-#include "itensor/util/print_macro.h"
 #include "tt_sketch.h"
 
 namespace itensor {
