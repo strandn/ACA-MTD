@@ -36,8 +36,8 @@ main()
     basis[2].setConv(true);
     cout << densEval(G, basis, { -0.9, -0.8, -0.6 }) << endl;
     cout << densEval(G, basis, { -0.95, -0.85, -0.65 }) << endl;
-    vector<Real> dens_grad1 = densGrad(G, basis, { -0.9, -0.8, -0.6 });
-    vector<Real> dens_grad2 = densGrad(G, basis, { -0.95, -0.85, -0.65 });
+    dens_grad1 = densGrad(G, basis, { -0.9, -0.8, -0.6 });
+    dens_grad2 = densGrad(G, basis, { -0.95, -0.85, -0.65 });
     cout << dens_grad1[0] << " " << dens_grad1[1] << " " << dens_grad1[2] << " " << endl;
     cout << dens_grad2[0] << " " << dens_grad2[1] << " " << dens_grad2[2] << " " << endl;
     }
