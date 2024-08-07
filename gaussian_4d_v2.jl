@@ -21,20 +21,6 @@ function V(r)
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
-# function fes(rho, rhomax, kT)
-# 	rho_adj = max(rho * 100 / rhomax, 1)
-# 	return -kT * log(rho_adj)
-# end
-
-# function Vbias(r, rholist, rhomaxlist, basislist, kT)
-# 	result = 0.0
-# 	for i in eachindex(rholist)
-#         rho = dens_eval(rholist[i], basislist[i], r)
-#         result -= fes(rho, rhomaxlist[i], kT)
-# 	end
-# 	return result
-# end
-
 function Vbias(r, rho, basis)
 	if rho == []
 		return 0.0
@@ -42,13 +28,11 @@ function Vbias(r, rho, basis)
 	return dens_eval(rho, basis, r)
 end
 
-# Vbias_shifted(r, rholist, rhomaxlist, basislist, kT, Vshift) = max(Vbias(r, rholist, rhomaxlist, basislist, kT) - Vshift, 0.0)
 Vbias_shifted(r, rho, basis, Vshift) = max(Vbias(r, rho, basis) - Vshift, 0.0)
 
 function Vtop(rho, basis, samples)
 	max = 0.0
 	for r in samples
-		# result = Vbias(r, rholist, rhomaxlist, basislist, kT)
 		result = Vbias(r, rho, basis)
 		if result > max
 			max = result
@@ -130,7 +114,7 @@ function sketch_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = nsamples * 1e6
+	steps = nsamples * 1000000
 	stride = 100
 	nbiasupdates = 15
 
@@ -144,17 +128,12 @@ function sketch_mtd()
 	sigma = sqrt(2 * kb * T / (gamma * dt))
 	normal_dist = Normal(0.0, sigma)
 
-	# rholist = []
-    # rhomaxlist = []
-	# basislist = []
-    # basisdlist = []
 	rho = []
 	convbasis = []
 	convbasisd = []
 	Vinc = 4.6 * kb * T
 	Vmax = 20 * kb * T
 	samples = []
-	weights = []
 	Vshift = 0.0
 
 	for count in 1:nbiasupdates
@@ -193,7 +172,6 @@ function sketch_mtd()
 			if i % stride == 0
 				Vbiass = Vbias_shifted([x1, x2, x3, x4], rho, convbasis, Vshift)
 				push!(traj, [t, x1, x2, x3, x4, Vbiass])
-				push!(weights, exp(Vbiass / (kb * T)))
 				push!(samples, [x1, x2, x3, x4])
 			end
 		end
@@ -208,15 +186,12 @@ function sketch_mtd()
 		println(domain_small)
         println("Forming TT...")
         flush(stdout)
-		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis)
 
-		# push!(rholist, G)
-		# update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
-		# push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))]))
 		if count == 1
 			convbasis, convbasisd = convolution(basis, domain, nbins, nbasis)
 		end
-		rhomax = maximum([dens_eval(G, convbasis, [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))])
+		rhomax = maximum([dens_eval(G, convbasis, [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:div(steps, stride)])
 		G *= Vinc / rhomax
 		rho = count == 1 ? G : update_sketch(rho, G)
 

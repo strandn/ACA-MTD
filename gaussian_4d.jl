@@ -4,7 +4,6 @@ using KernelDensity
 using ForwardDiff
 using Interpolations
 
-# include("tt_sketch.jl")
 include("tt_sketch_v2.jl")
 
 function V(r)
@@ -127,7 +126,7 @@ function sketch_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	steps = nsamples * 1e6
+	steps = nsamples * 1000000
 	stride = 100
 	nbiasupdates = 20
 
@@ -147,7 +146,6 @@ function sketch_mtd()
     basisdlist = []
 	Vmax = 20 * kb * T
 	samples = []
-	weights = []
 	Vshift = 0.0
 
 	for count in 1:nbiasupdates
@@ -186,11 +184,9 @@ function sketch_mtd()
 			if i % stride == 0
 				Vbiass = Vbias_shifted([x1, x2, x3, x4], rholist, rhomaxlist, basislist, kb * T, Vshift)
 				push!(traj, [t, x1, x2, x3, x4, Vbiass])
-				push!(weights, exp(Vbiass / (kb * T)))
 				push!(samples, [x1, x2, x3, x4])
 			end
 		end
-		# open("data/colvar_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
 		open("data/colvar_$(count)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
 			for step in traj
 				write(file, "$(step[1]) $(step[2]) $(step[3]) $(step[4]) $(step[5]) $(step[6])\n")
@@ -202,12 +198,11 @@ function sketch_mtd()
 		println(domain_small)
         println("Forming TT...")
         flush(stdout)
-		# G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", r, rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
-		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis)
 
 		push!(rholist, G)
 		update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
-		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:Int64(div(steps, stride))]))
+		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:div(steps, stride)]))
 
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
@@ -227,7 +222,6 @@ function sketch_mtd()
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
 			kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
-			# open("data/kde_$(i)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
 				for x in ranges[i]
 					write(file, "$(pdf(ik, x)) ")
@@ -243,7 +237,6 @@ function sketch_mtd()
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
-				# open("data/kde_$(i)$(j)_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]
 						for y in ranges[j]
@@ -259,10 +252,6 @@ end
 
 println(ARGS)
 flush(stdout)
-# r = parse(Int64, ARGS[1])
-# rc = parse(Int64, ARGS[2])
-# nbasis = parse(Int64, ARGS[3])
-# nsamples = parse(Int64, ARGS[4])
 rc = parse(Int64, ARGS[1])
 nbasis = parse(Int64, ARGS[2])
 nsamples = parse(Int64, ARGS[3])

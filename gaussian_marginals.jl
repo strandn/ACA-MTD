@@ -26,7 +26,6 @@ function gaussian_marginals()
 	flush(stdout)
 
 	nbins = 1000
-	# ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 
 	G = zeros(nbins)
 	rho_total = 0.0

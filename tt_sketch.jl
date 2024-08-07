@@ -105,17 +105,17 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     return coeff
 end
 
-function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sample_weight::Vector{Float64}, nb::Int64)
+function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, nb::Int64)
     N, d = size(samples)
     is_new = siteinds(size(samples, 1), d)
     M = Vector{ITensor}(undef, d)
     for i in 1:d
-        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        M[i] = ITensor((1 / N) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
     end
     return M, is_new
 end
 
-function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::Float64)
+function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
     d = length(M);
     N = size(M[1], 1);
     rs = linkdims(coeff)
@@ -165,7 +165,7 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
     return MPS(B), envi_L, envi_R
 end
 
-function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb::Int64, sample_weight::Vector{Float64})
+function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb::Int64)
     d = size(samples, 2)
     basis, basis_d = if basis_type == "fourier"
         ([b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = fourier_d(x, pos, domain[i]) for i in 1:d])
@@ -176,10 +176,10 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     end
 
     coeff = create_TT_coeff(nb, d, rc, alpha)
-    M, is = int_basis_sample(basis, samples, siteinds(coeff), sample_weight, nb)
+    M, is = int_basis_sample(basis, samples, siteinds(coeff), nb)
     G = Vector{ITensor}(undef, d)
 
-    Bemp, envi_L, envi_R = form_tensor_moment(M, coeff, is, sum(sample_weight))
+    Bemp, envi_L, envi_R = form_tensor_moment(M, coeff, is)
     V = Vector{ITensor}(undef, d)
     for core_id in 1:d
         if core_id == 1
@@ -243,14 +243,3 @@ function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
     end
     return grad
 end
-
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 4, 0.05, 21, [1.0, 1.0, 1.0])
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "gaussian", 2, 10, 0.05, 5, [1.0, 1.0, 1.0])
-# result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
-# println(result)
-# result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
-# println(result)
-# result = dens_grad(G, basis, basis_d, [-0.9, -0.8, -0.6])
-# println(result)
-# result = dens_grad(G, basis, basis_d, [-0.95, -0.85, -0.65])
-# println(result)

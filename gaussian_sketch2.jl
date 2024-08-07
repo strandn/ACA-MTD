@@ -62,8 +62,6 @@ function sketch_mtd()
 	dt = 1.0e-4
 	steps = 1e6
 	stride = 100
-	# steps = 10000
-	# stride = 10
 	nbiasupdates = 20
 
 	x1 = rand(Normal(-1.0, 0.1))
@@ -81,11 +79,7 @@ function sketch_mtd()
     basis = undef
     basisd = undef
 	Vmax = 35 * kb * T
-	# Vmax = Inf
-	# Vinc = 4.6 * kb * T
 	samples = []
-	# Vshift = 0.0
-	# numlast = Int64(div(steps, stride))
 
 	for count in 1:nbiasupdates
 		println("Vbias update $count...")
@@ -143,9 +137,8 @@ function sketch_mtd()
 		println("$(domain_cv_small[1][1]) $(domain_cv_small[1][2]) $(domain_cv_small[2][1]) $(domain_cv_small[2][2])")
         println("Forming TT...")
         flush(stdout)
-		rho, basis, basisd = para_sketch([s[i] for s in samples, i in 1:length(samples[1])], domain_cv_small, "gaussian", r, rc, 0.05, nbasis, ones(length(samples)))
+		rho, basis, basisd = para_sketch([s[i] for s in samples, i in 1:length(samples[1])], domain_cv_small, "gaussian", r, rc, 0.05, nbasis)
         
-        # rhomax = maximum([dens_eval(G, basis, samples) for i in 1:Int64(div(steps, stride))])
 		rhomax = maximum([dens_eval(rho, basis, s) for s in samples])
 		
 		rangex_small = LinRange(domain_cv_small[1][1], domain_cv_small[1][2], nbins)

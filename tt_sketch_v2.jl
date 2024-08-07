@@ -98,14 +98,6 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     sites = siteinds(n, d)
     coeff = randomMPS(sites; linkdims = r)
     for i in 1:d
-        # if i == 1
-        #     coeff[1][:, :] = 0.5 * ones(n, r)
-        # elseif i == d
-        #     coeff[d][:, :] = 0.5 * ones(r, n)
-        # else
-        #     coeff[i][:, :, :] = 0.5 * ones(r, n, r)
-        # end
-        # println(norm(coeff[i]))
         A = diagITensor(a, sites[i], sites[i]')
         A[1, 1] = 1
         coeff[i] *= A
@@ -114,17 +106,17 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     return coeff
 end
 
-function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, sample_weight::Vector{Float64}, nb::Int64)
+function int_basis_sample(basis, samples::Array{Float64, 2}, nb::Int64)
     N, d = size(samples)
     is_new = siteinds(size(samples, 1), d)
     M = Vector{ITensor}(undef, d)
     for i in 1:d
-        M[i] = ITensor((sample_weight / sum(sample_weight)) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
+        M[i] = ITensor((1 / N) .^ (1 / d) .* [basis[i](x, pos) for x in samples[:, i], pos in 1:nb], is_new[i], is[i])
     end
     return M, is_new
 end
 
-function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::Float64)
+function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
     d = length(M);
     N = size(M[1], 1);
     rs = linkdims(coeff)
@@ -174,7 +166,7 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet, norm::
     return MPS(B), envi_L, envi_R
 end
 
-function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, rc::Int64, alpha::Float64, nb::Int64, sample_weight::Vector{Float64})
+function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, rc::Int64, alpha::Float64, nb::Int64)
     d = size(samples, 2)
     basis, basis_d = if basis_type == "fourier"
         ([b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = fourier_d(x, pos, domain[i]) for i in 1:d])
@@ -185,10 +177,10 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     end
 
     coeff = create_TT_coeff(nb, d, rc, alpha)
-    M, is = int_basis_sample(basis, samples, siteinds(coeff), sample_weight, nb)
+    M, is = int_basis_sample(basis, samples, siteinds(coeff), nb)
     G = Vector{ITensor}(undef, d)
 
-    Bemp, envi_L, envi_R = form_tensor_moment(M, coeff, is, sum(sample_weight))
+    Bemp, envi_L, envi_R = form_tensor_moment(M, coeff, is)
     V = Vector{ITensor}(undef, d)
     for core_id in 1:d
         if core_id == 1
@@ -264,69 +256,3 @@ function update_sketch(G::MPS, Ginc::MPS)
     println(linkinds(Gnew))
     return Gnew
 end
-
-# G, basis, basis_d = para_sketch([-0.9 -0.8 -0.6; -0.3 0.1 0.6; -0.4 0.3 -0.7], [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)], "fourier", 5, 0.05, 10, [1.0, 1.0, 1.0])
-
-# result = dens_eval(G, basis, [-0.9, -0.8, -0.6])
-# println(result)
-# result = dens_eval(G, basis, [-0.95, -0.85, -0.65])
-# println(result)
-# result = dens_grad(G, basis, basis_d, [-0.9, -0.8, -0.6])
-# println(result)
-# result = dens_grad(G, basis, basis_d, [-0.95, -0.85, -0.65])
-# println(result)
-
-# domain = [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)]
-# nbins = 100
-# nbasis = 10
-# ranges = [LinRange(d[1], d[2], nbins) for d in domain]
-# gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
-# gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
-# for j in 1:nbasis
-#     for k in 1:nbins
-#         w = 0.02
-#         sigma = w * (domain[1][2] - domain[1][1])
-#         s = domain[1][1] + (k - 1) * (domain[1][2] - domain[1][1]) / (nbins - 1)
-#         f(x) = basis[1](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-#         df(x) = basis[1](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-#         gridpoints[j][k] = quadgk(f, domain[1]...)[1]
-#         gridpoints_d[j][k] = quadgk(df, domain[1]...)[1]
-#     end
-# end
-# vec = [
-#     linear_interpolation(ranges[1], [gridpoints[j][k] for k in 1:nbins])
-#     for j in 1:nbasis
-# ]
-# conv(x, pos) = vec[pos](x)
-# vec_d = [
-#     linear_interpolation(ranges[1], [gridpoints_d[j][k] for k in 1:nbins])
-#     for j in 1:nbasis
-# ]
-# conv_d(x, pos) = vec_d[pos](x)
-
-# for j in 1:nbasis
-#     for k in 1:nbins
-#         print("$(gridpoints[j][k]) ")
-#     end
-#     println()
-# end
-# println()
-# for j in 1:nbasis
-#     for k in 1:nbins
-#         print("$(gridpoints_d[j][k]) ")
-#     end
-#     println()
-# end
-# println()
-# for j in 1:nbasis
-#     println("$(conv(0.12345, j)) $(conv_d(0.12345, j))")
-# end
-
-# result = dens_eval(G, [conv, conv, conv], [-0.9, -0.8, -0.6])
-# println(result)
-# result = dens_eval(G, [conv, conv, conv], [-0.95, -0.85, -0.65])
-# println(result)
-# result = dens_grad(G, [conv, conv, conv], [conv_d, conv_d, conv_d], [-0.9, -0.8, -0.6])
-# println(result)
-# result = dens_grad(G, [conv, conv, conv], [conv_d, conv_d, conv_d], [-0.95, -0.85, -0.65])
-# println(result)

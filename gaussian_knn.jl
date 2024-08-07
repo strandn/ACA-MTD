@@ -262,12 +262,12 @@ function aca_mtd()
 	T = 1.0
 	fc = 1.0
 	dt = 1.0e-4
-	steps = 1e6
+	steps = 1000000
 	stride = 100
 	nbiasupdates = 20
 
-	xlist = fill(0.0, Int64(div(steps, stride)))
-	ylist = fill(0.0, Int64(div(steps, stride)))
+	xlist = fill(0.0, div(steps, stride))
+	ylist = fill(0.0, div(steps, stride))
 
 	x1 = rand(Normal(-1.0, 0.1))
 	x2 = rand(Normal(-1.0, 0.1))
@@ -280,9 +280,7 @@ function aca_mtd()
 	normal_dist = Normal(0.0, sigma)
 
 	rholist = []
-	# Vmax = 20 * kb * T
 	Vmax = Inf
-	# Vinc = 4.6 * kb * T
 	samples = []
 	Vshift = 0.0
 	outer = []
@@ -338,7 +336,7 @@ function aca_mtd()
 				if i % stride == 0
 					s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
 					push!(traj, [t, s[1], s[2], Vbias_shifted(s, rholist, outer, inner, Vshift, rhomaxlist, kb * T)])
-					xlist[Int64(div(i, stride))], ylist[Int64(div(i, stride))] = s[1], s[2]
+					xlist[div(i, stride)], ylist[div(i, stride)] = s[1], s[2]
 					push!(samples, s)
 				end
 			end
@@ -365,11 +363,7 @@ function aca_mtd()
 			return k_neighbors * gamma(D / 2 + 1) / (N * pi ^ (D / 2) * dists[k_neighbors] ^ D)
 		end
 		
-		# fhat(x, y) = -kb * T * log(abs(rhohat(x, y, data)))
-		# fmin = minimum([fhat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
-		# fhat_adj(x, y) = min((fhat(x, y) - fmin) - Vinc, 0)
-		# rhomax = maximum([rhohat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))])
-		push!(rhomaxlist, maximum([rhohat(xlist[i], ylist[i]) for i in 1:Int64(div(steps, stride))]))
+		push!(rhomaxlist, maximum([rhohat(xlist[i], ylist[i]) for i in 1:div(steps, stride)]))
 
 		rangex_small = LinRange(minimum(xlist), maximum(xlist), nbins)
 		rangey_small = LinRange(minimum(ylist), maximum(ylist), nbins)
@@ -387,7 +381,6 @@ function aca_mtd()
 		end
 		
 		domain_cv_small = ((minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist)))
-		# F = ResFunc(fhat_adj, domain_cv_small, 0.1)
 		F = ResFunc(rhohat, domain_cv_small, 1.0e-3)
 		if mpi_rank == 0
 			println("Target rank $rank")
@@ -401,7 +394,6 @@ function aca_mtd()
 			println()
 			flush(stdout)
 
-			# rhomax = maximum([compute_func(F, [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))])
 			open("data/dF_$(count)_$(rank)_$(k_neighbors).txt", "w") do file
 				for x in rangex_small
 					for y in rangey_small
@@ -451,7 +443,6 @@ if mpi_rank == 0
 	println(ARGS)
 	flush(stdout)
 end
-# jobid = if length(ARGS) > 0 parse(Int64, ARGS[1]) else 0 end
 rank = parse(Int64, ARGS[1])
 k_neighbors = parse(Int64, ARGS[2])
 aca_mtd()

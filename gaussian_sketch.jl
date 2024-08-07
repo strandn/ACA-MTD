@@ -124,11 +124,8 @@ function sketch_mtd()
 	T = 1.0
 	gamma = 1.0
 	dt = 1.0e-4
-	# steps = 2e6
-	steps = nsamples * 1e6
+	steps = nsamples * 1000000
 	stride = 100
-	# steps = 10000
-	# stride = 10
 	nbiasupdates = 20
 
 	x1 = rand(Normal(-1.0, 0.1))
@@ -155,7 +152,6 @@ function sketch_mtd()
 		t = 0.0
 
 		traj = []
-		weights = []
 		for i in 1:steps
 			grad = grad_V([x1, x2, x3, x4], rholist, rhomaxlist, basislist, basisdlist, kb * T, Vshift)
 
@@ -194,7 +190,6 @@ function sketch_mtd()
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
 				Vbiass = Vbias_shifted(s, rholist, rhomaxlist, basislist, kb * T, Vshift)
 				push!(traj, [t, s[1], s[2], Vbiass])
-				push!(weights, exp(Vbiass / (kb * T)))
 				push!(samples, s)
 			end
 		end
@@ -210,11 +205,11 @@ function sketch_mtd()
         println("Forming TT...")
         flush(stdout)
         domain_cv_small = [(minimum(xlist), maximum(xlist)), (minimum(ylist), maximum(ylist))]
-		G, basis, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, ones(Int64(div(steps, stride))))
+		G, basis, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis)
 
 		push!(rholist, G)
 		update_conv(basis, basislist, basisdlist, domain_cv_full, nbins, nbasis)
-		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[i], ylist[i]]) for i in 1:Int64(div(steps, stride))]))
+		push!(rhomaxlist, maximum([dens_eval(G, last(basislist), [xlist[i], ylist[i]]) for i in 1:div(steps, stride)]))
 		
 		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
 		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
@@ -250,30 +245,6 @@ function sketch_mtd()
                 write(file, "\n")
             end
         end
-
-		# println("Forming reweighted TT...")
-        # flush(stdout)
-		# Grw, basisrw, _ = para_sketch(hcat(xlist, ylist), domain_cv_small, "fourier", r, rc, 0.2, nbasis, weights / sum(weights))
-
-		# open("data/ttderw_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
-        #     for x in rangex
-        #         for y in rangey
-        #             write(file, "$(dens_eval(Grw, basisrw, [x, y])) ")
-        #         end
-        #         write(file, "\n")
-        #     end
-        # end
-
-		# kde_result = kde(hcat(xlist, ylist), npoints = (nbins, nbins), weights = weights / sum(weights))
-		# ik = InterpKDE(kde_result)
-		# open("data/kderw_$(count)_$(r)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
-        #     for x in rangex_small
-        #         for y in rangey_small
-        #             write(file, "$(pdf(ik, x, y)) ")
-        #         end
-        #         write(file, "\n")
-        #     end
-        # end
 
 		Vpeak = Vtop(rholist, rhomaxlist, basislist, kb * T, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
