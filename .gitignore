@@ -5,6 +5,7 @@
 *.xlsx
 *.toml
 *.pdf
+.vscode
 cpp/*.o
 cpp/.debug_objs/*
 cpp/test
