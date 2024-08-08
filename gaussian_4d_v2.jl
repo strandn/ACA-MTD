@@ -56,8 +56,8 @@ function convolution(basis, domain, nbins, nbasis)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				gridpoints[j][k] = quadgk(f, domain[i]...)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i]...)[1]
+				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
 			end
 		end
 		vec = [
@@ -97,7 +97,7 @@ function gradtop(rho, basis, basisd, samples, Vshift)
 	dim = length(samples[1])
 	max = zeros(dim)
 	for r in samples
-		result = grad_V(r, rho, basis, basisd, Vshift)
+		result = dVbias(r, rho, basis, basisd, Vshift)
 		for i in 1:dim
 			if result[i] > abs(max[i])
 				max[i] = abs(result[i])
@@ -109,7 +109,7 @@ end
 
 function sketch_mtd()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
-	nbins = 100
+	nbins = 1000
 
 	T = 1.0
 	gamma = 1.0
@@ -134,6 +134,7 @@ function sketch_mtd()
 	Vinc = 4.6 * kb * T
 	Vmax = 20 * kb * T
 	samples = []
+	weights = []
 	Vshift = 0.0
 
 	for count in 1:nbiasupdates
@@ -150,17 +151,10 @@ function sketch_mtd()
 			v3 = -(grad[3] / gamma) + rand(normal_dist)
 			v4 = -(grad[4] / gamma) + rand(normal_dist)
 
-			old = [x1, x2, x3, x4]
-
 			x1 += v1 * dt
 			x2 += v2 * dt
 			x3 += v3 * dt
 			x4 += v4 * dt
-
-			if isnan(x1) || isnan(x2) || isnan(x3) || isnan(x4)
-				println("$old $grad")
-				exit(1)
-			end
 			
 			x1 = clamp(x1, domain[1][1], domain[1][2])
 			x2 = clamp(x2, domain[2][1], domain[2][2])
@@ -173,6 +167,7 @@ function sketch_mtd()
 				Vbiass = Vbias_shifted([x1, x2, x3, x4], rho, convbasis, Vshift)
 				push!(traj, [t, x1, x2, x3, x4, Vbiass])
 				push!(samples, [x1, x2, x3, x4])
+				push!(weights, exp(Vbiass / (kb * T)))
 			end
 		end
 		open("data/colvar_$(count)_$(rc)_$(nbasis)_$(nsamples).out", "w") do file
@@ -186,7 +181,7 @@ function sketch_mtd()
 		println(domain_small)
         println("Forming TT...")
         flush(stdout)
-		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_small, "fourier", rc, 0.05, nbasis)
+		G, basis, _ = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain, "fourier", rc, 0.05, nbasis)
 
 		if count == 1
 			convbasis, convbasisd = convolution(basis, domain, nbins, nbasis)
@@ -207,11 +202,11 @@ function sketch_mtd()
 		println()
 		flush(stdout)
 
-		nbins = 1000
-		ranges = [LinRange(d[1], d[2], nbins) for d in domain]
+		gridbins = 1000
+		ranges = [LinRange(d[1], d[2], gridbins) for d in domain]
 		for i in 1:4
 			bw = 0.01 .* (domain[i][2] - domain[i][1])
-			kde_result = kde([step[i] for step in samples], npoints = nbins, weights = weights / sum(weights), bandwidth = bw)
+			kde_result = kde([step[i] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
 			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 				for x in ranges[i]
@@ -221,12 +216,12 @@ function sketch_mtd()
 			end
 		end
 
-		nbins = 100
-		ranges = [LinRange(d[1], d[2], nbins) for d in domain]
+		gridbins = 100
+		ranges = [LinRange(d[1], d[2], gridbins) for d in domain]
 		for i in 1:4
 			for j in i+1:4
 				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
-				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (nbins, nbins), weights = weights / sum(weights), bandwidth = bw)
+				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
 				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]

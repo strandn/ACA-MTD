@@ -106,7 +106,7 @@ function create_TT_coeff(n::Int64, d::Int64, r::Int64, a::Float64)
     return coeff
 end
 
-function int_basis_sample(basis, samples::Array{Float64, 2}, nb::Int64)
+function int_basis_sample(basis, samples::Array{Float64, 2}, is::IndexSet, nb::Int64)
     N, d = size(samples)
     is_new = siteinds(size(samples, 1), d)
     M = Vector{ITensor}(undef, d)
@@ -168,12 +168,12 @@ end
 
 function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, rc::Int64, alpha::Float64, nb::Int64)
     d = size(samples, 2)
-    basis, basis_d = if basis_type == "fourier"
-        ([b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = fourier_d(x, pos, domain[i]) for i in 1:d])
+    basis = if basis_type == "fourier"
+        [b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d]
     elseif basis_type == "poly"
-        ([b(x, pos) = legendre_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = legendre_d(x, pos, domain[i]) for i in 1:d])
+        [b(x, pos) = legendre_basis(x, pos, domain[i]) for i in 1:d]
     elseif basis_type == "gaussian"
-        ([b(x, pos) = gaussian_basis(x, pos, domain[i], nb) for i in 1:d], [db(x, pos) = gaussian_d(x, pos, domain[i], nb) for i in 1:d])
+        [b(x, pos) = gaussian_basis(x, pos, domain[i], nb) for i in 1:d]
     end
 
     coeff = create_TT_coeff(nb, d, rc, alpha)
@@ -218,7 +218,20 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
     end
     println(linkinds(MPS(G)))
 
-    return MPS(G), basis, basis_d
+    return MPS(G)
+end
+
+function get_basis(domain::Vector{Tuple{Float64, Float64}}, basis_type::String, nb::Int64)
+    d = length(domain)
+    basis, basis_d = if basis_type == "fourier"
+        ([b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = fourier_d(x, pos, domain[i]) for i in 1:d])
+    elseif basis_type == "poly"
+        ([b(x, pos) = legendre_basis(x, pos, domain[i]) for i in 1:d], [db(x, pos) = legendre_d(x, pos, domain[i]) for i in 1:d])
+    elseif basis_type == "gaussian"
+        ([b(x, pos) = gaussian_basis(x, pos, domain[i], nb) for i in 1:d], [db(x, pos) = gaussian_d(x, pos, domain[i], nb) for i in 1:d])
+    end
+
+    return basis, basis_d
 end
 
 function dens_eval(G::MPS, basis, elements::Vector{Float64})
