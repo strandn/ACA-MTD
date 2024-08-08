@@ -1,6 +1,6 @@
 #!/bin/bash
  
-#SBATCH --job-name=gaussian_sketch
+#SBATCH --job-name=gaussian_sumdens
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
  
