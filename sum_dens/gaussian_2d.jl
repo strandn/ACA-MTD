@@ -60,8 +60,9 @@ function get_conv(domain, basis_type, nbasis, nbins)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				L = (domain[i][2] - domain[i][1]) / 2
+				gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
 			end
 		end
 		vec = [
@@ -124,8 +125,8 @@ function sketch_mtd()
 	nbins = 100
 	basis_type = "fourier"
 	convbins = 1000
-	basis, basisd = get_conv(domain_cv, basis_type, nbasis, convbins)
-	# basis, basisd = get_basis(domain_cv, basis_type, nbasis)
+	# basis, basisd = get_conv(domain_cv, basis_type, nbasis, convbins)
+	basis, basisd = get_basis(domain_cv, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -145,8 +146,6 @@ function sketch_mtd()
 	normal_dist = Normal(0.0, sigma)
 
 	rho = []
-	# basis = []
-	# basisd = []
 	Vinc = 5 * kb * T
 	Vmax = 20 * kb * T
 	samples = []
@@ -172,10 +171,10 @@ function sketch_mtd()
 			x3 += v3 * dt
 			x4 += v4 * dt
 			
-			x1 = clamp(x1, domain[1][1], domain[1][2])
-			x2 = clamp(x2, domain[2][1], domain[2][2])
-			x3 = clamp(x3, domain[3][1], domain[3][2])
-			x4 = clamp(x4, domain[4][1], domain[4][2])
+			# x1 = clamp(x1, domain[1][1], domain[1][2])
+			# x2 = clamp(x2, domain[2][1], domain[2][2])
+			# x3 = clamp(x3, domain[3][1], domain[3][2])
+			# x4 = clamp(x4, domain[4][1], domain[4][2])
 
 			t += dt
 

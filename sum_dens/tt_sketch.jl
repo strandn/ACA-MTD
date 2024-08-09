@@ -5,9 +5,9 @@ using QuadGK
 using Interpolations
 
 function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
+    # if x < dom[1] || x > dom[2]
+    #     return 0.0
+    # end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     if pos == 1
@@ -20,9 +20,9 @@ function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
     
 function legendre_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
+    # if x < dom[1] || x > dom[2]
+    #     return 0.0
+    # end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     xadj = (x - shift) / L
@@ -36,9 +36,9 @@ function legendre_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
 
 function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int64)
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
+    # if x < dom[1] || x > dom[2]
+    #     return 0.0
+    # end
     w = 1.0
     dx = (dom[2] - dom[1]) / (n - 1)
     centers = LinRange(dom[1], dom[2], n + 1)
@@ -50,9 +50,9 @@ function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n:
 end
 
 function fourier_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
+    # if x < dom[1] || x > dom[2]
+    #     return 0.0
+    # end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     if pos == 1
@@ -65,9 +65,9 @@ function fourier_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
     
 function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
+    # if x < dom[1] || x > dom[2]
+    #     return 0.0
+    # end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     xadj = (x - shift) / L
@@ -81,9 +81,9 @@ function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
 
 function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int64)
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
+    # if x < dom[1] || x > dom[2]
+    #     return 0.0
+    # end
     w = 1.0
     dx = (dom[2] - dom[1]) / (n - 1)
     centers = LinRange(dom[1], dom[2], n + 1)

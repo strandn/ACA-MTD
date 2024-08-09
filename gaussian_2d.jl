@@ -51,40 +51,6 @@ function Vtop(rholist, rhomaxlist, basis, kT, samples)
 	return max
 end
 
-# function update_conv(basis, basislist, basisdlist, domain, nbins, nbasis)
-# 	order = length(basis)
-# 	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
-# 	push!(basislist, [])
-# 	push!(basisdlist, [])
-# 	for i in 1:order
-# 		gridpoints = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
-# 		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
-# 		for j in 1:nbasis
-# 			for k in 1:nbins
-# 				w = 0.02
-# 				sigma = w * (domain[i][2] - domain[i][1])
-# 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
-# 				f(x) = basis[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-# 				df(x) = basis[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-# 				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
-# 				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
-# 			end
-# 		end
-# 		vec = [
-# 			linear_interpolation(ranges[i], [gridpoints[j][k] for k in 1:nbins])
-# 			for j in 1:nbasis
-# 		]
-# 		conv(x, pos) = vec[pos](x)
-# 		push!(last(basislist), conv)
-# 		vec_d = [
-# 			linear_interpolation(ranges[i], [gridpoints_d[j][k] for k in 1:nbins])
-# 			for j in 1:nbasis
-# 		]
-# 		conv_d(x, pos) = vec_d[pos](x)
-# 		push!(last(basisdlist), conv_d)
-# 	end
-# end
-
 function get_conv(domain, basis_type, nbasis, nbins)
 	basis_original, _ = get_basis(domain, basis_type, nbasis)
 	order = length(basis_original)
@@ -101,8 +67,9 @@ function get_conv(domain, basis_type, nbasis, nbins)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				L = (domain[i][2] - domain[i][1]) / 2
+				gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
 			end
 		end
 		vec = [
@@ -192,8 +159,6 @@ function sketch_mtd()
 
 	rholist = []
     rhomaxlist = []
-	# basislist = []
-    # basisdlist = []
 	Vmax = 20 * kb * T
 	samples = []
 	weights = []
@@ -218,10 +183,10 @@ function sketch_mtd()
 			x3 += v3 * dt
 			x4 += v4 * dt
 			
-			x1 = clamp(x1, domain[1][1], domain[1][2])
-			x2 = clamp(x2, domain[2][1], domain[2][2])
-			x3 = clamp(x3, domain[3][1], domain[3][2])
-			x4 = clamp(x4, domain[4][1], domain[4][2])
+			# x1 = clamp(x1, domain[1][1], domain[1][2])
+			# x2 = clamp(x2, domain[2][1], domain[2][2])
+			# x3 = clamp(x3, domain[3][1], domain[3][2])
+			# x4 = clamp(x4, domain[4][1], domain[4][2])
 
 			t += dt
 
@@ -247,7 +212,6 @@ function sketch_mtd()
 		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
 
 		push!(rholist, G)
-		# update_conv(basis, basislist, basisdlist, domain_cv, nbins, nbasis)
 		push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)]))
 
 		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
@@ -350,7 +314,4 @@ flush(stdout)
 rc = parse(Int64, ARGS[1])
 nbasis = parse(Int64, ARGS[2])
 nsamples = parse(Int64, ARGS[3])
-# rc = 20
-# nbasis = 20
-# nsamples = 1
 sketch_mtd()
