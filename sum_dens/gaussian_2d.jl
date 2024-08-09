@@ -28,17 +28,12 @@ function Vbias(s, rho, basis, domain)
 	if rho == []
 		return 0.0
 	end
-	for i in eachindex(s)
-		if s[i] < domain[i][1] || s[i] > domain[i][2]
-			return 0.0
-		end
-	end
-	return dens_eval(rho, basis, s)
+	return dens_eval(rho, basis, s, domain)
 end
 
 Vbias_shifted(s, rho, basis, domain, Vshift) = max(Vbias(s, rho, basis, domain) - Vshift, 0.0)
 
-function Vtop(rho, basis, samples, domain)
+function Vtop(rho, basis, domain, samples)
 	max = 0.0
 	for s in samples
 		result = Vbias(s, rho, basis, domain)
@@ -91,10 +86,10 @@ function dVbias(s, rho, basis, basisd, domain, Vshift)
 	if Vbias(s, rho, basis, domain) <= Vshift
 		return grad
 	end
-	return dens_grad(rho, basis, basisd, s)
+	return dens_grad(rho, basis, basisd, domain, s)
 end
 
-function grad_V(r, rho, basis, basisd, Vshift)
+function grad_V(r, rho, basis, basisd, domain, Vshift)
 	grad = ForwardDiff.gradient(V, r)
 	if rho == []
 		return grad
@@ -164,7 +159,7 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], rho, basis, basisd, Vshift)
+			grad = grad_V([x1, x2, x3, x4], rho, basis, basisd, domain_cv, Vshift)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -204,7 +199,7 @@ function sketch_mtd()
         flush(stdout)
 		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
 
-		rhomax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		rhomax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]], domain_cv) for i in 1:div(steps, stride)])
 		G *= Vinc / rhomax
 		rho = count == 1 ? G : update_sketch(rho, G)
 
@@ -219,14 +214,14 @@ function sketch_mtd()
             end
         end
 
-		Vpeak = Vtop(rho, basis, samples, domain_cv)
+		Vpeak = Vtop(rho, basis, domain_cv, samples)
 		Vshift = max(Vpeak - Vmax, 0.0)
 		println()
 		println("Vtop = $Vpeak Vshift = $Vshift")
 		println()
 		flush(stdout)
 
-		gradpeak = gradtop(rho, basis, basisd, samples, domain_cv, Vshift)
+		gradpeak = gradtop(rho, basis, basisd, domain_cv, samples, Vshift)
 		println("maxgrad = $gradpeak")
 		println()
 		flush(stdout)

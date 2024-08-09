@@ -31,13 +31,8 @@ end
 
 function Vbias(s, rholist, rhomaxlist, basis, domain, kT)
 	result = 0.0
-	for i in eachindex(s)
-		if s[i] < domain[i][1] || s[i] > domain[i][2]
-			return 0.0
-		end
-	end
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basis, s)
+        rho = dens_eval(rholist[i], basis, s, domain)
         result -= fes(rho, rhomaxlist[i], kT)
 	end
 	return result
@@ -99,9 +94,9 @@ function dVbias(s, rholist, rhomaxlist, basis, basisd, domain, kT, Vshift)
 		return grad
 	end
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basis, s)
+        rho = dens_eval(rholist[i], basis, domain, s)
         if rho * 100 / rhomaxlist[i] > 1
-            grad += dens_grad(rholist[i], basis, basisd, s) * kT / rho
+            grad += dens_grad(rholist[i], basis, basisd, domain, s) * kT / rho
         end
 	end
 	return grad
@@ -217,14 +212,14 @@ function sketch_mtd()
 		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
 
 		push!(rholist, G)
-		push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)]))
+		push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]], domain_cv) for i in 1:div(steps, stride)]))
 
 		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
 		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, basis, [x, y])) ")
+                    write(file, "$(dens_eval(G, basis, [x, y], domain_cv)) ")
                 end
                 write(file, "\n")
             end
@@ -233,7 +228,7 @@ function sketch_mtd()
 		open("data/dF_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(fes(dens_eval(G, basis, [x, y]), last(rhomaxlist), kb * T)) ")
+                    write(file, "$(fes(dens_eval(G, basis, [x, y], domain_cv), last(rhomaxlist), kb * T)) ")
                 end
                 write(file, "\n")
             end

@@ -234,9 +234,14 @@ function get_basis(domain::Vector{Tuple{Float64, Float64}}, basis_type::String, 
     return basis, basis_d
 end
 
-function dens_eval(G::MPS, basis, elements::Vector{Float64})
+function dens_eval(G::MPS, basis, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
     d = length(elements)
     s = siteinds(G)
+    for i in 1:d
+		if elements[i] < domain[i][1] || elements[i] > domain[i][2]
+			return 0.0
+		end
+	end
     result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
     for i in 2:d
         result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
@@ -244,10 +249,15 @@ function dens_eval(G::MPS, basis, elements::Vector{Float64})
     return result[]
 end
 
-function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64})
+function dens_grad(G::MPS, basis, basis_d, elements::Vector{Float64}, domain::Vector{Tuple{Float64, Float64}})
     d = length(elements)
     s = siteinds(G)
     grad = zeros(d)
+    for i in 1:d
+		if elements[i] < domain[i][1] || elements[i] > domain[i][2]
+			return grad
+		end
+	end
     for k in 1:d
         result = G[1] * ITensor((k == 1 ? basis_d : basis)[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
         for i in 2:d
