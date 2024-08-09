@@ -94,9 +94,9 @@ function dVbias(s, rholist, rhomaxlist, basis, basisd, domain, kT, Vshift)
 		return grad
 	end
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basis, domain, s)
+        rho = dens_eval(rholist[i], basis, s, domain)
         if rho * 100 / rhomaxlist[i] > 1
-            grad += dens_grad(rholist[i], basis, basisd, domain, s) * kT / rho
+            grad += dens_grad(rholist[i], basis, basisd, s, domain) * kT / rho
         end
 	end
 	return grad

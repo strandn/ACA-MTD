@@ -86,7 +86,7 @@ function dVbias(s, rho, basis, basisd, domain, Vshift)
 	if Vbias(s, rho, basis, domain) <= Vshift
 		return grad
 	end
-	return dens_grad(rho, basis, basisd, domain, s)
+	return dens_grad(rho, basis, basisd, s, domain)
 end
 
 function grad_V(r, rho, basis, basisd, domain, Vshift)
@@ -208,7 +208,7 @@ function sketch_mtd()
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, basis, [x, y])) ")
+                    write(file, "$(dens_eval(G, basis, [x, y], domain_cv)) ")
                 end
                 write(file, "\n")
             end
