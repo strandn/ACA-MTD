@@ -30,9 +30,14 @@ function fes(rho, rhomax, kT)
 end
 
 function Vbias(s, rholist, rhomaxlist, basis, domain, kT)
+	for i in eachindex(s)
+		if s[i] < domain[i][1] || s[i] > domain[i][2]
+			return 0.0
+		end
+	end
 	result = 0.0
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basis, s, domain)
+        rho = dens_eval(rholist[i], basis, s)
         result -= fes(rho, rhomaxlist[i], kT)
 	end
 	return result
@@ -67,9 +72,11 @@ function get_conv(domain, basis_type, nbasis, nbins)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				L = (domain[i][2] - domain[i][1]) / 2
-				gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				# L = (domain[i][2] - domain[i][1]) / 2
+				# gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
+				# gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
 			end
 		end
 		vec = [
@@ -94,9 +101,9 @@ function dVbias(s, rholist, rhomaxlist, basis, basisd, domain, kT, Vshift)
 		return grad
 	end
 	for i in eachindex(rholist)
-        rho = dens_eval(rholist[i], basis, s, domain)
+        rho = dens_eval(rholist[i], basis, s)
         if rho * 100 / rhomaxlist[i] > 1
-            grad += dens_grad(rholist[i], basis, basisd, s, domain) * kT / rho
+            grad += dens_grad(rholist[i], basis, basisd, s) * kT / rho
         end
 	end
 	return grad
@@ -135,10 +142,13 @@ end
 function sketch_mtd()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	domain_cv = [(-2.0, 2.0), (-2.0, 2.0)]
+	domain_full = [(-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)]
+	domain_cv_full = [(-3.0, 3.0), (-3.0, 3.0)]
 	nbins = 100
 	convbins = 1000
 	basis_type = "fourier"
-	basis, basisd = get_conv(domain_cv, basis_type, nbasis, convbins)
+	# basis, basisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
+	basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -183,10 +193,10 @@ function sketch_mtd()
 			x3 += v3 * dt
 			x4 += v4 * dt
 			
-			# x1 = clamp(x1, domain[1][1], domain[1][2])
-			# x2 = clamp(x2, domain[2][1], domain[2][2])
-			# x3 = clamp(x3, domain[3][1], domain[3][2])
-			# x4 = clamp(x4, domain[4][1], domain[4][2])
+			x1 = clamp(x1, domain_full[1][1], domain_full[1][2])
+			x2 = clamp(x2, domain_full[2][1], domain_full[2][2])
+			x3 = clamp(x3, domain_full[3][1], domain_full[3][2])
+			x4 = clamp(x4, domain_full[4][1], domain_full[4][2])
 
 			t += dt
 
@@ -209,17 +219,17 @@ function sketch_mtd()
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
         println("Forming TT...")
         flush(stdout)
-		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
+		G = para_sketch(hcat(xlist, ylist), domain_cv_full, basis_type, rc, 0.05, nbasis)
 
 		push!(rholist, G)
-		push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]], domain_cv) for i in 1:div(steps, stride)]))
+		push!(rhomaxlist, maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)]))
 
 		rangex = LinRange(domain_cv[1][1], domain_cv[1][2], nbins)
 		rangey = LinRange(domain_cv[2][1], domain_cv[2][2], nbins)
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, basis, [x, y], domain_cv)) ")
+                    write(file, "$(dens_eval(G, basis, [x, y])) ")
                 end
                 write(file, "\n")
             end
@@ -228,7 +238,7 @@ function sketch_mtd()
 		open("data/dF_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(fes(dens_eval(G, basis, [x, y], domain_cv), last(rhomaxlist), kb * T)) ")
+                    write(file, "$(fes(dens_eval(G, basis, [x, y]), last(rhomaxlist), kb * T)) ")
                 end
                 write(file, "\n")
             end

@@ -25,10 +25,15 @@ function V(r)
 end
 
 function Vbias(s, rho, basis, domain)
+	for i in eachindex(s)
+		if s[i] < domain[i][1] || s[i] > domain[i][2]
+			return 0.0
+		end
+	end
 	if rho == []
 		return 0.0
 	end
-	return dens_eval(rho, basis, s, domain)
+	return dens_eval(rho, basis, s)
 end
 
 Vbias_shifted(s, rho, basis, domain, Vshift) = max(Vbias(s, rho, basis, domain) - Vshift, 0.0)
@@ -60,9 +65,11 @@ function get_conv(domain, basis_type, nbasis, nbins)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				L = (domain[i][2] - domain[i][1]) / 2
-				gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				# L = (domain[i][2] - domain[i][1]) / 2
+				# gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
+				# gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
 			end
 		end
 		vec = [
@@ -86,7 +93,7 @@ function dVbias(s, rho, basis, basisd, domain, Vshift)
 	if Vbias(s, rho, basis, domain) <= Vshift
 		return grad
 	end
-	return dens_grad(rho, basis, basisd, s, domain)
+	return dens_grad(rho, basis, basisd, s)
 end
 
 function grad_V(r, rho, basis, basisd, domain, Vshift)
@@ -122,11 +129,13 @@ end
 function sketch_mtd()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	domain_cv = [(-2.0, 2.0), (-2.0, 2.0)]
+	domain_full = [(-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)]
+	domain_cv_full = [(-3.0, 3.0), (-3.0, 3.0)]
 	nbins = 100
 	basis_type = "fourier"
 	convbins = 1000
-	# basis, basisd = get_conv(domain_cv, basis_type, nbasis, convbins)
-	basis, basisd = get_basis(domain_cv, basis_type, nbasis)
+	# basis, basisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
+	basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -171,10 +180,10 @@ function sketch_mtd()
 			x3 += v3 * dt
 			x4 += v4 * dt
 			
-			# x1 = clamp(x1, domain[1][1], domain[1][2])
-			# x2 = clamp(x2, domain[2][1], domain[2][2])
-			# x3 = clamp(x3, domain[3][1], domain[3][2])
-			# x4 = clamp(x4, domain[4][1], domain[4][2])
+			x1 = clamp(x1, domain_full[1][1], domain_full[1][2])
+			x2 = clamp(x2, domain_full[2][1], domain_full[2][2])
+			x3 = clamp(x3, domain_full[3][1], domain_full[3][2])
+			x4 = clamp(x4, domain_full[4][1], domain_full[4][2])
 
 			t += dt
 
@@ -197,9 +206,9 @@ function sketch_mtd()
 		println("$(minimum(xlist)) $(maximum(xlist)) $(minimum(ylist)) $(maximum(ylist))")
         println("Forming TT...")
         flush(stdout)
-		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
+		G = para_sketch(hcat(xlist, ylist), domain_cv_full, basis_type, rc, 0.05, nbasis)
 
-		rhomax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]], domain_cv) for i in 1:div(steps, stride)])
+		rhomax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= Vinc / rhomax
 		rho = count == 1 ? G : update_sketch(rho, G)
 
@@ -208,7 +217,7 @@ function sketch_mtd()
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, basis, [x, y], domain_cv)) ")
+                    write(file, "$(dens_eval(G, basis, [x, y])) ")
                 end
                 write(file, "\n")
             end
