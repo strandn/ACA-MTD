@@ -147,8 +147,8 @@ function sketch_mtd()
 	nbins = 100
 	convbins = 1000
 	basis_type = "fourier"
-	# basis, basisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
-	basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
+	basis, basisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
+	# basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
