@@ -265,7 +265,7 @@ function update_sketch(G::MPS, Ginc::MPS)
         Ginc[i] *= delta(sites_inc[i], sites[i])
     end
     Gnew = add(G, Ginc)
-    truncate!(Gnew; cutoff = 1.0e-8)
+    truncate!(Gnew; cutoff = 1.0e-6)
     println(linkinds(Gnew))
     return Gnew
 end
