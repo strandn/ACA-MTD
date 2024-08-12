@@ -156,7 +156,7 @@ function sketch_mtd()
 
 	rho = []
 	# Vinc = 5 * kb * T
-	Vinc = 3 * kb * T
+	Vinc = 4 * kb * T
 	Vmax = 20 * kb * T
 	samples = []
 	weights = []
