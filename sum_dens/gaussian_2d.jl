@@ -155,7 +155,8 @@ function sketch_mtd()
 	normal_dist = Normal(0.0, sigma)
 
 	rho = []
-	Vinc = 5 * kb * T
+	# Vinc = 5 * kb * T
+	Vinc = 3 * kb * T
 	Vmax = 20 * kb * T
 	samples = []
 	weights = []
@@ -209,13 +210,14 @@ function sketch_mtd()
 		G = para_sketch(hcat(xlist, ylist), domain_cv_full, basis_type, rc, 0.05, nbasis)
 
 		# rhomax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
-		rholist = []
-		for i in 1:div(steps, stride)
-			if xlist[i] > domain_cv[1][1] && xlist[i] < domain_cv[1][2] && ylist[i] > domain_cv[2][1] && ylist[i] < domain_cv[2][2]
-				push!(rholist, dens_eval(G, basis, [xlist[i], ylist[i]]))
-			end
-		end
-		rhomax = maximum(rholist)
+		# rholist = []
+		# for i in 1:div(steps, stride)
+		# 	if xlist[i] > domain_cv[1][1] && xlist[i] < domain_cv[1][2] && ylist[i] > domain_cv[2][1] && ylist[i] < domain_cv[2][2]
+		# 		push!(rholist, dens_eval(G, basis, [xlist[i], ylist[i]]))
+		# 	end
+		# end
+		# rhomax = maximum(rholist)
+		rhomax = mean([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= Vinc / rhomax
 		rho = count == 1 ? G : update_sketch(rho, G)
 
