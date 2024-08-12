@@ -155,8 +155,8 @@ function sketch_mtd()
 	normal_dist = Normal(0.0, sigma)
 
 	rho = []
-	# Vinc = 5 * kb * T
-	Vinc = 4 * kb * T
+	Vinc = 5 * kb * T
+	# Vinc = 4 * kb * T
 	Vmax = 20 * kb * T
 	samples = []
 	weights = []
