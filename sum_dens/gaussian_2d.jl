@@ -216,8 +216,8 @@ function sketch_mtd()
 		# 		push!(rholist, dens_eval(G, basis, [xlist[i], ylist[i]]))
 		# 	end
 		# end
-		rhomax = maximum(rholist)
-		rhomax = mean([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		# rhomax = maximum(rholist)
+		# rhomax = mean([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= Vinc / rhomax
 		rho = count == 1 ? G : update_sketch(rho, G)
 
