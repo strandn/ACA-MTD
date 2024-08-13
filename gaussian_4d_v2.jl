@@ -115,7 +115,7 @@ end
 
 function sketch_mtd()
 	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
-	domain_full = [[(-2.25, 2.25), (-2.25, 2.25), (-2.25, 2.25), (-2.25, 2.25)]]
+	domain_full = [(-2.25, 2.25), (-2.25, 2.25), (-2.25, 2.25), (-2.25, 2.25)]
 	basis_type = "fourier"
 	convbins = 1000
 	basis, basisd = get_conv(domain_full, basis_type, nbasis, convbins)
