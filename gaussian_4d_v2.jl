@@ -22,7 +22,7 @@ function V(r)
 end
 
 function Vbias(r, rho, basis, domain)
-	for i in eachindex(s)
+	for i in eachindex(r)
 		if r[i] < domain[i][1] || r[i] > domain[i][2]
 			return 0.0
 		end
@@ -57,7 +57,7 @@ function get_conv(domain, basis_type, nbasis, nbins)
 		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
 		for j in 1:nbasis
 			for k in 1:nbins
-				w = 0.01
+				w = 0.02
 				sigma = w * (domain[i][2] - domain[i][1])
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
