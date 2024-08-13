@@ -21,4 +21,5 @@ export JULIA_NUM_THREADS=4
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-julia gaussian_2d.jl $RC $NBASIS $NSAMPLES
+#julia gaussian_2d.jl $RC $NBASIS $NSAMPLES
+julia gaussian_4d_v2.jl $RC $NBASIS $NSAMPLES

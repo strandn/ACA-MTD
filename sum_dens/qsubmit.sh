@@ -12,7 +12,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=100G
+#SBATCH --mem=20G
  
 #SBATCH --export=NONE
 
