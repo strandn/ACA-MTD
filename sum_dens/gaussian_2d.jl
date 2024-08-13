@@ -65,8 +65,10 @@ function get_conv(domain, basis_type, nbasis, nbins)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				# gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				# gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+				gridpoints[j][k] = quadgk(f, domain[i]...)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i]...)[1]
 				# L = (domain[i][2] - domain[i][1]) / 2
 				# gridpoints[j][k] = quadgk(f, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
 				# gridpoints_d[j][k] = quadgk(df, domain[i][1] - L, domain[i][2] + L, atol = 1.0e-10, rtol = 1.0e-6)[1]
