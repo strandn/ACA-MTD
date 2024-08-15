@@ -90,10 +90,9 @@ function dens_eval(G::MPS, basis, elements::Vector{Float64})
     return result[]
 end
 
-function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Float64, Float64}}, samples)
+function update_rho(rho::MPS, G::MPS, basis, basisinc, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples)
     d = length(basis)
-    n = length(basis)
-    P(x...) = max(dens_eval(rho, basis, [elt for elt in x]), 0.01) * max(dens_eval(G, basisinc, [elt for elt in x]), 1)
+    P(x...) = max(dens_eval(rho, basis, [elt for elt in x]), 1.0e-6) * max(dens_eval(G, basisinc, [elt for elt in x]), 1)
     F = ResFunc(P, Tuple(domain), 1.0e-4)
 
     println()
@@ -101,13 +100,15 @@ function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Floa
     continuous_aca(F, fill(50, d - 1), samples)
 
     sites = siteinds(n, d)
-    l = Vector{Index}(undef, d)
+    l = Vector{Index}(undef, d - 1)
     psi = Vector{ITensor}(undef, d)
     ranks = [length(F.I[i]) for i in 2:d]
     print("Determinants ")
     for ii in eachindex(sites)
         s = sites[ii]
-        l[ii] = Index(ranks[ii], "Link,l=$ii")
+        if ii != d
+            l[ii] = Index(ranks[ii], "Link,l=$ii")
+        end
 
         if ii == 1
             psi[1] = ITensor(s, l[1]')
@@ -131,7 +132,7 @@ function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Floa
                 for ll in eachval(l[ii - 1])
                     for lr in eachval(l[ii])
                         f(x) = P([F.I[ii][ll]...; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
-                        psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[d]...)[1]
+                        psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]...)[1]
                     end
                 end
             end
@@ -144,7 +145,7 @@ function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Floa
                     Ahat[jj, kk] = P([F.I[ii + 1][jj]; F.J[ii + 1][kk]]...)
                 end
             end
-            print(" $(det(Ahat)) ")
+            print("$(det(Ahat)) ")
             psi[ii] *= ITensor(inv(Ahat), l[ii]', l[ii])
         end
     end

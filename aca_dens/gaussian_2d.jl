@@ -135,7 +135,7 @@ function sketch_mtd()
 	domain_cv_full = [(-2.25, 2.25), (-2.25, 2.25)]
 	nbins = 100
 	basis_type = "fourier"
-	convbins = 1000
+	# convbins = 1000
 	# basis, basisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
 	basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
 
@@ -222,7 +222,7 @@ function sketch_mtd()
 
 		Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
-		rho = count == 1 ? G : update_rho(rho, G, basis, basis, domain_cv_full, samples)
+		rho = count == 1 ? G : update_rho(rho, G, basis, basis, nbasis, domain_cv_full, samples)
 
 		Vpeak = Vtop(rho, basis, domain_cv, samples, kb * T)
 		Lambda = min(rhomax / exp(Vpeak / (kb * T)), 1)
