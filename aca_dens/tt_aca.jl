@@ -11,7 +11,7 @@ mutable struct ResFunc{T, N}
     cutoff::T
 
     function ResFunc(f, domain::NTuple{N, Tuple{T, T}}, cutoff::T) where {T, N}
-        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], fill(Inf, N - 1), cutoff)
+        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], cutoff)
     end
 end
 
@@ -40,7 +40,7 @@ function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
     push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
 end
 
-function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples::Vector{Vector{Float64}}) where {T, N}
+function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T, N}
     order = F.ndims
 
     F.pos = 0
@@ -90,12 +90,13 @@ function dens_eval(G::MPS, basis, elements::Vector{Float64})
     return result[]
 end
 
-function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Float64, Float64}}, samples::Vector{Vector{Float64}})
+function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Float64, Float64}}, samples)
     d = length(basis)
     n = length(basis)
     P(x...) = max(dens_eval(rho, basis, [elt for elt in x]), 0.01) * max(dens_eval(G, basisinc, [elt for elt in x]), 1)
-    F = ResFunc(P, Tuple(domain), 1.0e-10)
+    F = ResFunc(P, Tuple(domain), 1.0e-4)
 
+    println()
     println("Starting TT-cross ACA...")
     continuous_aca(F, fill(50, d - 1), samples)
 
@@ -128,9 +129,9 @@ function update_rho(rho::MPS, G::MPS, basis, basisinc, domain::Vector{Tuple{Floa
             psi[ii] = ITensor(s, l[ii - 1], l[ii]')
             for ss in eachval(s)
                 for ll in eachval(l[ii - 1])
-                    for lr in eachval(l[ii]')
+                    for lr in eachval(l[ii])
                         f(x) = P([F.I[ii][ll]...; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
-                        psi[d][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[d]...)[1]
+                        psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[d]...)[1]
                     end
                 end
             end
