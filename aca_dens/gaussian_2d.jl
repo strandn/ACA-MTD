@@ -64,8 +64,8 @@ function get_conv(domain, basis_type, nbasis, nbins)
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				gridpoints[j][k] = quadgk(f, domain[i]...)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i]...)[1]
+				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-12)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-12)[1]
 			end
 		end
 		vec = [
@@ -135,9 +135,9 @@ function sketch_mtd()
 	domain_cv_full = [(-2.25, 2.25), (-2.25, 2.25)]
 	nbins = 100
 	basis_type = "fourier"
-	# convbins = 1000
-	# basis, basisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
-	basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
+	convbins = 1000
+	convbasis, convbasisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
+	basis, _ = get_basis(domain_cv_full, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -168,7 +168,7 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], rho, basis, basisd, domain_cv, kb * T)
+			grad = grad_V([x1, x2, x3, x4], rho, convbasis, convbasisd, domain_cv, kb * T)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -189,7 +189,7 @@ function sketch_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				Vbiass = Vbias(s, rho, basis, domain_cv, kb * T)
+				Vbiass = Vbias(s, rho, convbasis, domain_cv, kb * T)
 				push!(traj, [t, s[1], s[2], Vbiass])
 				push!(samples, s)
 				push!(weights, exp(Vbiass / (kb * T)))
@@ -214,24 +214,24 @@ function sketch_mtd()
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, basis, [x, y])) ")
+                    write(file, "$(dens_eval(G, convbasis, [x, y])) ")
                 end
                 write(file, "\n")
             end
         end
 
-		Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
-		rho = count == 1 ? G : update_rho(rho, G, basis, basis, nbasis, domain_cv_full, samples)
+		rho = count == 1 ? G : update_rho(rho, G, basis, convbasis, nbasis, domain_cv_full, samples)
 
-		Vpeak = Vtop(rho, basis, domain_cv, samples, kb * T)
+		Vpeak = Vtop(rho, convbasis, domain_cv, samples, kb * T)
 		Lambda = min(rhomax / exp(Vpeak / (kb * T)), 1)
 		rho *= Lambda
 		println()
 		println("Vtop = $Vpeak Lambda = $Lambda")
 		flush(stdout)
 
-		gradpeak = gradtop(rho, basis, basisd, domain_cv, samples, kb * T)
+		gradpeak = gradtop(rho, convbasis, convbasisd, domain_cv, samples, kb * T)
 		println("maxgrad = $gradpeak")
 		println()
 		flush(stdout)
@@ -239,7 +239,7 @@ function sketch_mtd()
 		open("data/F_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			for x in rangex
 				for y in rangey
-					write(file, "$(-Vbias([x, y], rho, basis, domain_cv, kb * T)) ")
+					write(file, "$(-Vbias([x, y], rho, convbasis, domain_cv, kb * T)) ")
 				end
 				write(file, "\n")
 			end
@@ -249,7 +249,7 @@ function sketch_mtd()
 			open("data/dVbiasdy_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do filey
 				for x in rangex
 					for y in rangey
-						grad = dVbias([x, y], rho, basis, basisd, domain_cv, kb * T)
+						grad = dVbias([x, y], rho, convbasis, convbasisd, domain_cv, kb * T)
 						write(filex, "$(grad[1]) ")
 						write(filey, "$(grad[2]) ")
 					end

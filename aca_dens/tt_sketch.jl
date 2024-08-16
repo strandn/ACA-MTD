@@ -183,7 +183,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             for s in 1:nb
                 for t in s:nb
                     f(x) = basis[core_id](x, s) * basis[core_id](x, t)
-                    basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]...)[1]
+                    basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]..., atol = 1.0e-12)[1]
                 end
             end
             G[core_id] *= ITensor(pinv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
