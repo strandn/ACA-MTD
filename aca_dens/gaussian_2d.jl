@@ -158,6 +158,7 @@ function sketch_mtd()
 
 	rho = []
 	rhomax = 1.0e9
+	maxsamples = 1000000
 	samples = []
 	weights = []
 
@@ -222,7 +223,8 @@ function sketch_mtd()
 
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
-		rho = count == 1 ? G : update_rho(rho, G, basis, convbasis, nbasis, domain_cv_full, samples)
+		sampleinc = div(length(samples) - 1, maxsamples) + 1
+		rho = count == 1 ? G : update_rho(rho, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)])
 
 		Vpeak = Vtop(rho, convbasis, domain_cv, samples, kb * T)
 		Lambda = min(rhomax / exp(Vpeak / (kb * T)), 1)
