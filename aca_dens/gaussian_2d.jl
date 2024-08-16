@@ -25,22 +25,22 @@ function V(r)
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
-function Vbias(s, rho, basis, domain, kT)
+function Vbias(s, vb, basis, domain)
 	for i in eachindex(s)
 		if s[i] < domain[i][1] || s[i] > domain[i][2]
 			return 0.0
 		end
 	end
-	if rho == []
+	if vb == []
 		return 0.0
 	end
-	return kT * log(max(dens_eval(rho, basis, s), 1))
+	return max(dens_eval(vb, basis, s), 0)
 end
 
-function Vtop(rho, basis, domain, samples, kT)
+function Vtop(vb, basis, domain, samples)
 	max = 0.0
 	for s in samples
-		result = Vbias(s, rho, basis, domain, kT)
+		result = Vbias(s, vb, basis, domain)
 		if result > max
 			max = result
 		end
@@ -84,28 +84,28 @@ function get_conv(domain, basis_type, nbasis, nbins)
 	return basis, basisd
 end
 
-function dVbias(s, rho, basis, basisd, domain, kT)
+function dVbias(s, vb, basis, basisd, domain)
 	grad = zeros(length(s))
 	for i in eachindex(s)
 		if s[i] < domain[i][1] || s[i] > domain[i][2]
 			return grad
 		end
 	end
-	if rho == []
+	if vb == []
 		return grad
 	end
-	dens = dens_eval(rho, basis, s)
-	if dens < 1
+	vbias = dens_eval(vb, basis, s)
+	if vbias < 0
 		return grad
 	end
-	return dens_grad(rho, basis, basisd, s) * kT / dens
+	return dens_grad(vb, basis, basisd, s)
 end
 
-function grad_V(r, rho, basis, basisd, domain, kT)
+function grad_V(r, vb, basis, basisd, domain)
 	grad = ForwardDiff.gradient(V, r)
 	dx = ForwardDiff.gradient(x, r)
 	dy = ForwardDiff.gradient(y, r)
-	dVdx, dVdy = dVbias([x(r), y(r)], rho, basis, basisd, domain, kT)
+	dVdx, dVdy = dVbias([x(r), y(r)], vb, basis, basisd, domain)
 	dVdx1 = dVdx * dx[1] + dVdy * dy[1]
 	dVdx2 = dVdx * dx[2] + dVdy * dy[2]
 	dVdx3 = dVdx * dx[3] + dVdy * dy[3]
@@ -114,11 +114,11 @@ function grad_V(r, rho, basis, basisd, domain, kT)
 	return grad
 end
 
-function gradtop(rho, basis, basisd, domain, samples, kT)
+function gradtop(vb, basis, basisd, domain, samples)
 	dim = length(samples[1])
 	max = zeros(dim)
 	for r in samples
-		result = dVbias(r, rho, basis, basisd, domain, kT)
+		result = dVbias(r, vb, basis, basisd, domain)
 		for i in 1:dim
 			if result[i] > abs(max[i])
 				max[i] = abs(result[i])
@@ -156,8 +156,9 @@ function sketch_mtd()
 	sigma = sqrt(2 * kb * T / (gamma * dt))
 	normal_dist = Normal(0.0, sigma)
 
-	rho = []
-	rhomax = 1.0e9
+	vb = []
+	vmax = 20 * kb * T
+	vshift = 0
 	maxsamples = 1000000
 	samples = []
 	weights = []
@@ -169,7 +170,8 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], rho, convbasis, convbasisd, domain_cv, kb * T)
+			grad = grad_V([x1, x2, x3, x4], vb, basis, basisd, domain_cv)
+			# grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd, domain_cv)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -190,7 +192,8 @@ function sketch_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				Vbiass = Vbias(s, rho, convbasis, domain_cv, kb * T)
+				Vbiass = Vbias(s, vb, basis, domain_cv)
+				# Vbiass = Vbias(s, vb, convbasis, domain_cv)
 				push!(traj, [t, s[1], s[2], Vbiass])
 				push!(samples, s)
 				push!(weights, exp(Vbiass / (kb * T)))
@@ -215,25 +218,29 @@ function sketch_mtd()
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, convbasis, [x, y])) ")
+                    write(file, "$(dens_eval(G, basis, [x, y])) ")
+					# write(file, "$(dens_eval(G, convbasis, [x, y])) ")
                 end
                 write(file, "\n")
             end
         end
 
-		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		# Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
 		sampleinc = div(length(samples) - 1, maxsamples) + 1
-		rho = count == 1 ? G : update_rho(rho, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)])
+		vb = update_rho(vb, G, basis, basis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
 
-		Vpeak = Vtop(rho, convbasis, domain_cv, samples, kb * T)
-		Lambda = min(rhomax / exp(Vpeak / (kb * T)), 1)
-		rho *= Lambda
+		vpeak = Vtop(vb, basis, domain_cv, samples)
+		# vpeak = Vtop(vb, convbasis, domain_cv, samples)
+		vshift = max(vpeak - vmax, 0)
 		println()
-		println("Vtop = $Vpeak Lambda = $Lambda")
+		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
-		gradpeak = gradtop(rho, convbasis, convbasisd, domain_cv, samples, kb * T)
+		gradpeak = gradtop(vb, basis, basisd, domain_cv, samples)
+		# gradpeak = gradtop(vb, convbasis, convbasisd, domain_cv, samples)
 		println("maxgrad = $gradpeak")
 		println()
 		flush(stdout)
@@ -241,7 +248,8 @@ function sketch_mtd()
 		open("data/F_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			for x in rangex
 				for y in rangey
-					write(file, "$(-Vbias([x, y], rho, convbasis, domain_cv, kb * T)) ")
+					write(file, "$(-Vbias([x, y], vb, basis, domain_cv)) ")
+					# write(file, "$(-Vbias([x, y], vb, convbasis, domain_cv)) ")
 				end
 				write(file, "\n")
 			end
@@ -251,7 +259,8 @@ function sketch_mtd()
 			open("data/dVbiasdy_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do filey
 				for x in rangex
 					for y in rangey
-						grad = dVbias([x, y], rho, convbasis, convbasisd, domain_cv, kb * T)
+						grad = dVbias([x, y], vb, basis, basisd, domain_cv)
+						# grad = dVbias([x, y], vb, convbasis, convbasisd, domain_cv)
 						write(filex, "$(grad[1]) ")
 						write(filey, "$(grad[2]) ")
 					end
