@@ -31,7 +31,7 @@ function Vbias(s, vb, basis, domain)
 			return 0.0
 		end
 	end
-	if vb == []
+	if length(vb) == 0
 		return 0.0
 	end
 	return max(dens_eval(vb, basis, s), 0)
@@ -91,7 +91,7 @@ function dVbias(s, vb, basis, basisd, domain)
 			return grad
 		end
 	end
-	if vb == []
+	if length(vb) == 0
 		return grad
 	end
 	vbias = dens_eval(vb, basis, s)
@@ -137,7 +137,7 @@ function sketch_mtd()
 	basis_type = "fourier"
 	convbins = 1000
 	convbasis, convbasisd = get_conv(domain_cv_full, basis_type, nbasis, convbins)
-	basis, _ = get_basis(domain_cv_full, basis_type, nbasis)
+	basis, basisd = get_basis(domain_cv_full, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -156,9 +156,9 @@ function sketch_mtd()
 	sigma = sqrt(2 * kb * T / (gamma * dt))
 	normal_dist = Normal(0.0, sigma)
 
-	vb = []
+	vb = MPS()
 	vmax = 20 * kb * T
-	vshift = 0
+	vshift = 0.0
 	maxsamples = 1000000
 	samples = []
 	weights = []
@@ -218,19 +218,18 @@ function sketch_mtd()
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    write(file, "$(dens_eval(G, basis, [x, y])) ")
-					# write(file, "$(dens_eval(G, convbasis, [x, y])) ")
+                    # write(file, "$(dens_eval(G, basis, [x, y])) ")
+					write(file, "$(dens_eval(G, convbasis, [x, y])) ")
                 end
                 write(file, "\n")
             end
         end
 
-		Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
-		# Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		# Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
 		sampleinc = div(length(samples) - 1, maxsamples) + 1
-		vb = update_rho(vb, G, basis, basis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
-		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
 
 		vpeak = Vtop(vb, basis, domain_cv, samples)
 		# vpeak = Vtop(vb, convbasis, domain_cv, samples)

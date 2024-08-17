@@ -92,12 +92,16 @@ end
 
 function update_rho(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
     d = length(basis)
-    P(x...) = max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + max(dens_eval(G, basis, [elt for elt in x]), 0)
-    F = ResFunc(P, Tuple(domain), 1.0e-2)
+    P(x...) = if length(vb) == 0
+        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+    else
+        max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+    end
+    F = ResFunc(P, Tuple(domain), 0.02)
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(50, d - 1), samples)
+    continuous_aca(F, fill(20, d - 1), samples)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)
@@ -116,7 +120,8 @@ function update_rho(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{
                 for lr in eachval(l[1])
                     # println("$ss $lr")
                     f(x) = P([x; F.J[2][lr]]...) * basis[1](x, ss)
-                    psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
+                    psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                    # psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                 end
             end
         elseif ii == d
@@ -124,7 +129,8 @@ function update_rho(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{
             for ss in eachval(s)
                 for ll in eachval(l[d - 1])
                     f(x) = P([F.I[d][ll]; x]...) * basis[d](x, ss)
-                    psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
+                    psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                    # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                 end
             end
         else
@@ -133,7 +139,8 @@ function update_rho(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{
                 for ll in eachval(l[ii - 1])
                     for lr in eachval(l[ii])
                         f(x) = P([F.I[ii][ll]...; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
-                        psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
+                        psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-10, rtol = 1.0e-6)[1]
+                        # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                     end
                 end
             end
