@@ -228,7 +228,8 @@ function sketch_mtd()
 		# Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
-		sampleinc = div(length(samples) - 1, maxsamples) + 1
+		# sampleinc = div(length(samples) - 1, maxsamples) + 1
+		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
 		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
 		vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
 
