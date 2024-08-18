@@ -218,20 +218,18 @@ function sketch_mtd()
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
             for x in rangex
                 for y in rangey
-                    # write(file, "$(dens_eval(G, basis, [x, y])) ")
 					write(file, "$(dens_eval(G, convbasis, [x, y])) ")
                 end
                 write(file, "\n")
             end
         end
 
-		# Gmax = maximum([dens_eval(G, basis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
 		# sampleinc = div(length(samples) - 1, maxsamples) + 1
 		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
 		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
-		vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
 
 		vpeak = Vtop(vb, basis, domain_cv, samples)
 		# vpeak = Vtop(vb, convbasis, domain_cv, samples)

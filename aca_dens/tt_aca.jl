@@ -90,12 +90,13 @@ function dens_eval(G::MPS, basis, elements::Vector{Float64})
     return result[]
 end
 
-function update_rho(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
+function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
     d = length(basis)
     P(x...) = if length(vb) == 0
         kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     else
         max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        # max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
     F = ResFunc(P, Tuple(domain), 0.05)
 
