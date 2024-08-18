@@ -97,7 +97,7 @@ function update_rho(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{
     else
         max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
-    F = ResFunc(P, Tuple(domain), 0.1)
+    F = ResFunc(P, Tuple(domain), 0.05)
 
     println()
     println("Starting TT-cross ACA...")
