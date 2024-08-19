@@ -92,13 +92,14 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(20, d - 1), samples)
+    continuous_aca(F, fill(50, d - 1), samples)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)
     psi = Vector{ITensor}(undef, d)
     ranks = [length(F.I[i]) for i in 2:d]
     print("Determinants ")
+    flush(stdout)
     for ii in eachindex(sites)
         s = sites[ii]
         if ii != d
@@ -145,6 +146,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
                 end
             end
             print("$(det(Ahat)) ")
+            flush(stdout)
             psi[ii] *= ITensor(inv(Ahat), l[ii]', l[ii])
         end
     end

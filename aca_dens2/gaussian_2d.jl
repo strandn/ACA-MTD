@@ -233,14 +233,14 @@ function sketch_mtd()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
-		# sampleinc = div(length(samples) - 1, maxsamples) + 1
-		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
-		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
+		sampleinc = div(length(samples) - 1, maxsamples) + 1
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		# samplerange = max(length(samples)-maxsamples+1,1):length(samples)
+		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
 
 		# gradpeak = gradtop(vb, basis, basisd, domain_cv, samples)
 		gradpeak = gradtop(vb, convbasis, convbasisd, domain_cv, samples)
-		println("maxgrad = $gradpeak")
+		println("\nmaxgrad = $gradpeak")
 		println()
 		flush(stdout)
 
