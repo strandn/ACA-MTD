@@ -37,14 +37,14 @@ function Vbias(s, vb, basis, domain)
 end
 
 function Vtop(vb, G, basis, domain, samples, kT)
-	max = 0.0
+	top = 0.0
 	for s in samples
 		result = Vbias(s, vb, basis, domain) + kT * log(max(dens_eval(G, basis, s), 1))
-		if result > max
-			max = result
+		if result > top
+			top = result
 		end
 	end
-	return max
+	return top
 end
 
 function get_conv(domain, basis_type, nbasis, nbins)
@@ -232,7 +232,7 @@ function sketch_mtd()
 		println()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
-		
+
 		# sampleinc = div(length(samples) - 1, maxsamples) + 1
 		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
 		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
