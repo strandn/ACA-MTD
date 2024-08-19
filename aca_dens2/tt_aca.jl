@@ -1,4 +1,4 @@
-using ITensors
+include("tt_sketch.jl")
 
 mutable struct ResFunc{T, N}
     f
@@ -78,16 +78,6 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
     end
 
     return F.I, F.J
-end
-
-function dens_eval(G::MPS, basis, elements::Vector{Float64})
-    d = length(elements)
-    s = siteinds(G)
-    result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
-    for i in 2:d
-        result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
-    end
-    return result[]
 end
 
 function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)

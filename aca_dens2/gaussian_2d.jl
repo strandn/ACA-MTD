@@ -4,7 +4,6 @@ using KernelDensity
 using ForwardDiff
 using Interpolations
 
-include("tt_sketch.jl")
 include("tt_aca.jl")
 
 x(z) = z[1]
@@ -37,10 +36,10 @@ function Vbias(s, vb, basis, domain)
 	return max(dens_eval(vb, basis, s), 0)
 end
 
-function Vtop(vb, basis, domain, samples)
+function Vtop(vb, G, basis, domain, samples, kT)
 	max = 0.0
 	for s in samples
-		result = Vbias(s, vb, basis, domain)
+		result = Vbias(s, vb, basis, domain) + kT * log(max(dens_eval(G, basis, s), 1))
 		if result > max
 			max = result
 		end
@@ -226,17 +225,18 @@ function sketch_mtd()
 
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
-		# sampleinc = div(length(samples) - 1, maxsamples) + 1
-		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
-		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
 
 		# vpeak = Vtop(vb, basis, domain_cv, samples)
-		vpeak = Vtop(vb, convbasis, domain_cv, samples)
+		vpeak = Vtop(vb, G, convbasis, domain_cv, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
+		
+		# sampleinc = div(length(samples) - 1, maxsamples) + 1
+		# vb = update_rho(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
 
 		# gradpeak = gradtop(vb, basis, basisd, domain_cv, samples)
 		gradpeak = gradtop(vb, convbasis, convbasisd, domain_cv, samples)
