@@ -53,17 +53,28 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         res_new = 0.0
         n_samples = length(samples)
         for r in 1:rank[i]
-            xy = Tuple(fill(0.0, order))
-            res_new = 0.0
-            for k in 1:n_samples
+            # xy = Tuple(fill(0.0, order))
+            # res_new = 0.0
+            # for k in 1:n_samples
+            #     pivot = F.I[i][(k - 1) % n_pivots + 1]
+            #     arg_new = [pivot; samples[k]]
+            #     f_new = abs(F(arg_new...))
+            #     if f_new > res_new
+            #         res_new = f_new
+            #         xy = Tuple(arg_new)
+            #     end
+            # end
+            results = zeros(n_samples)
+            Threads.@threads for k in 1:n_samples
                 pivot = F.I[i][(k - 1) % n_pivots + 1]
-                arg_new = [pivot; samples[k]]
-                f_new = abs(F(arg_new...))
-                if f_new > res_new
-                    res_new = f_new
-                    xy = Tuple(arg_new)
-                end
+                arg = [pivot; samples[k][F.pos:F.ndims]]
+                results[k] = abs(F(arg...))
             end
+            top = argmax(results)
+            pivot_top = F.I[i][(top - 1) % n_pivots + 1]
+            arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
+            res_new = results[top]
+            xy = Tuple(arg_top)
             if isempty(F.I[i + 1])
                 push!(F.resfirst, res_new)
             elseif res_new > F.resfirst[i]
