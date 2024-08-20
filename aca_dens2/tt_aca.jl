@@ -120,7 +120,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
         if ii == 1
             psi[1] = ITensor(s, l[1]')
             for ss in eachval(s)
-                for lr in eachval(l[1])
+                Threads.@threads for lr in eachval(l[1])
                     # println("$ss $lr")
                     f(x) = P([x; F.J[2][lr]]...) * basis[1](x, ss)
                     psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-10, rtol = 1.0e-8)[1]
@@ -130,7 +130,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
         elseif ii == d
             psi[d] = ITensor(s, l[d - 1])
             for ss in eachval(s)
-                for ll in eachval(l[d - 1])
+                Threads.@threads for ll in eachval(l[d - 1])
                     f(x) = P([F.I[d][ll]; x]...) * basis[d](x, ss)
                     psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-10, rtol = 1.0e-8)[1]
                     # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
@@ -140,7 +140,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
             psi[ii] = ITensor(s, l[ii - 1], l[ii]')
             for ss in eachval(s)
                 for ll in eachval(l[ii - 1])
-                    for lr in eachval(l[ii])
+                    Threads.@threads for lr in eachval(l[ii])
                         f(x) = P([F.I[ii][ll]...; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
                         psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
                         # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
