@@ -1,4 +1,4 @@
-using ITensors
+include("tt_sketch.jl")
 
 mutable struct ResFunc{T, N}
     f
@@ -80,35 +80,26 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
     return F.I, F.J
 end
 
-function dens_eval(G::MPS, basis, elements::Vector{Float64})
-    d = length(elements)
-    s = siteinds(G)
-    result = G[1] * ITensor(basis[1].(elements[1], 1:ITensors.dim(s[1])), s[1])
-    for i in 2:d
-        result *= G[i] * ITensor(basis[i].(elements[i], 1:ITensors.dim(s[i])), s[i])
-    end
-    return result[]
-end
-
 function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
     d = length(basis)
     P(x...) = if length(vb) == 0
         kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     else
-        max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
-        # max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        # max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
     F = ResFunc(P, Tuple(domain), 0.05)
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(20, d - 1), samples)
+    continuous_aca(F, fill(50, d - 1), samples)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)
     psi = Vector{ITensor}(undef, d)
     ranks = [length(F.I[i]) for i in 2:d]
     print("Determinants ")
+    flush(stdout)
     for ii in eachindex(sites)
         s = sites[ii]
         if ii != d
@@ -155,6 +146,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
                 end
             end
             print("$(det(Ahat)) ")
+            flush(stdout)
             psi[ii] *= ITensor(inv(Ahat), l[ii]', l[ii])
         end
     end

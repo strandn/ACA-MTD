@@ -112,7 +112,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
                 for lr in eachval(l[1])
                     # println("$ss $lr")
                     f(x) = P([x; F.J[2][lr]]...) * basis[1](x, ss)
-                    psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                    psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-10, rtol = 1.0e-8)[1]
                     # psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                 end
             end
@@ -121,7 +121,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
             for ss in eachval(s)
                 for ll in eachval(l[d - 1])
                     f(x) = P([F.I[d][ll]; x]...) * basis[d](x, ss)
-                    psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                    psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-10, rtol = 1.0e-8)[1]
                     # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                 end
             end
