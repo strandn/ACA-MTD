@@ -142,7 +142,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
             for ss in eachval(s)
                 for ll in eachval(l[ii - 1])
                     Threads.@threads for lr in eachval(l[ii])
-                        f(x) = P([F.I[ii][ll]...; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
+                        f(x) = P([F.I[ii][ll]; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
                         psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
                         # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                     end
