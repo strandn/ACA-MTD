@@ -33,7 +33,8 @@ function Vbias(s, vb, basis, domain)
 	if length(vb) == 0
 		return 0.0
 	end
-	return max(dens_eval(vb, basis, s), 0)
+	# return max(dens_eval(vb, basis, s), 0)
+	return dens_eval(vb, basis, s)
 end
 
 function Vtop(vb, G, basis, domain, samples, kT)
@@ -93,10 +94,10 @@ function dVbias(s, vb, basis, basisd, domain)
 	if length(vb) == 0
 		return grad
 	end
-	vbias = dens_eval(vb, basis, s)
-	if vbias < 0
-		return grad
-	end
+	# vbias = dens_eval(vb, basis, s)
+	# if vbias < 0
+	# 	return grad
+	# end
 	return dens_grad(vb, basis, basisd, s)
 end
 
@@ -233,10 +234,10 @@ function sketch_mtd()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
-		# sampleinc = div(length(samples) - 1, maxsamples) + 1
-		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
-		samplerange = max(length(samples)-maxsamples+1,1):length(samples)
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
+		sampleinc = div(length(samples) - 1, maxsamples) + 1
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		# samplerange = max(length(samples)-maxsamples+1,1):length(samples)
+		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv_full, samples[samplerange], kb * T, vshift)
 
 		# gradpeak = gradtop(vb, basis, basisd, domain_cv, samples)
 		gradpeak = gradtop(vb, convbasis, convbasisd, domain_cv, samples)
