@@ -53,17 +53,6 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         res_new = 0.0
         n_samples = length(samples)
         for r in 1:rank[i]
-            # xy = Tuple(fill(0.0, order))
-            # res_new = 0.0
-            # for k in 1:n_samples
-            #     pivot = F.I[i][(k - 1) % n_pivots + 1]
-            #     arg_new = [pivot; samples[k]]
-            #     f_new = abs(F(arg_new...))
-            #     if f_new > res_new
-            #         res_new = f_new
-            #         xy = Tuple(arg_new)
-            #     end
-            # end
             results = zeros(n_samples)
             Threads.@threads for k in 1:n_samples
                 pivot = F.I[i][(k - 1) % n_pivots + 1]
@@ -96,8 +85,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     P(x...) = if length(vb) == 0
         kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     else
-        # max(dens_eval(vb, basis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
-        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -10 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, 0) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
     F = ResFunc(P, Tuple(domain), 0.05)
 
@@ -121,10 +109,8 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
             psi[1] = ITensor(s, l[1]')
             for ss in eachval(s)
                 Threads.@threads for lr in eachval(l[1])
-                    # println("$ss $lr")
                     f(x) = P([x; F.J[2][lr]]...) * basis[1](x, ss)
                     psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
-                    # psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                 end
             end
         elseif ii == d
@@ -133,7 +119,6 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
                 Threads.@threads for ll in eachval(l[d - 1])
                     f(x) = P([F.I[d][ll]; x]...) * basis[d](x, ss)
                     psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
-                    # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                 end
             end
         else
@@ -143,7 +128,6 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
                     Threads.@threads for lr in eachval(l[ii])
                         f(x) = P([F.I[ii][ll]...; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
                         psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
-                        # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-6, rtol = 1.0e-4, order = 3)[1]
                     end
                 end
             end
