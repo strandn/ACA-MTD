@@ -85,7 +85,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     P(x...) = if length(vb) == 0
         kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     else
-        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, 0) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -5 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
     F = ResFunc(P, Tuple(domain), 0.05)
 

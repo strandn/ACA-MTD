@@ -28,7 +28,7 @@ function Vbias(s, vb, basis)
 	if length(vb) == 0
 		return 0.0
 	end
-	return dens_eval(vb, basis, s)
+	return max(dens_eval(vb, basis, s), 0)
 end
 
 function Vtop(vb, G, basis, samples, kT)
@@ -54,15 +54,15 @@ function get_conv(domain, basis_type, nbasis, nbins)
 		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
 		for j in 1:nbasis
 			for k in 1:nbins
-				w = 0.01
+				w = 0.02
 				sigma = w * (domain[i][2] - domain[i][1])
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
-				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
-				gridpoints[j][k] = quadgk(f, domain[i]..., atol = 1.0e-12)[1]
-				gridpoints_d[j][k] = quadgk(df, domain[i]..., atol = 1.0e-12)[1]
-				# gridpoints[j][k] = quadgk(f, domain[i][1] - L / 4, domain[i][2] + L / 4, atol = 1.0e-12)[1]
-				# gridpoints_d[j][k] = quadgk(df, domain[i][1] - L / 4, domain[i][2] + L / 4, atol = 1.0e-12)[1]
+				G(x, k) = exp(-(s - x - 2 * k * L) ^ 2 / (2 * sigma ^ 2))
+				dG(x, k) = (s - x - 2 * k * L) / sigma ^ 2 * G(x, k)
+				f(x) = basis_original[i](x, j) * (G(x, -1) + G(x, 0) + G(x, 1))
+				df(x) = basis_original[i](x, j) * (dG(x, -1) + dG(x, 0) + dG(x, 1))
+				gridpoints[j][k] = quadgk(f, domain[i][1] - L / 4, domain[i][2] + L / 4, atol = 1.0e-12)[1]
+				gridpoints_d[j][k] = quadgk(df, domain[i][1] - L / 4, domain[i][2] + L / 4, atol = 1.0e-12)[1]
 			end
 		end
 		vec = [
@@ -84,6 +84,9 @@ end
 function dVbias(s, vb, basis, basisd)
 	grad = zeros(length(s))
 	if length(vb) == 0
+		return grad
+	end
+	if dens_eval(vb, basis, s) < 0
 		return grad
 	end
 	return dens_grad(vb, basis, basisd, s)
@@ -253,7 +256,7 @@ function sketch_mtd()
 		gridbins = 1000
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 
-		bw = 0.01 .* (domain[1][2] - domain[1][1])
+		bw = 0.006 .* (domain[1][2] - domain[1][1])
 		kde_result = kde([step[1] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_1_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
@@ -263,7 +266,7 @@ function sketch_mtd()
 			write(file, "\n")
 		end
 
-		bw = 0.01 .* (domain[3][2] - domain[3][1])
+		bw = 0.012 .* (domain[3][2] - domain[3][1])
 		kde_result = kde([step[2] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_3_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
