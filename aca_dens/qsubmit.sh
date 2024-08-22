@@ -11,12 +11,12 @@
  
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=20G
  
 #SBATCH --export=NONE
 
-export JULIA_NUM_THREADS=8
+export JULIA_NUM_THREADS=16
 
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
