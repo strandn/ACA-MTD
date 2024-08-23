@@ -1,5 +1,4 @@
-using Random
-using Distributions
+include("tt_sketch.jl")
 
 mutable struct ResFunc{T, N}
     f
@@ -9,11 +8,10 @@ mutable struct ResFunc{T, N}
     I::Vector{Vector{Vector{T}}}
     J::Vector{Vector{Vector{T}}}
     resfirst::Vector{T}
-    minp::Vector{T}
     cutoff::T
 
     function ResFunc(f, domain::NTuple{N, Tuple{T, T}}, cutoff::T) where {T, N}
-        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], fill(Inf, N - 1), cutoff)
+        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], cutoff)
     end
 end
 
@@ -27,7 +25,7 @@ function (F::ResFunc{T, N})(elements::T...) where {T, N}
             if iter == 0
                 row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
                 col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-                new[idx] = F.f((row..., col...)...)
+                new[idx] = F.f([row; col]...)
             else
                 new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
             end
@@ -37,365 +35,121 @@ function (F::ResFunc{T, N})(elements::T...) where {T, N}
     return new[]
 end
 
-function initIJ(F::ResFunc{T, N}, IJ::Tuple{Vector{Vector{Vector{T}}}, Vector{Vector{Vector{T}}}}) where {T, N}
-    order = F.ndims
-    (F.I, F.J) = IJ
-    F.pos += 1
-    for i in 1:order-1
-        push!(F.resfirst, F.f((F.I[i + 1][1]..., F.J[i + 1][1]...)...))
-    end
-end
-
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
     push!(F.I[F.pos + 1], [ij[j] for j in 1:F.pos])
     push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
 end
 
-function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, n_chains::Int64, n_samples::Int64, jump_width::Float64, mpi_comm::MPI.Comm) where {T, N}
-    mpi_rank = MPI.Comm_rank(mpi_comm)
-    mpi_size = MPI.Comm_size(mpi_comm)
-    
+function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T, N}
     order = F.ndims
-    if order == 1 && mpi_rank == 0
-        error(
-            "`continuous_aca` currently does not support system sizes of 1.",
-        )
-    end
 
     F.pos = 0
     for i in 1:order-1
-        if mpi_rank == 0
-            println("pos = $i")
-            flush(stdout)
-        end
+        println("pos = $i")
+        flush(stdout)
         F.pos += 1
         
         n_pivots = length(F.I[i])
-        n_chains_reduced = max(ceil(Int64, n_chains / n_pivots), ceil(Int64, mpi_size / n_pivots))
-        n_chains_total = n_pivots * n_chains_reduced
-        xylist = fill(Tuple(fill(0.0, order)), n_chains_total)
-        reslist = fill(0.0, n_chains_total)
-        resminlist = fill(0.0, n_chains_total)
         res_new = 0.0
-        for r in length(F.I[i + 1])+1:rank[i]
-            elements_per_task = floor(Int64, n_chains_total / mpi_size)
-            remainder = n_chains_total % mpi_size
-            local_xy = fill(Tuple(fill(0.0, order)), elements_per_task)
-            local_res = fill(0.0, elements_per_task)
-            local_resmin = fill(0.0, elements_per_task)
-            for k in 1:elements_per_task
-                global_idx = mpi_rank * elements_per_task + k
-                pidx = floor(Int64, (global_idx - 1) / n_chains_reduced) + 1
-                local_xy[k], local_res[k], local_resmin[k] = max_metropolis(F, F.I[i][pidx], n_samples, jump_width)
+        n_samples = length(samples)
+        for r in 1:rank[i]
+            results = zeros(n_samples)
+            Threads.@threads for k in 1:n_samples
+                pivot = F.I[i][(k - 1) % n_pivots + 1]
+                arg = [pivot; samples[k][F.pos:F.ndims]]
+                results[k] = abs(F(arg...))
             end
-            xydata = MPI.Gather(local_xy, 0, mpi_comm)
-            resdata = MPI.Gather(local_res, 0, mpi_comm)
-            resmindata = MPI.Gather(local_resmin, 0, mpi_comm)
-            if mpi_rank == 0
-                xylist[1:mpi_size*elements_per_task] .= xydata
-                reslist[1:mpi_size*elements_per_task] .= resdata
-                resminlist[1:mpi_size*elements_per_task] .= resmindata
-            end
-            if mpi_rank == 0 && remainder > 0
-                for k in mpi_size*elements_per_task+1:n_chains_total
-                    pidx = floor(Int64, (k - 1) / n_chains_reduced) + 1
-                    xylist[k], reslist[k], resminlist[k] = max_metropolis(F, F.I[i][pidx], n_samples, jump_width)
-                end
-            end
-            xylist = reshape(xylist, (n_pivots, n_chains_reduced))
-            reslist = reshape(reslist, (n_pivots, n_chains_reduced))
-            resminlist = reshape(resminlist, (n_pivots, n_chains_reduced))
-            idx = argmax(reslist)
-            xy = [xylist[idx]]
-            MPI.Bcast!(xy, 0, mpi_comm)
-            res_new = [reslist[idx]]
-            MPI.Bcast!(res_new, 0, mpi_comm)
+            top = argmax(results)
+            pivot_top = F.I[i][(top - 1) % n_pivots + 1]
+            arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
+            res_new = results[top]
+            xy = Tuple(arg_top)
             if isempty(F.I[i + 1])
-                push!(F.resfirst, res_new[])
-            elseif res_new[] > F.resfirst[i]
-                F.resfirst[i] = res_new[]
-            elseif res_new[] / F.resfirst[i] < F.cutoff
+                push!(F.resfirst, res_new)
+            elseif res_new > F.resfirst[i]
+                F.resfirst[i] = res_new
+            elseif res_new / F.resfirst[i] < F.cutoff
                 break
             end
-            updateIJ(F, xy[])
-            if mpi_rank == 0
-                println("rank = $r res = $(res_new[]) xy = $(xy[])")
-                flush(stdout)
-                if minimum(resmindata) < F.minp[i]
-                    F.minp[i] = minimum(resmindata)
-                end
-            end
+            updateIJ(F, xy)
+            println("rank = $r res = $res_new xy = $xy")
+            flush(stdout)
         end
     end
 
     return F.I, F.J
 end
 
-function max_metropolis(F::ResFunc{T, N}, pivot::Vector{T}, n_samples::Int64, jump_width::Float64) where {T, N}
-    order = F.ndims - F.pos + 1
-    
-    lb = [F.domain[i][1] for i in F.pos:F.ndims]
-    ub = [F.domain[i][2] for i in F.pos:F.ndims]
-
-    chain = zeros(n_samples, order)
-
-    max_res = 0.0
-    min_res = Inf
-    max_xy = zeros(F.ndims)
-
-    for k in 1:order
-        chain[1, k] = rand() * (ub[k] - lb[k]) + lb[k]
+function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
+    d = length(basis)
+    P(x...) = if length(vb) == 0
+        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+    else
+        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -5 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
-    while abs(F([pivot; [chain[1, k] for k in 1:order]]...)) == 0.0
-        for k in 1:order
-            chain[1, k] = rand() * (ub[k] - lb[k]) + lb[k]
-        end
-    end
+    F = ResFunc(P, Tuple(domain), 0.05)
 
-    for i in 2:n_samples
-        p_new = zeros(order)
-        for k in 1:order
-            p_new[k] = rand(Normal(chain[i - 1, k], jump_width * (ub[k] - lb[k])))
-            if p_new[k] < lb[k]
-                p_new[k] = lb[k] + abs(p_new[k] - lb[k])
-            elseif p_new[k] > ub[k]
-                p_new[k] = ub[k] - abs(p_new[k] - ub[k])
-            end
+    println()
+    println("Starting TT-cross ACA...")
+    continuous_aca(F, fill(50, d - 1), samples)
+
+    sites = siteinds(n, d)
+    l = Vector{Index}(undef, d - 1)
+    psi = Vector{ITensor}(undef, d)
+    ranks = [length(F.I[i]) for i in 2:d]
+    print("Determinants ")
+    flush(stdout)
+    for ii in eachindex(sites)
+        s = sites[ii]
+        if ii != d
+            l[ii] = Index(ranks[ii], "Link,l=$ii")
         end
 
-        arg_old = [pivot; [chain[i - 1, k] for k in 1:order]]
-        arg_new = [pivot; [p_new[k] for k in 1:order]]
-        f_old = abs(F(arg_old...))
-        f_new = abs(F(arg_new...))
-        acceptance_prob = min(1, f_new / f_old)
-        # TODO might need to allow for variable kT
-        
-        if isnan(acceptance_prob) || rand() < acceptance_prob
-            chain[i, :] = p_new
-            if f_new > max_res
-                max_res = f_new
-                max_xy = arg_new
+        if ii == 1
+            psi[1] = ITensor(s, l[1]')
+            for ss in eachval(s)
+                Threads.@threads for lr in eachval(l[1])
+                    f(x) = P([x; F.J[2][lr]]...) * basis[1](x, ss)
+                    # psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-12)[1]
+                    psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                end
             end
-            if f_new < min_res
-                min_res = f_new
+        elseif ii == d
+            psi[d] = ITensor(s, l[d - 1])
+            for ss in eachval(s)
+                Threads.@threads for ll in eachval(l[d - 1])
+                    f(x) = P([F.I[d][ll]; x]...) * basis[d](x, ss)
+                    # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-12)[1]
+                    psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                end
             end
         else
-            chain[i, :] = chain[i - 1, :]
-        end
-    end
-
-    return Tuple(max_xy), max_res, min_res
-end
-
-function compute_func(F::ResFunc{T, N}, x::Vector{T}) where {T, N}
-    order = F.ndims
-	npivots = [length(F.I[i]) for i in 2:order]
-	result = zeros(1, npivots[1])
-	for j in 1:npivots[1]
-		result[j] = F.f((x[1], F.J[2][j]...)...)
-	end
-	AIJ = zeros(npivots[1], npivots[1])
-	for j in 1:npivots[1]
-		for k in 1:npivots[1]
-			AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
-		end
-	end
-	result *= inv(AIJ)
-	for i in 2:order-1
-		resulti = zeros(npivots[i - 1], npivots[i])
-		for j in 1:npivots[i - 1]
-			for k in 1:npivots[i]
-				resulti[j, k] = F.f((F.I[i][j]..., x[i], F.J[i + 1][k]...)...)
-			end
-		end
-		AIJ = zeros(npivots[i], npivots[i])
-		for j in 1:npivots[i]
-			for k in 1:npivots[i]
-				AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
-			end
-		end
-		result *= resulti * inv(AIJ)
-	end
-	R = zeros(npivots[order - 1])
-	for j in 1:npivots[order - 1]
-		R[j] = F.f((F.I[order][j]..., x[order])...)
-	end
-	result *= R
-	return result[]
-end
-
-function compute_norm(F::ResFunc{T, N}) where {T, N}
-    order = F.ndims
-    npivots = [length(F.I[i]) for i in 2:order]
-    norm = zeros(1, npivots[1])
-    for j in 1:npivots[1]
-        f(x) = F.f((x, F.J[2][j]...)...)
-        norm[j] = quadgk(f, F.domain[1]...)[1]
-    end
-    AIJ = zeros(npivots[1], npivots[1])
-    for j in 1:npivots[1]
-        for k in 1:npivots[1]
-            AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
-        end
-    end
-    norm *= inv(AIJ)
-    for i in 2:order-1
-        normi = zeros((npivots[i - 1], npivots[i]))
-        for j in 1:npivots[i - 1]
-            for k in 1:npivots[i]
-                f(x) = F.f((F.I[i][j]..., x, F.J[i + 1][k]...)...)
-                normi[j, k] = quadgk(f, F.domain[i]...)[1]
-            end
-        end
-        AIJ = zeros(npivots[i], npivots[i])
-        for j in 1:npivots[i]
-            for k in 1:npivots[i]
-                AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
-            end
-        end
-        norm *= normi * inv(AIJ)
-    end
-    R = zeros(npivots[order - 1])
-    for j in 1:npivots[order - 1]
-        f(x) = F.f((F.I[order][j]..., x)...)
-        R[j] = quadgk(f, domain[order]...)[1]
-    end
-    norm *= R
-    return norm[]
-end
-
-function compute_mu(F::ResFunc{T, N}, norm::T) where {T, N}
-    order = F.ndims
-    npivots = [length(F.I[i]) for i in 2:order]
-    mu = [zeros(1, npivots[1]) for _ in 1:order]
-    for j in 1:npivots[1]
-        for pos in 1:order
-            f(x) = if pos == 1
-                x * F.f((x, F.J[2][j]...)...)
-            else
-                F.f((x, F.J[2][j]...)...)
-            end
-            mu[pos][j] = quadgk(f, domain[1]...)[1]
-        end
-    end
-    AIJ = zeros(npivots[1], npivots[1])
-    for j in 1:npivots[1]
-        for k in 1:npivots[1]
-            AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
-        end
-    end
-    for pos in 1:order
-        mu[pos] *= inv(AIJ)
-    end
-    for i in 2:order-1
-        normi = [zeros((npivots[i - 1], npivots[i])) for _ in 1:order]
-        prev = deepcopy(mu)
-        mu = [zeros(1, npivots[i]) for _ in 1:order]
-        for j in 1:npivots[i - 1]
-            for k in 1:npivots[i]
-                for pos in 1:order
-                    f(x) = if pos == i
-                        x * F.f((F.I[i][j]..., x, F.J[i + 1][k]...)...)
-                    else
-                        F.f((F.I[i][j]..., x, F.J[i + 1][k]...)...)
+            psi[ii] = ITensor(s, l[ii - 1], l[ii]')
+            for ss in eachval(s)
+                for ll in eachval(l[ii - 1])
+                    Threads.@threads for lr in eachval(l[ii])
+                        f(x) = P([F.I[ii][ll]; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
+                        # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-12)[1]
+                        psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
                     end
-                    normi[pos][j, k] = quadgk(f, domain[i]...)[1]
                 end
             end
         end
-        AIJ = zeros(npivots[i], npivots[i])
-        for j in 1:npivots[i]
-            for k in 1:npivots[i]
-                AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
-            end
-        end
-        for pos in 1:order
-            mu[pos] = prev[pos] * normi[pos] * inv(AIJ)
-        end
-    end
-    R = [zeros(npivots[order - 1]) for _ in 1:order]
-    prev = deepcopy(mu)
-    mu = zeros(order)
-    for j in 1:npivots[order - 1]
-        for pos in 1:order
-            f(x) = if pos == order
-                x * F.f((F.I[order][j]..., x)...)
-            else
-                F.f((F.I[order][j]..., x)...)
-            end
-            R[pos][j] = quadgk(f, domain[order]...)[1]
-        end
-    end
-    for pos in 1:order
-        mu[pos] = (prev[pos] * R[pos])[]
-    end
-    return [mu[pos] / norm[] for pos in 1:order]
-end
 
-function compute_var(F::ResFunc{T, N}, norm::T, mu::Vector{T}) where {T, N}
-    order = F.ndims
-    npivots = [length(F.I[i]) for i in 2:order]
-    var = [zeros(1, npivots[1]) for _ in 1:order]
-    for j in 1:npivots[1]
-        for pos in 1:order
-            f(x) = if pos == 1
-                (x - mu[1]) ^ 2 * F.f((x, F.J[2][j]...)...)
-            else
-                F.f((x, F.J[2][j]...)...)
-            end
-            var[pos][j] = quadgk(f, domain[1]...)[1]
-        end
-    end
-    AIJ = zeros(npivots[1], npivots[1])
-    for j in 1:npivots[1]
-        for k in 1:npivots[1]
-            AIJ[j, k] = F.f((F.I[2][j]..., F.J[2][k]...)...)
-        end
-    end
-    for pos in 1:order
-        var[pos] *= inv(AIJ)
-    end
-    for i in 2:order-1
-        normi = [zeros((npivots[i - 1], npivots[i])) for _ in 1:order]
-        prev = deepcopy(var)
-        var = [zeros(1, npivots[i]) for _ in 1:order]
-        for j in 1:npivots[i - 1]
-            for k in 1:npivots[i]
-                for pos in 1:order
-                    f(x) = if pos == i
-                        (x - mu[i]) ^ 2 * F.f((F.I[i][j]..., x, F.J[i + 1][k]...)...)
-                    else
-                        F.f((F.I[i][j]..., x, F.J[i + 1][k]...)...)
-                    end
-                    normi[pos][j, k] = quadgk(f, domain[i]...)[1]
+        if ii != d
+            Ahat = zeros(ranks[ii], ranks[ii])
+            for jj in 1:ranks[ii]
+                for kk in 1:ranks[ii]
+                    Ahat[jj, kk] = P([F.I[ii + 1][jj]; F.J[ii + 1][kk]]...)
                 end
             end
-        end
-        AIJ = zeros(npivots[i], npivots[i])
-        for j in 1:npivots[i]
-            for k in 1:npivots[i]
-                AIJ[j, k] = F.f((F.I[i + 1][j]..., F.J[i + 1][k]...)...)
-            end
-        end
-        for pos in 1:order
-            var[pos] = prev[pos] * normi[pos] * inv(AIJ)
+            print("$(det(Ahat)) ")
+            flush(stdout)
+            psi[ii] *= ITensor(inv(Ahat), l[ii]', l[ii])
         end
     end
-    R = [zeros(npivots[order - 1]) for _ in 1:order]
-    prev = deepcopy(var)
-    var = zeros(order)
-    for j in 1:npivots[order - 1]
-        for pos in 1:order
-            f(x) = if pos == order
-                (x - mu[order]) ^ 2 * F.f((F.I[order][j]..., x)...)
-            else
-                F.f((F.I[order][j]..., x)...)
-            end
-            R[pos][j] = quadgk(f, domain[order]...)[1]
-        end
-    end
-    for pos in 1:order
-        var[pos] = (prev[pos] * R[pos])[]
-    end
-    return [var[pos] / norm[] for pos in 1:order]
+    println()
+    flush(stdout)
+
+    return MPS(psi)
 end

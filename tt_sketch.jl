@@ -2,11 +2,9 @@ using LegendrePolynomials
 using ITensors
 using LinearAlgebra
 using QuadGK
+using Interpolations
 
 function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     if pos == 1
@@ -19,9 +17,6 @@ function fourier_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
     
 function legendre_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     xadj = (x - shift) / L
@@ -35,9 +30,6 @@ function legendre_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
 
 function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int64)
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     w = 1.0
     dx = (dom[2] - dom[1]) / (n - 1)
     centers = LinRange(dom[1], dom[2], n + 1)
@@ -49,9 +41,6 @@ function gaussian_basis(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n:
 end
 
 function fourier_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     if pos == 1
@@ -64,9 +53,6 @@ function fourier_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
     
 function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     L = (dom[2] - dom[1]) / 2
     shift = (dom[2] + dom[1]) / 2
     xadj = (x - shift) / L
@@ -80,9 +66,6 @@ function legendre_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64})
 end
 
 function gaussian_d(x::Float64, pos::Int64, dom::Tuple{Float64, Float64}, n::Int64)
-    if x < dom[1] || x > dom[2]
-        return 0.0
-    end
     w = 1.0
     dx = (dom[2] - dom[1]) / (n - 1)
     centers = LinRange(dom[1], dom[2], n + 1)
@@ -165,7 +148,7 @@ function form_tensor_moment(M::Vector{ITensor}, coeff::MPS, is::IndexSet)
     return MPS(B), envi_L, envi_R
 end
 
-function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, r::Int64, rc::Int64, alpha::Float64, nb::Int64)
+function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, Float64}}, basis_type::String, rc::Int64, alpha::Float64, nb::Int64)
     d = size(samples, 2)
     basis = if basis_type == "fourier"
         [b(x, pos) = fourier_basis(x, pos, domain[i]) for i in 1:d]
@@ -189,7 +172,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             A = envi_L[core_id]' * envi_R[core_id - 1]
             G[core_id] = ITensor(pinv(A), l', l) * Bemp[core_id]
             noprime!(G[core_id])
-            _, _, V[core_id] = svd(ITensor(A, l', l), l', maxdim = r, righttags = tags(l))
+            _, _, V[core_id] = svd(ITensor(A, l', l), l', cutoff = 1.0e-6, righttags = tags(l))
         end
     end
     println(linkinds(MPS(G)))
@@ -200,7 +183,7 @@ function para_sketch(samples::Array{Float64, 2}, domain::Vector{Tuple{Float64, F
             for s in 1:nb
                 for t in s:nb
                     f(x) = basis[core_id](x, s) * basis[core_id](x, t)
-                    basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]...)[1]
+                    basis_int[s, t] = basis_int[t, s] = quadgk(f, domain[core_id]..., atol = 1.0e-12)[1]
                 end
             end
             G[core_id] *= ITensor(pinv(basis_int), siteind(coeff, core_id), siteind(coeff, core_id)')
