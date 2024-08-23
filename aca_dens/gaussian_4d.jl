@@ -42,7 +42,7 @@ end
 function get_conv(domain, basis_type, nbasis, nbins)
 	basis_original, _ = get_basis(domain, basis_type, nbasis)
 	order = length(basis_original)
-	ranges = [LinRange(d[1], d[2], nbins) for d in domain_small]
+	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
 	basis = []
 	basisd = []
 	for i in 1:order
@@ -112,7 +112,7 @@ function sketch_mtd()
 	basis_type = "fourier"
 	convbins = 1000
 	convbasis, convbasisd = get_conv(domain, basis_type, nbasis, convbins)
-	basis, basisd = get_basis(domain, basis_type, nbasis)
+	basis, _ = get_basis(domain, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -178,8 +178,8 @@ function sketch_mtd()
 		end
 
 		xlist = [[step[i] for step in traj] for i in 2:5]
-		domain_small = [(minimum(xlist), maximum(xlist)) for xlist in xlist]
-		println(domain_small)
+		limits = [(minimum(xlist), maximum(xlist)) for xlist in xlist]
+		println(limits)
 		println()
         println("Forming TT-sketch density...")
         flush(stdout)
@@ -205,7 +205,7 @@ function sketch_mtd()
 		gridbins = 1000
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 		for i in 1:4
-			bw = 0.005 .* (domain[i][2] - domain[i][1])
+			bw = 0.035
 			kde_result = kde([step[i] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
 			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
@@ -217,10 +217,10 @@ function sketch_mtd()
 		end
 
 		gridbins = 100
-		ranges = [LinRange(d[1], d[2], gridbins) for d in domain]
+		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 		for i in 1:4
 			for j in i+1:4
-				bw = 0.01 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
+				bw = 0.07
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
 				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
