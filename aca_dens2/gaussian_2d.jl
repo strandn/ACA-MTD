@@ -125,7 +125,7 @@ function sketch_mtd()
 	basis_type = "fourier"
 	convbins = 1000
 	convbasis, convbasisd = get_conv(domain_cv, basis_type, nbasis, convbins)
-	basis, _ = get_basis(domain_cv, basis_type, nbasis)
+	basis, basisd = get_basis(domain_cv, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -147,7 +147,7 @@ function sketch_mtd()
 	vb = MPS()
 	vmax = 20 * kb * T
 	vshift = 0.0
-	maxsamples = 500000
+	maxsamples = 200000
 	samples = []
 	weights = []
 
@@ -230,7 +230,8 @@ function sketch_mtd()
 		open("data/F_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			for x in rangex
 				for y in rangey
-					write(file, "$(-Vbias([x, y], vb, convbasis)) ")
+					write(file, "$(-Vbias([x, y], vb, basis)) ")
+					# write(file, "$(-Vbias([x, y], vb, convbasis)) ")
 				end
 				write(file, "\n")
 			end
@@ -240,7 +241,8 @@ function sketch_mtd()
 			open("data/dVbiasdy_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do filey
 				for x in rangex
 					for y in rangey
-						grad = dVbias([x, y], vb, convbasis, convbasisd)
+						grad = dVbias([x, y], vb, basis, basisd)
+						# grad = dVbias([x, y], vb, convbasis, convbasisd)
 						write(filex, "$(grad[1]) ")
 						write(filey, "$(grad[2]) ")
 					end
