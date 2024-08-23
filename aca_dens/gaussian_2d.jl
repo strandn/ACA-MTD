@@ -253,7 +253,7 @@ function sketch_mtd()
 		gridbins = 1000
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 
-		bw = 0.006 .* (domain[1][2] - domain[1][1])
+		bw = 0.005 .* (domain[1][2] - domain[1][1])
 		kde_result = kde([step[1] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_1_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
@@ -263,7 +263,7 @@ function sketch_mtd()
 			write(file, "\n")
 		end
 
-		bw = 0.012 .* (domain[3][2] - domain[3][1])
+		bw = 0.005 .* (domain[3][2] - domain[3][1])
 		kde_result = kde([step[2] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_3_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
@@ -276,7 +276,7 @@ function sketch_mtd()
 		gridbins = 100
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 
-		bw = 0.02 .* (domain[1][2] - domain[1][1], domain[3][2] - domain[3][1])
+		bw = 0.01 .* (domain[1][2] - domain[1][1], domain[3][2] - domain[3][1])
 		kde_result = kde(hcat([step[1] for step in samples], [step[2] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_13_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
