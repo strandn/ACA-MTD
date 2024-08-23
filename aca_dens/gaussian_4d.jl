@@ -21,22 +21,17 @@ function V(r)
 		(x1 + 1/3) ^ 4 / 5 + (x2 + 2/3) ^ 4 / 5 + x3 ^ 4 / 5 + (x4 + 1/3) ^ 4 / 5
 end
 
-function Vbias(r, vb, basis, domain)
-	for i in eachindex(r)
-		if r[i] < domain[i][1] || s[i] > domain[i][2]
-			return 0.0
-		end
-	end
+function Vbias(r, vb, basis)
 	if length(vb) == 0
 		return 0.0
 	end
 	return max(dens_eval(vb, basis, r), 0)
 end
 
-function Vtop(vb, G, basis, domain, samples, kT)
+function Vtop(vb, G, basis, samples, kT)
 	top = 0.0
 	for r in samples
-		result = Vbias(r, vb, basis, domain) + kT * log(max(dens_eval(G, basis, s), 1))
+		result = Vbias(r, vb, basis) + kT * log(max(dens_eval(G, basis, s), 1))
 		if result > top
 			top = result
 		end
@@ -47,7 +42,7 @@ end
 function get_conv(domain, basis_type, nbasis, nbins)
 	basis_original, _ = get_basis(domain, basis_type, nbasis)
 	order = length(basis_original)
-	ranges = [LinRange(d[1], d[2], nbins) for d in domain]
+	ranges = [LinRange(d[1], d[2], nbins) for d in domain_small]
 	basis = []
 	basisd = []
 	for i in 1:order
@@ -80,34 +75,28 @@ function get_conv(domain, basis_type, nbasis, nbins)
 	return basis, basisd
 end
 
-function dVbias(r, vb, basis, basisd, domain)
+function dVbias(r, vb, basis, basisd)
 	grad = zeros(length(r))
-	for i in eachindex(r)
-		if r[i] < domain[i][1] || r[i] > domain[i][2]
-			return grad
-		end
-	end
 	if length(vb) == 0
 		return grad
 	end
-	vbias = dens_eval(vb, basis, r)
-	if vbias < 0
+	if dens_eval(vb, basis, r) < 0
 		return grad
 	end
 	return dens_grad(vb, basis, basisd, r)
 end
 
-function grad_V(r, vb, basis, basisd, domain)
+function grad_V(r, vb, basis, basisd)
 	grad = ForwardDiff.gradient(V, r)
-	grad += dVbias(r, vb, basis, basisd, domain)
+	grad += dVbias(r, vb, basis, basisd)
 	return grad
 end
 
-function gradtop(vb, basis, basisd, domain, samples)
+function gradtop(vb, basis, basisd, samples)
 	dim = length(samples[1])
 	max = zeros(dim)
 	for r in samples
-		result = dVbias(r, vb, basis, basisd, domain)
+		result = dVbias(r, vb, basis, basisd)
 		for i in 1:dim
 			if result[i] > abs(max[i])
 				max[i] = abs(result[i])
@@ -118,13 +107,12 @@ function gradtop(vb, basis, basisd, domain, samples)
 end
 
 function sketch_mtd()
-	domain = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
-	domain_full = [(-2.25, 2.25), (-2.25, 2.25), (-2.25, 2.25), (-2.25, 2.25)]
-	nbins = 100
+	domain = [(-3.0, 2.5), (-3.5, 2.0), (-3.0, 3.0), (-3.0, 2.5)]
+	domain_small = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	basis_type = "fourier"
 	convbins = 1000
-	convbasis, convbasisd = get_conv(domain_full, basis_type, nbasis, convbins)
-	basis, basisd = get_basis(domain_full, basis_type, nbasis)
+	convbasis, convbasisd = get_conv(domain, basis_type, nbasis, convbins)
+	basis, basisd = get_basis(domain, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -157,7 +145,7 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd, domain)
+			grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -169,15 +157,15 @@ function sketch_mtd()
 			x3 += v3 * dt
 			x4 += v4 * dt
 			
-			x1 = clamp(x1, domain_full[1][1], domain_full[1][2])
-			x2 = clamp(x2, domain_full[2][1], domain_full[2][2])
-			x3 = clamp(x3, domain_full[3][1], domain_full[3][2])
-			x4 = clamp(x4, domain_full[4][1], domain_full[4][2])
+			x1 = clamp(x1, domain[1][1], domain[1][2])
+			x2 = clamp(x2, domain[2][1], domain[2][2])
+			x3 = clamp(x3, domain[3][1], domain[3][2])
+			x4 = clamp(x4, domain[4][1], domain[4][2])
 
 			t += dt
 
 			if i % stride == 0
-				Vbiass = Vbias([x1, x2, x3, x4], vb, convbasis, domain)
+				Vbiass = Vbias([x1, x2, x3, x4], vb, convbasis)
 				push!(traj, [t, x1, x2, x3, x4, Vbiass])
 				push!(samples, [x1, x2, x3, x4])
 				push!(weights, exp(Vbiass / (kb * T)))
@@ -195,31 +183,29 @@ function sketch_mtd()
 		println()
         println("Forming TT-sketch density...")
         flush(stdout)
-		G = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain_full, basis_type, rc, 0.05, nbasis)
+		G = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain, basis_type, rc, 0.05, nbasis)
 
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
 
-		vpeak = Vtop(vb, G, convbasis, domain, samples, kb * T)
+		vpeak = Vtop(vb, G, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
 		sampleinc = div(length(samples) - 1, maxsamples) + 1
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_full, samples[1:sampleinc:length(samples)], kb * T, vshift)
-		# samplerange = max(length(samples)-maxsamples+1,1):length(samples)
-		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_full, samples[samplerange], kb * T, vshift)
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain, samples[1:sampleinc:length(samples)], kb * T, vshift)
 
-		gradpeak = gradtop(vb, convbasis, convbasisd, domain, samples)
+		gradpeak = gradtop(vb, convbasis, convbasisd, samples)
 		println("\nmaxgrad = $gradpeak")
 		println()
 		flush(stdout)
 
 		gridbins = 1000
-		ranges = [LinRange(d[1], d[2], gridbins) for d in domain]
+		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 		for i in 1:4
-			bw = 0.01 .* (domain[i][2] - domain[i][1])
+			bw = 0.005 .* (domain[i][2] - domain[i][1])
 			kde_result = kde([step[i] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 			ik = InterpKDE(kde_result)
 			open("data/kde_$(i)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
@@ -234,7 +220,7 @@ function sketch_mtd()
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain]
 		for i in 1:4
 			for j in i+1:4
-				bw = 0.02 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
+				bw = 0.01 .* (domain[i][2] - domain[i][1], domain[j][2] - domain[j][1])
 				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = bw)
 				ik = InterpKDE(kde_result)
 				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
