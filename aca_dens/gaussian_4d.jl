@@ -221,7 +221,7 @@ function sketch_mtd()
 		for i in 1:4
 			for j in i+1:4
 				bw = 0.07
-				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = bw)
+				kde_result = kde(hcat([step[i] for step in samples], [step[j] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = (bw, bw))
 				ik = InterpKDE(kde_result)
 				open("data/kde_$(i)$(j)_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 					for x in ranges[i]

@@ -277,7 +277,7 @@ function sketch_mtd()
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 
 		bw = 0.07
-		kde_result = kde(hcat([step[1] for step in samples], [step[2] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = bw)
+		kde_result = kde(hcat([step[1] for step in samples], [step[2] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = (bw, bw))
 		ik = InterpKDE(kde_result)
 		open("data/kde_13_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
 			for x in ranges[1]
