@@ -31,7 +31,7 @@ end
 function Vtop(vb, G, basis, samples, kT)
 	top = 0.0
 	for r in samples
-		result = Vbias(r, vb, basis) + kT * log(max(dens_eval(G, basis, s), 1))
+		result = Vbias(r, vb, basis) + kT * log(max(dens_eval(G, basis, r), 1))
 		if result > top
 			top = result
 		end
