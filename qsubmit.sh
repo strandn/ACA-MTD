@@ -11,15 +11,15 @@
  
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=100G
  
 #SBATCH --export=NONE
 
-export JULIA_NUM_THREADS=4
+export JULIA_NUM_THREADS=8
 
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-#julia gaussian_2d.jl $RC $NBASIS $NSAMPLES
-julia gaussian_4d_v2.jl $RC $NBASIS $NSAMPLES
+julia gaussian_2d.jl $RC $NBASIS $NSAMPLES
+#julia gaussian_4d.jl $RC $NBASIS $NSAMPLES
