@@ -65,15 +65,17 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
             arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
             res_new = results[top]
             xy = Tuple(arg_top)
-            updateIJ(F, xy)
-            println("rank = $r res = $res_new xy = $xy")
-            flush(stdout)
 
             if isempty(F.I[i + 1])
                 push!(F.resfirst, res_new)
             elseif res_new > F.resfirst[i]
                 F.resfirst[i] = res_new
-            elseif res_new / F.resfirst[i] < F.cutoff
+            end
+
+            updateIJ(F, xy)
+            println("rank = $r res = $res_new xy = $xy")
+            flush(stdout)
+            if res_new / F.resfirst[i] < F.cutoff
                 break
             end
         end
