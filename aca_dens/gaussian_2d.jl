@@ -147,7 +147,7 @@ function sketch_mtd()
 	vb = MPS()
 	vmax = 20 * kb * T
 	vshift = 0.0
-	maxsamples = 200000
+	maxsamples = 100000
 	samples = []
 	weights = []
 

@@ -7,41 +7,32 @@ mutable struct ResFunc{T, N}
     domain::NTuple{N, Tuple{T, T}}
     I::Vector{Vector{Vector{T}}}
     J::Vector{Vector{Vector{T}}}
-    reslist::Vector{T}
-    eltlist::Vector{NTuple{N, T}}
     resfirst::Vector{T}
     cutoff::T
 
     function ResFunc(f, domain::NTuple{N, Tuple{T, T}}, cutoff::T) where {T, N}
-        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], T[], NTuple{N, T}[], T[], cutoff)
+        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], cutoff)
     end
 end
 
-# function (F::ResFunc{T, N})(elements::T...) where {T, N}
-#     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-#     k = length(F.I[F.pos + 1])
-#     old = new = zeros(1, 1)
-#     for iter in 0:k
-#         new = zeros(k - iter + 1, k - iter + 1)
-#         for idx in CartesianIndices(new)
-#             if iter == 0
-#                 row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-#                 col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-#                 new[idx] = F.f([row; col]...)
-#             else
-#                 new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-#             end
-#         end
-#         old = deepcopy(new)
-#     end
-#     return new[]
-# end
-
-function updateRes(F::ResFunc{T, N}) where {T, N}
-    lasti, lastj = (last(F.I[F.pos + 1]), last(F.J[F.pos + 1]))
-    for k in eachindex(F.reslist)
-        x, y = ([eltlist[k][i] for i in 1:F.pos], [eltlist[k][i] for i in F.pos+1:F.ndims])
+function (F::ResFunc{T, N})(elements::T...) where {T, N}
+    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+    k = length(F.I[F.pos + 1])
+    old = new = zeros(1, 1)
+    for iter in 0:k
+        new = zeros(k - iter + 1, k - iter + 1)
+        for idx in CartesianIndices(new)
+            if iter == 0
+                row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
+                col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
+                new[idx] = F.f([row; col]...)
+            else
+                new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
+            end
+        end
+        old = deepcopy(new)
     end
+    return new[]
 end
 
 function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
@@ -68,7 +59,7 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
                 arg = [pivot; samples[k][F.pos:F.ndims]]
                 results[k] = abs(F(arg...))
             end
-
+            
             top = argmax(results)
             pivot_top = F.I[i][(top - 1) % n_pivots + 1]
             arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
