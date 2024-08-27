@@ -7,38 +7,90 @@ mutable struct ResFunc{T, N}
     domain::NTuple{N, Tuple{T, T}}
     I::Vector{Vector{Vector{T}}}
     J::Vector{Vector{Vector{T}}}
+    u::Vector{Vector{T}}
+    v::Vector{Vector{T}}
     resfirst::Vector{T}
     cutoff::T
 
     function ResFunc(f, domain::NTuple{N, Tuple{T, T}}, cutoff::T) where {T, N}
-        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], cutoff)
+        new{T, N}(f, N, 0, domain, [[[T[]]]; [Vector{T}[] for _ in 2:N]], [[[T[]]]; [Vector{T}[] for _ in 2:N]], Vector{T}[], Vector{T}[], T[], cutoff)
     end
 end
 
-function (F::ResFunc{T, N})(elements::T...) where {T, N}
-    (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-    k = length(F.I[F.pos + 1])
-    old = new = zeros(1, 1)
-    for iter in 0:k
-        new = zeros(k - iter + 1, k - iter + 1)
-        for idx in CartesianIndices(new)
-            if iter == 0
-                row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-                col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-                new[idx] = F.f([row; col]...)
-            else
-                new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-            end
-        end
-        old = deepcopy(new)
+# function (F::ResFunc{T, N})(elements::T...) where {T, N}
+#     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
+#     k = length(F.I[F.pos + 1])
+#     old = new = zeros(1, 1)
+#     for iter in 0:k
+#         new = zeros(k - iter + 1, k - iter + 1)
+#         for idx in CartesianIndices(new)
+#             if iter == 0
+#                 row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
+#                 col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
+#                 new[idx] = F.f([row; col]...)
+#             else
+#                 new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
+#             end
+#         end
+#         old = deepcopy(new)
+#     end
+#     return new[]
+# end
+
+function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64}) where {T, N}
+    # lasti, lastj = (last(F.I[F.pos + 1]), last(F.J[F.pos + 1]))
+    # for k in eachindex(F.reslist)
+    #     x, y = ([eltlist[k][i] for i in 1:F.pos], [eltlist[k][i] for i in F.pos+1:F.ndims])
+    # end
+    k = length(F.I[F.pos + 1]) + 1
+    Rj = zeros(length(samples))
+    x = [samples[is][i] for i in 1:F.pos]
+    Threads.@threads for k in eachindex(samples)
+        yk = [samples[k][i] for i in F.pos+1:F.ndims]
+        Rj[k] = F.f([x; yk]...)
     end
-    return new[]
+    for l in 1:k-1
+        Rj -= F.u[l][is] * F.v[l]
+    end
+    js = argmax(abs.(Rj))
+    dk = Rj[js]
+
+    Ri = zeros(length(samples))
+    y = [samples[js][i] for i in F.pos+1:F.ndims]
+    Threads.@threads for k in eachindex(samples)
+        xk = [samples[k][i] for i in 1:F.pos]
+        Ri[k] = F.f([xk; y]...)
+    end
+    for l in 1:k-1
+        Ri -= F.u[l] * F.v[l][js]
+    end
+    # println(is)
+    # println(js)
+    # println(x)
+    # println(y)
+    push!(F.u, Ri)
+    push!(F.v, Rj / dk)
+
+    if isempty(F.I[F.pos + 1])
+        push!(F.resfirst, abs(dk))
+    end
+
+    push!(F.I[F.pos + 1], x)
+    push!(F.J[F.pos + 1], y)
+    push!(ilist, is)
+    ulast = deepcopy(F.u[k])
+    is = argmax(abs.(ulast))
+    while is in ilist
+        ulast[is] = 0
+        is = argmax(abs.(ulast))
+    end
+    return is, abs(dk), [x; y]
 end
 
-function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
-    push!(F.I[F.pos + 1], [ij[j] for j in 1:F.pos])
-    push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
-end
+# function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
+#     push!(F.I[F.pos + 1], [ij[j] for j in 1:F.pos])
+#     push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
+# end
 
 function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T, N}
     order = F.ndims
@@ -49,33 +101,33 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         flush(stdout)
         F.pos += 1
         
-        n_pivots = length(F.I[i])
         res_new = 0.0
-        n_samples = length(samples)
+        ilist = Int64[]
+        is = 1
+        empty!(F.u)
+        empty!(F.v)
         for r in 1:rank[i]
-            results = zeros(n_samples)
-            Threads.@threads for k in 1:n_samples
-                pivot = F.I[i][(k - 1) % n_pivots + 1]
-                arg = [pivot; samples[k][F.pos:F.ndims]]
-                results[k] = abs(F(arg...))
-            end
+            # results = zeros(n_samples)
+            # Threads.@threads for k in 1:n_samples
+            #     pivot = F.I[i][(k - 1) % n_pivots + 1]
+            #     arg = [pivot; samples[k][F.pos:F.ndims]]
+            #     results[k] = abs(F(arg...))
+            # end
             
-            top = argmax(results)
-            pivot_top = F.I[i][(top - 1) % n_pivots + 1]
-            arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
-            res_new = results[top]
-            xy = Tuple(arg_top)
+            # top = argmax(results)
+            # pivot_top = F.I[i][(top - 1) % n_pivots + 1]
+            # arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
+            # res_new = results[top]
+            # xy = Tuple(arg_top)
 
-            if isempty(F.I[i + 1])
-                push!(F.resfirst, res_new)
-            elseif res_new > F.resfirst[i]
-                F.resfirst[i] = res_new
-            end
-
-            updateIJ(F, xy)
+            is, res_new, xy = aca_partial(F, samples, is, ilist)
+            # println(is)
+            # println(ilist)
             println("rank = $r res = $res_new xy = $xy")
             flush(stdout)
-            if res_new / F.resfirst[i] < F.cutoff
+            if res_new > F.resfirst[i]
+                F.resfirst[i] = res_new
+            elseif res_new / F.resfirst[i] < F.cutoff
                 break
             end
         end
@@ -91,7 +143,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     else
         max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
-    F = ResFunc(P, Tuple(domain), 0.1)
+    F = ResFunc(P, Tuple(domain), 0.01)
 
     println()
     println("Starting TT-cross ACA...")
