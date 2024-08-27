@@ -42,7 +42,7 @@ function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64})
     if r == 1
         evals = zeros(length(samples))
         Threads.@threads for k in eachindex(samples)
-            evals[k] = F.f([samples[k]]...)
+            evals[k] = F.f(samples[k]...)
         end
         is = argmax(abs.(evals))
     end
