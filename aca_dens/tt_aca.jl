@@ -38,10 +38,6 @@ end
 # end
 
 function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64}) where {T, N}
-    # lasti, lastj = (last(F.I[F.pos + 1]), last(F.J[F.pos + 1]))
-    # for k in eachindex(F.reslist)
-    #     x, y = ([eltlist[k][i] for i in 1:F.pos], [eltlist[k][i] for i in F.pos+1:F.ndims])
-    # end
     k = length(F.I[F.pos + 1]) + 1
     Rj = zeros(length(samples))
     x = [samples[is][i] for i in 1:F.pos]
@@ -64,19 +60,15 @@ function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64})
     for l in 1:k-1
         Ri -= F.u[l] * F.v[l][js]
     end
-    # println(is)
-    # println(js)
-    # println(x)
-    # println(y)
     push!(F.u, Ri)
     push!(F.v, Rj / dk)
 
-    if isempty(F.I[F.pos + 1])
-        push!(F.resfirst, abs(dk))
-    end
+    # if isempty(F.I[F.pos + 1])
+    #     push!(F.resfirst, abs(dk))
+    # end
 
-    push!(F.I[F.pos + 1], x)
-    push!(F.J[F.pos + 1], y)
+    # push!(F.I[F.pos + 1], x)
+    # push!(F.J[F.pos + 1], y)
     push!(ilist, is)
     ulast = deepcopy(F.u[k])
     is = argmax(abs.(ulast))
@@ -84,7 +76,7 @@ function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64})
         ulast[is] = 0
         is = argmax(abs.(ulast))
     end
-    return is, abs(dk), [x; y]
+    return is, abs(dk), x, y
 end
 
 # function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
@@ -103,7 +95,8 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         
         res_new = 0.0
         ilist = Int64[]
-        is = 1
+        # is = 1
+        is = length(samples)
         empty!(F.u)
         empty!(F.v)
         for r in 1:rank[i]
@@ -120,16 +113,20 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
             # res_new = results[top]
             # xy = Tuple(arg_top)
 
-            is, res_new, xy = aca_partial(F, samples, is, ilist)
-            # println(is)
-            # println(ilist)
-            println("rank = $r res = $res_new xy = $xy")
-            flush(stdout)
-            if res_new > F.resfirst[i]
+            is, res_new, x, y = aca_partial(F, samples, is, ilist)
+            if isempty(F.I[i + 1])
+                push!(F.resfirst, res_new)
+            elseif res_new > F.resfirst[i]
                 F.resfirst[i] = res_new
             elseif res_new / F.resfirst[i] < F.cutoff
                 break
             end
+        
+            push!(F.I[F.pos + 1], x)
+            push!(F.J[F.pos + 1], y)
+
+            println("rank = $r res = $res_new xy = $([x; y])")
+            flush(stdout)
         end
     end
 
@@ -143,7 +140,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     else
         max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
-    F = ResFunc(P, Tuple(domain), 0.01)
+    F = ResFunc(P, Tuple(domain), 0.001)
 
     println()
     println("Starting TT-cross ACA...")
