@@ -77,7 +77,7 @@ function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64})
     # push!(F.I[F.pos + 1], x)
     # push!(F.J[F.pos + 1], y)
     push!(ilist, is)
-    ulast = deepcopy(F.u[k])
+    ulast = deepcopy(F.u[r])
     is = argmax(abs.(ulast))
     while is in ilist
         ulast[is] = 0
