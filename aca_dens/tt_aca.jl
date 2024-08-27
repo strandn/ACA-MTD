@@ -38,14 +38,21 @@ end
 # end
 
 function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64}) where {T, N}
-    k = length(F.I[F.pos + 1]) + 1
+    r = length(F.I[F.pos + 1]) + 1
+    if r == 1
+        evals = zeros(length(samples))
+        Threads.@threads for k in eachindex(samples)
+            evals[k] = F.f([samples[k]]...)
+        end
+        is = argmax(abs.(evals))
+    end
     Rj = zeros(length(samples))
     x = [samples[is][i] for i in 1:F.pos]
     Threads.@threads for k in eachindex(samples)
         yk = [samples[k][i] for i in F.pos+1:F.ndims]
         Rj[k] = F.f([x; yk]...)
     end
-    for l in 1:k-1
+    for l in 1:r-1
         Rj -= F.u[l][is] * F.v[l]
     end
     js = argmax(abs.(Rj))
@@ -57,7 +64,7 @@ function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64})
         xk = [samples[k][i] for i in 1:F.pos]
         Ri[k] = F.f([xk; y]...)
     end
-    for l in 1:k-1
+    for l in 1:r-1
         Ri -= F.u[l] * F.v[l][js]
     end
     push!(F.u, Ri)
@@ -95,8 +102,8 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         
         res_new = 0.0
         ilist = Int64[]
-        # is = 1
-        is = length(samples)
+        is = 1
+        # is = length(samples)
         empty!(F.u)
         empty!(F.v)
         for r in 1:rank[i]
