@@ -147,7 +147,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     else
         max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
-    F = ResFunc(P, Tuple(domain), 1.0e-6)
+    F = ResFunc(P, Tuple(domain), 1.0e-10)
 
     println()
     println("Starting TT-cross ACA...")
