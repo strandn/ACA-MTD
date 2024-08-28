@@ -140,12 +140,12 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
     return F.I, F.J
 end
 
-function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
+function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT)
     d = length(basis)
     P(x...) = if length(vb) == 0
-        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 0.1))
+        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     else
-        max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
+        dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     end
     F = ResFunc(P, Tuple(domain), 1.0e-10)
 
