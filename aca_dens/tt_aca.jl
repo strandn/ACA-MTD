@@ -39,13 +39,13 @@ end
 
 function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64}) where {T, N}
     r = length(F.I[F.pos + 1]) + 1
-    if r == 1
-        evals = zeros(length(samples))
-        Threads.@threads for k in eachindex(samples)
-            evals[k] = F.f(samples[k]...)
-        end
-        is = argmax(abs.(evals))
-    end
+    # if r == 1
+    #     evals = zeros(length(samples))
+    #     Threads.@threads for k in eachindex(samples)
+    #         evals[k] = F.f(samples[k]...)
+    #     end
+    #     is = argmax(abs.(evals))
+    # end
     Rj = zeros(length(samples))
     x = [samples[is][i] for i in 1:F.pos]
     Threads.@threads for k in eachindex(samples)
@@ -91,7 +91,7 @@ end
 #     push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
 # end
 
-function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T, N}
+function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples, initial_i) where {T, N}
     order = F.ndims
 
     F.pos = 0
@@ -102,7 +102,7 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         
         res_new = 0.0
         ilist = Int64[]
-        is = 1
+        is = initial_i
         # is = length(samples)
         empty!(F.u)
         empty!(F.v)
@@ -140,7 +140,7 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
     return F.I, F.J
 end
 
-function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT)
+function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, initial_i)
     d = length(basis)
     P(x...) = if length(vb) == 0
         kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 0.1))
@@ -151,7 +151,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(5, d - 1), samples)
+    continuous_aca(F, fill(5, d - 1), samples, initial_i)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)

@@ -35,13 +35,15 @@ Vbias(s, vb, basis, vshift) = max(Vbias_full(s, vb, basis) - vshift, 0)
 
 function Vtop(vb, G, basis, samples, kT)
 	top = 0.0
-	for s in samples
-		result = Vbias_full(s, vb, basis) + kT * log(max(dens_eval(G, basis, s), 1))
+	pos = 0
+	for i in eachindex(samples)
+		result = Vbias_full(samples[i], vb, basis) + kT * log(max(dens_eval(G, basis, samples[i]), 1))
 		if result > top
+			pos = i
 			top = result
 		end
 	end
-	return top
+	return top, pos
 end
 
 function get_conv(domain, basis_type, nbasis, nbins)
@@ -212,7 +214,7 @@ function sketch_mtd()
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
 
-		vpeak = Vtop(vb, G, convbasis, samples, kb * T)
+		vpeak, peakpos = Vtop(vb, G, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
 		println("Vtop = $vpeak Vshift = $vshift")
@@ -220,7 +222,7 @@ function sketch_mtd()
 
 		# sampleinc = div(length(samples) - 1, maxsamples) + 1
 		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples[1:sampleinc:length(samples)], kb * T, vshift)
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T)
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, peakpos)
 
 		gradpeak = gradtop(vb, convbasis, convbasisd, samples, vshift)
 		println("\nmaxgrad = $gradpeak")
