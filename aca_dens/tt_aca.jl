@@ -132,7 +132,7 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
             push!(F.I[F.pos + 1], x)
             push!(F.J[F.pos + 1], y)
 
-            println("rank = $r res = $res_new xy = $([x; y])")
+            println("rank = $r res = $res_new xy = $(Tuple([x; y]))")
             flush(stdout)
         end
     end
