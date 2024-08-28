@@ -147,11 +147,11 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     else
         max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
-    F = ResFunc(P, Tuple(domain), 0.001)
+    F = ResFunc(P, Tuple(domain), 1.0e-6)
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(50, d - 1), samples)
+    continuous_aca(F, fill(5, d - 1), samples)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)
