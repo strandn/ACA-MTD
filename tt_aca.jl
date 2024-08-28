@@ -59,21 +59,25 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
                 arg = [pivot; samples[k][F.pos:F.ndims]]
                 results[k] = abs(F(arg...))
             end
+            
             top = argmax(results)
             pivot_top = F.I[i][(top - 1) % n_pivots + 1]
             arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
             res_new = results[top]
             xy = Tuple(arg_top)
+
             if isempty(F.I[i + 1])
                 push!(F.resfirst, res_new)
             elseif res_new > F.resfirst[i]
                 F.resfirst[i] = res_new
-            elseif res_new / F.resfirst[i] < F.cutoff
-                break
             end
+
             updateIJ(F, xy)
             println("rank = $r res = $res_new xy = $xy")
             flush(stdout)
+            if res_new / F.resfirst[i] < F.cutoff
+                break
+            end
         end
     end
 
@@ -83,9 +87,9 @@ end
 function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
     d = length(basis)
     P(x...) = if length(vb) == 0
-        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 0.1))
     else
-        max(dens_eval(vb, convbasis, [elt for elt in x]) - vshift, -5 * kT) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
     F = ResFunc(P, Tuple(domain), 0.1)
 
@@ -107,30 +111,33 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
 
         if ii == 1
             psi[1] = ITensor(s, l[1]')
-            for ss in eachval(s)
-                Threads.@threads for lr in eachval(l[1])
+            Threads.@threads for ss in eachval(s)
+                for lr in eachval(l[1])
                     f(x) = P([x; F.J[2][lr]]...) * basis[1](x, ss)
                     # psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-12)[1]
                     psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                    # psi[1][s => ss, l[1]' => lr] = quadgk(f, domain[1]..., atol = 1.0e-6, rtol = 1.0e-4)[1]
                 end
             end
         elseif ii == d
             psi[d] = ITensor(s, l[d - 1])
-            for ss in eachval(s)
-                Threads.@threads for ll in eachval(l[d - 1])
+            Threads.@threads for ss in eachval(s)
+                for ll in eachval(l[d - 1])
                     f(x) = P([F.I[d][ll]; x]...) * basis[d](x, ss)
                     # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-12)[1]
                     psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                    # psi[d][s => ss, l[d - 1] => ll] = quadgk(f, domain[d]..., atol = 1.0e-6, rtol = 1.0e-4)[1]
                 end
             end
         else
             psi[ii] = ITensor(s, l[ii - 1], l[ii]')
-            for ss in eachval(s)
+            Threads.@threads for ss in eachval(s)
                 for ll in eachval(l[ii - 1])
-                    Threads.@threads for lr in eachval(l[ii])
+                    for lr in eachval(l[ii])
                         f(x) = P([F.I[ii][ll]; x; F.J[ii + 1][lr]]...) * basis[ii](x, ss)
                         # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-12)[1]
                         psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-8, rtol = 1.0e-6)[1]
+                        # psi[ii][s => ss, l[ii - 1] => ll, l[ii]' => lr] = quadgk(f, domain[ii]..., atol = 1.0e-6, rtol = 1.0e-4)[1]
                     end
                 end
             end
