@@ -52,24 +52,22 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T
         
         res_new = 0.0
         Rk = [F.f(samples[i]...) for i in eachindex(samples)]
-        normA = norm(Rk)
         empty!(F.u)
         empty!(F.v)
         for r in 1:rank[i]
             res_new, arg_top = aca_diag(F, samples, Rk)
             xy = Tuple(arg_top)
-            ratio = res_new ^ 2 / normA
             if isempty(F.I[i + 1])
                 push!(F.resfirst, res_new)
             elseif res_new > F.resfirst[i]
                 F.resfirst[i] = res_new
-            elseif ratio < F.cutoff
+            elseif res_new / F.resfirst[i] < F.cutoff
                 break
             end
     
             updateIJ(F, xy)
             Rk -= F.u[r] .* F.v[r]
-            println("rank = $r res = $res_new xy = $xy |uk||vk|/|A| = $ratio")
+            println("rank = $r res = $res_new xy = $xy")
             flush(stdout)
         end
     end
@@ -84,7 +82,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     else
         max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
-    F = ResFunc(P, Tuple(domain), 1.0e-4)
+    F = ResFunc(P, Tuple(domain), 0.02)
 
     println()
     println("Starting TT-cross ACA...")
