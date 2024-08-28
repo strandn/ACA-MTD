@@ -17,81 +17,31 @@ mutable struct ResFunc{T, N}
     end
 end
 
-# function (F::ResFunc{T, N})(elements::T...) where {T, N}
-#     (x, y) = ([elements[i] for i in 1:F.pos], [elements[i] for i in F.pos+1:F.ndims])
-#     k = length(F.I[F.pos + 1])
-#     old = new = zeros(1, 1)
-#     for iter in 0:k
-#         new = zeros(k - iter + 1, k - iter + 1)
-#         for idx in CartesianIndices(new)
-#             if iter == 0
-#                 row = idx[1] == k + 1 ? x : F.I[F.pos + 1][idx[1]]
-#                 col = idx[2] == k + 1 ? y : F.J[F.pos + 1][idx[2]]
-#                 new[idx] = F.f([row; col]...)
-#             else
-#                 new[idx] = old[idx[1] + 1, idx[2] + 1] - old[idx[1] + 1, 1] * old[1, idx[2] + 1] / old[1, 1]
-#             end
-#         end
-#         old = deepcopy(new)
-#     end
-#     return new[]
-# end
+function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
+    push!(F.I[F.pos + 1], [ij[j] for j in 1:F.pos])
+    push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
+end
 
-function aca_partial(F::ResFunc{T, N}, samples, is::Int64, ilist::Vector{Int64}) where {T, N}
-    r = length(F.I[F.pos + 1]) + 1
-    # if r == 1
-    #     evals = zeros(length(samples))
-    #     Threads.@threads for k in eachindex(samples)
-    #         evals[k] = F.f(samples[k]...)
-    #     end
-    #     is = argmax(abs.(evals))
-    # end
-    Rj = zeros(length(samples))
-    x = [samples[is][i] for i in 1:F.pos]
-    Threads.@threads for k in eachindex(samples)
-        yk = [samples[k][i] for i in F.pos+1:F.ndims]
-        Rj[k] = F.f([x; yk]...)
-    end
-    for l in 1:r-1
-        Rj -= F.u[l][is] * F.v[l]
-    end
-    js = argmax(abs.(Rj))
-    dk = Rj[js]
-
+function aca_diag(F::ResFunc{T, N}, samples, Rk::Vector{Float64}) where {T, N}
+    k = length(F.I[F.pos + 1]) + 1
+    ik = argmax(abs.(Rk))
+    dk = Rk[ik]
     Ri = zeros(length(samples))
-    y = [samples[js][i] for i in F.pos+1:F.ndims]
-    Threads.@threads for k in eachindex(samples)
-        xk = [samples[k][i] for i in 1:F.pos]
-        Ri[k] = F.f([xk; y]...)
-    end
-    for l in 1:r-1
-        Ri -= F.u[l] * F.v[l][js]
+    Rj = zeros(length(samples))
+    Threads.@threads for i in eachindex(samples)
+        Ri[i] = F.f([[samples[i][j] for j in 1:F.pos]; [samples[ik][j] for j in F.pos+1:F.ndims]]...)
+        Rj[i] = F.f([[samples[ik][j] for j in 1:F.pos]; [samples[i][j] for j in F.pos+1:F.ndims]]...)
+        for l in 1:k-1
+            Ri[i] -= F.u[l][i] * F.v[l][ik]
+            Rj[i] -= F.u[l][ik] * F.v[l][i]
+        end
     end
     push!(F.u, Ri)
     push!(F.v, Rj / dk)
-
-    # if isempty(F.I[F.pos + 1])
-    #     push!(F.resfirst, abs(dk))
-    # end
-
-    # push!(F.I[F.pos + 1], x)
-    # push!(F.J[F.pos + 1], y)
-    push!(ilist, is)
-    ulast = deepcopy(F.u[r])
-    is = argmax(abs.(ulast))
-    while is in ilist
-        ulast[is] = 0
-        is = argmax(abs.(ulast))
-    end
-    return is, abs(dk), x, y
+    return abs(dk), samples[ik]
 end
 
-# function updateIJ(F::ResFunc{T, N}, ij::NTuple{N, T}) where {T, N}
-#     push!(F.I[F.pos + 1], [ij[j] for j in 1:F.pos])
-#     push!(F.J[F.pos + 1], [ij[j] for j in F.pos+1:F.ndims])
-# end
-
-function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples, initial_i) where {T, N}
+function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples) where {T, N}
     order = F.ndims
 
     F.pos = 0
@@ -101,26 +51,12 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples, initial_
         F.pos += 1
         
         res_new = 0.0
-        ilist = Int64[]
-        is = initial_i
-        # is = length(samples)
+        Rk = [F.f(samples[i]...) for i in eachindex(samples)]
         empty!(F.u)
         empty!(F.v)
         for r in 1:rank[i]
-            # results = zeros(n_samples)
-            # Threads.@threads for k in 1:n_samples
-            #     pivot = F.I[i][(k - 1) % n_pivots + 1]
-            #     arg = [pivot; samples[k][F.pos:F.ndims]]
-            #     results[k] = abs(F(arg...))
-            # end
-            
-            # top = argmax(results)
-            # pivot_top = F.I[i][(top - 1) % n_pivots + 1]
-            # arg_top = [pivot_top; samples[top][F.pos:F.ndims]]
-            # res_new = results[top]
-            # xy = Tuple(arg_top)
-
-            is, res_new, x, y = aca_partial(F, samples, is, ilist)
+            res_new, arg_top = aca_diag(F, samples, Rk)
+            xy = Tuple(arg_top)
             if isempty(F.I[i + 1])
                 push!(F.resfirst, res_new)
             elseif res_new > F.resfirst[i]
@@ -128,11 +64,10 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples, initial_
             elseif res_new / F.resfirst[i] < F.cutoff
                 break
             end
-        
-            push!(F.I[F.pos + 1], x)
-            push!(F.J[F.pos + 1], y)
-
-            println("rank = $r res = $res_new xy = $(Tuple([x; y]))")
+    
+            updateIJ(F, xy)
+            Rk -= F.u[r] .* F.v[r]
+            println("rank = $r res = $res_new xy = $xy")
             flush(stdout)
         end
     end
@@ -140,18 +75,18 @@ function continuous_aca(F::ResFunc{T, N}, rank::Vector{Int64}, samples, initial_
     return F.I, F.J
 end
 
-function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, initial_i)
+function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
     d = length(basis)
     P(x...) = if length(vb) == 0
         kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 0.1))
     else
-        dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
+        max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
     end
-    F = ResFunc(P, Tuple(domain), 1.0e-6)
+    F = ResFunc(P, Tuple(domain), 0.02)
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(5, d - 1), samples, initial_i)
+    continuous_aca(F, fill(50, d - 1), samples)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)
