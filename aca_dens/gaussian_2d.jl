@@ -147,6 +147,7 @@ function sketch_mtd()
 	vb = MPS()
 	vmax = 20 * kb * T
 	vshift = 0.0
+	# maxsamples = 1000000
 	samples = []
 	weights = []
 
@@ -219,6 +220,8 @@ function sketch_mtd()
 		flush(stdout)
 
 		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, vshift)
+		# sampleinc = div(length(samples) - 1, maxsamples) + 1
+		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples[1:sampleinc:length(samples)], kb * T, vshift)
 
 		gradpeak = gradtop(vb, convbasis, convbasisd, samples)
 		println("\nmaxgrad = $gradpeak")
