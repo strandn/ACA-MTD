@@ -217,7 +217,7 @@ function sketch_mtd()
 		Vmean = geomean([step[4] for step in traj])
 		hf = exp(-Vmean / (kb * T * (bf - 1)))
 		# G *= 100 / Gmax
-		G *= 100 ^ hf * exp / Gmax
+		G *= 100 ^ hf / Gmax
 
 		vpeak = Vtop(vb, G, basis, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
