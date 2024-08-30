@@ -219,9 +219,9 @@ function sketch_mtd()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, vshift)
-		# sampleinc = div(length(samples) - 1, maxsamples) + 1
-		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, vshift)
+		sampleinc = div(length(samples) - 1, maxsamples) + 1
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples[1:sampleinc:length(samples)], kb * T, vshift)
 
 		gradpeak = gradtop(vb, convbasis, convbasisd, samples)
 		println("\nmaxgrad = $gradpeak")
@@ -254,7 +254,7 @@ function sketch_mtd()
 		gridbins = 1000
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 
-		bw = 0.04
+		bw = 0.035
 		kde_result = kde([step[1] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_1_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
@@ -264,7 +264,7 @@ function sketch_mtd()
 			write(file, "\n")
 		end
 
-		bw = 0.04
+		bw = 0.035
 		kde_result = kde([step[2] for step in samples], npoints = gridbins, weights = weights / sum(weights), bandwidth = bw)
 		ik = InterpKDE(kde_result)
 		open("data/kde_3_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file	
@@ -277,7 +277,7 @@ function sketch_mtd()
 		gridbins = 100
 		ranges = [LinRange(d[1], d[2], gridbins) for d in domain_small]
 
-		bw = 0.08
+		bw = 0.07
 		kde_result = kde(hcat([step[1] for step in samples], [step[2] for step in samples]), npoints = (gridbins, gridbins), weights = weights / sum(weights), bandwidth = (bw, bw))
 		ik = InterpKDE(kde_result)
 		open("data/kde_13_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
