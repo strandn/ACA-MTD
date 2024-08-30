@@ -208,7 +208,7 @@ function sketch_mtd()
 		# G *= 100 / Gmax
 		G *= 100 ^ hf / Gmax
 		println()
-		println("Vmean = $Vmean")
+		println("Vmean = $Vmean Height = $(kb * T * log(100 ^ hf))")
 
 		rangex = LinRange(domain_cv_small[1][1], domain_cv_small[1][2], nbins)
 		rangey = LinRange(domain_cv_small[2][1], domain_cv_small[2][2], nbins)
