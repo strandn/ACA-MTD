@@ -202,6 +202,14 @@ function sketch_mtd()
         flush(stdout)
 		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
 
+		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
+		Vmean = geomean([step[4] for step in traj])
+		hf = exp(-Vmean / (kb * T * (bf - 1)))
+		# G *= 100 / Gmax
+		G *= 100 ^ hf / Gmax
+		println()
+		println("Vmean = $Vmean")
+
 		rangex = LinRange(domain_cv_small[1][1], domain_cv_small[1][2], nbins)
 		rangey = LinRange(domain_cv_small[2][1], domain_cv_small[2][2], nbins)
         open("data/ttde_$(count)_$(rc)_$(nbasis)_$(nsamples).txt", "w") do file
@@ -213,15 +221,8 @@ function sketch_mtd()
             end
         end
 
-		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
-		Vmean = geomean([step[4] for step in traj])
-		hf = exp(-Vmean / (kb * T * (bf - 1)))
-		# G *= 100 / Gmax
-		G *= 100 ^ hf / Gmax
-
 		vpeak = Vtop(vb, G, basis, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
-		println()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
