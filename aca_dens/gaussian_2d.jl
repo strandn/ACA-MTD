@@ -31,10 +31,10 @@ function Vbias(s, vb, basis)
 	return max(dens_eval(vb, basis, s), 0)
 end
 
-function Vtop(vb, G, basis, convbasis, samples, kT)
+function Vtop(vb, G, basis, samples, kT)
 	top = 0.0
 	for s in samples
-		result = Vbias(s, vb, basis) + kT * log(max(dens_eval(G, convbasis, s), 1))
+		result = Vbias(s, vb, basis) + kT * log(max(dens_eval(G, basis, s), 1))
 		if result > top
 			top = result
 		end
@@ -147,7 +147,7 @@ function sketch_mtd()
 	vb = MPS()
 	vmax = 20 * kb * T
 	vshift = 0.0
-	# maxsamples = 1000000
+	maxsamples = 200000
 	samples = []
 	weights = []
 
@@ -158,8 +158,7 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], vb, basis, basisd)
-			# grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd)
+			grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -180,8 +179,7 @@ function sketch_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				Vbiass = Vbias(s, vb, basis)
-				# Vbiass = Vbias(s, vb, convbasis)
+				Vbiass = Vbias(s, vb, convbasis)
 				push!(traj, [t, s[1], s[2], Vbiass])
 				push!(samples, s)
 				push!(weights, exp(Vbiass / (kb * T)))
@@ -215,18 +213,17 @@ function sketch_mtd()
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		G *= 100 / Gmax
 
-		vpeak = Vtop(vb, G, basis, convbasis, samples, kb * T)
+		vpeak = Vtop(vb, G, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
-		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, vshift)
-		# sampleinc = div(length(samples) - 1, maxsamples) + 1
-		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples[1:sampleinc:length(samples)], kb * T, vshift)
+		# vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, vshift)
+		sampleinc = div(length(samples) - 1, maxsamples) + 1
+		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples[1:sampleinc:length(samples)], kb * T, vshift)
 
-		gradpeak = gradtop(vb, basis, basisd, samples)
-		# gradpeak = gradtop(vb, convbasis, convbasisd, samples)
+		gradpeak = gradtop(vb, convbasis, convbasisd, samples)
 		println("\nmaxgrad = $gradpeak")
 		println()
 		flush(stdout)
