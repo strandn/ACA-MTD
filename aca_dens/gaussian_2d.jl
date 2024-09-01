@@ -29,7 +29,7 @@ function Vbias_full(s, vb, basis)
 	if length(vb) == 0
 		return 0.0
 	end
-	return max(dens_eval(vb, basis, s), 0)
+	return dens_eval(vb, basis, s)
 end
 
 Vbias(s, vb, basis, vshift) = max(Vbias_full(s, vb, basis) - vshift, 0)
@@ -237,6 +237,7 @@ function sketch_mtd()
 			for x in rangex
 				for y in rangey
 					write(file, "$(-Vbias([x, y], vb, basis, vshift)) ")
+					# write(file, "$(-Vbias_full([x, y], vb, basis)) ")
 				end
 				write(file, "\n")
 			end
