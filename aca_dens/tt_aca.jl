@@ -86,7 +86,7 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
 
     println()
     println("Starting TT-cross ACA...")
-    continuous_aca(F, fill(50, d - 1), samples)
+    continuous_aca(F, fill(30, d - 1), samples)
 
     sites = siteinds(n, d)
     l = Vector{Index}(undef, d - 1)
