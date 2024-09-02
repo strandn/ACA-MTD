@@ -3,6 +3,7 @@ using Distributions
 using KernelDensity
 using ForwardDiff
 using Interpolations
+using StatsBase
 
 include("tt_aca.jl")
 
