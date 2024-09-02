@@ -220,7 +220,7 @@ function sketch_mtd()
 		vpeak = Vtop(vb, G, basis, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
-		# println("Height = $(kb * T * log(100 ^ hf))")
+		println("Height = $(kb * T * log(100 ^ hf))")
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
