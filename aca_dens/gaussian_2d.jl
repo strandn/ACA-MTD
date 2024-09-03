@@ -3,7 +3,6 @@ using Distributions
 using KernelDensity
 using ForwardDiff
 using Interpolations
-using StatsBase
 
 include("tt_aca.jl")
 
@@ -32,10 +31,10 @@ function Vbias(s, vb, basis)
 	return max(dens_eval(vb, basis, s), 0)
 end
 
-function Vtop(vb, G, basis, samples, kT)
+function Vtop(vb, G, basis, basisg, samples, kT)
 	top = 0.0
 	for s in samples
-		result = Vbias(s, vb, basis) + kT * log(max(dens_eval(G, basis, s), 1))
+		result = Vbias(s, vb, basis) + kT * log(max(dens_eval(G, basisg, s), 1))
 		if result > top
 			top = result
 		end
@@ -159,7 +158,8 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd)
+			grad = grad_V([x1, x2, x3, x4], vb, basis, basisd)
+			# grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -180,7 +180,8 @@ function sketch_mtd()
 
 			if i % stride == 0
 				s = [x([x1, x2, x3, x4]), y([x1, x2, x3, x4])]
-				Vbiass = Vbias(s, vb, convbasis)
+				Vbiass = Vbias(s, vb, basis)
+				# Vbiass = Vbias(s, vb, convbasis)
 				push!(traj, [t, s[1], s[2], Vbiass])
 				push!(samples, s)
 				push!(weights, exp(Vbiass / (kb * T)))
@@ -201,9 +202,8 @@ function sketch_mtd()
 		G = para_sketch(hcat(xlist, ylist), domain_cv, basis_type, rc, 0.05, nbasis)
 
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
-		# G *= 100 / Gmax
 		hflist = [exp(-step[4] / (kb * T * (bf - 1))) for step in traj]
-		hf = geomean(hflist)
+		hf = mean(hflist)
 		G *= 100 ^ hf / Gmax
 
 		rangex = LinRange(domain_cv_small[1][1], domain_cv_small[1][2], nbins)
@@ -217,7 +217,8 @@ function sketch_mtd()
             end
         end
 
-		vpeak = Vtop(vb, G, convbasis, samples, kb * T)
+		vpeak = Vtop(vb, G, basis, convbasis, samples, kb * T)
+		# vpeak = Vtop(vb, G, convbasis, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
 		println("Height = $(kb * T * log(100 ^ hf))")
@@ -226,7 +227,8 @@ function sketch_mtd()
 
 		vb = update_vb(vb, G, basis, convbasis, nbasis, domain_cv, samples, kb * T, vshift)
 
-		gradpeak = gradtop(vb, convbasis, convbasisd, samples)
+		gradpeak = gradtop(vb, basis, basisd, samples)
+		# gradpeak = gradtop(vb, convbasis, convbasisd, samples)
 		println("\nmaxgrad = $gradpeak")
 		println()
 		flush(stdout)
