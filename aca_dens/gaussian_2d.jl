@@ -109,7 +109,7 @@ function gradtop(vb, basis, basisd, samples)
 	for r in samples
 		result = dVbias(r, vb, basis, basisd)
 		for i in 1:dim
-			if result[i] > abs(max[i])
+			if abs(result[i]) > max[i]
 				max[i] = abs(result[i])
 			end
 		end
