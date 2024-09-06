@@ -28,10 +28,10 @@ function Vbias(r, vb, basis)
 	return max(dens_eval(vb, basis, r), 0)
 end
 
-function Vtop(vb, G, basis, convbasis, samples, kT)
+function Vtop(vb, G, basis, basisg, samples, kT)
 	top = 0.0
 	for r in samples
-		result = Vbias(r, vb, basis) + kT * log(max(dens_eval(G, convbasis, r), 1))
+		result = Vbias(r, vb, basis) + kT * log(max(dens_eval(G, basisg, r), 1))
 		if result > top
 			top = result
 		end
@@ -50,8 +50,7 @@ function get_conv(domain, basis_type, nbasis, nbins)
 		gridpoints_d = [[0.0 for _ in 1:nbins] for _ in 1:nbasis]
 		for j in 1:nbasis
 			for k in 1:nbins
-				w = 0.02
-				sigma = w * (domain[i][2] - domain[i][1])
+				sigma = 0.08
 				s = domain[i][1] + (k - 1) * (domain[i][2] - domain[i][1]) / (nbins - 1)
 				f(x) = basis_original[i](x, j) * (1 / (sqrt(2 * pi) * sigma)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
 				df(x) = basis_original[i](x, j) * ((x - s) / (sqrt(2 * pi) * sigma ^ 3)) * exp(-(s - x) ^ 2 / (2 * sigma ^ 2))
@@ -111,8 +110,8 @@ function sketch_mtd()
 	domain_small = [(-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0), (-2.0, 2.0)]
 	basis_type = "fourier"
 	convbins = 1000
-	convbasis, _ = get_conv(domain, basis_type, nbasis, convbins)
-	basis, basisd = get_basis(domain, basis_type, nbasis)
+	convbasis, convbasisd = get_conv(domain, basis_type, nbasis, convbins)
+	basis, _ = get_basis(domain, basis_type, nbasis)
 
 	T = 1.0
 	gamma = 1.0
@@ -145,7 +144,7 @@ function sketch_mtd()
 
 		traj = []
 		for i in 1:steps
-			grad = grad_V([x1, x2, x3, x4], vb, basis, basisd)
+			grad = grad_V([x1, x2, x3, x4], vb, convbasis, convbasisd)
 
 			v1 = -(grad[1] / gamma) + rand(normal_dist)
 			v2 = -(grad[2] / gamma) + rand(normal_dist)
@@ -165,7 +164,7 @@ function sketch_mtd()
 			t += dt
 
 			if i % stride == 0
-				Vbiass = Vbias([x1, x2, x3, x4], vb, basis)
+				Vbiass = Vbias([x1, x2, x3, x4], vb, convbasis)
 				push!(traj, [t, x1, x2, x3, x4, Vbiass])
 				push!(samples, [x1, x2, x3, x4])
 				push!(weights, exp(Vbiass / (kb * T)))
@@ -186,20 +185,20 @@ function sketch_mtd()
 		G = para_sketch(hcat(xlist[1], xlist[2], xlist[3], xlist[4]), domain, basis_type, rc, 0.05, nbasis)
 
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[1][i], xlist[2][i], xlist[3][i], xlist[4][i]]) for i in 1:div(steps, stride)])
-		hflist = [exp(-step[6] / (kb * T * (bf - 1))) for step in traj]
-		hf = mean(hflist)
+		vmean = mean([step[6] for step in traj])
+		hf = exp(-vmean / (kb * T * (bf - 1)))
 		G *= 100 ^ hf / Gmax
 
-		vpeak = Vtop(vb, G, basis, convbasis, samples, kb * T)
+		vpeak = Vtop(vb, G, convbasis, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax, 0)
 		println()
-		println("Height = $(kb * T * log(100 ^ hf))")
+		println("Vmean = $vmean Height = $(kb * T * log(100 ^ hf))")
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
 		vb = update_vb(vb, G, basis, convbasis, nbasis, domain, samples, kb * T, vshift)
 
-		gradpeak = gradtop(vb, basis, basisd, samples)
+		gradpeak = gradtop(vb, convbasis, convbasisd, samples)
 		println("\nmaxgrad = $gradpeak")
 		println()
 		flush(stdout)
