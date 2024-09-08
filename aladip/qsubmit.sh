@@ -19,6 +19,5 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-#gmx_mpi mdrun -deffnm md_0_1 -plumed plumed3.dat -ntomp 4
 rm -f analysis.* \#md_0_1.* bck.*
 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed6.dat -pin off
