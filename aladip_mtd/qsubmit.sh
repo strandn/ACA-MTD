@@ -20,7 +20,7 @@ echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
 rm -f analysis.* \#md_0_1.* bck.*
-gmx_mpi mdrun -deffnm md_0_1 -plumed plumed2.dat -pin off
-plumed sum_hills --hills hills_phi.dat --outfile fes_phi.dat --bin 500 --mintozero
-# gmx_mpi mdrun -deffnm md_0_1 -plumed plumed3.dat -pin off
-# plumed sum_hills --hills hills_2d.dat --outfile fes_2d.dat --bin 100,100 --mintozero
+#gmx_mpi mdrun -deffnm md_0_1 -plumed plumed2.dat -pin off
+#plumed sum_hills --hills hills_phi.dat --outfile fes_phi.dat --bin 500 --mintozero
+gmx_mpi mdrun -deffnm md_0_1 -plumed plumed3.dat -pin off
+plumed sum_hills --hills hills_2d.dat --outfile fes_2d.dat --bin 100,100 --mintozero
