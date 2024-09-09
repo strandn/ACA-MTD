@@ -18,4 +18,4 @@ FILE=hills_phi.dat GRID_MIN=-pi GRID_MAX=pi
 ...
 
 # Print both collective variables and the value of the bias potential on COLVAR file
-PRINT ARG=phi,psi,metad.bias FILE=colvar_phi.dat STRIDE=10
+PRINT ARG=phi,psi,metad.bias FILE=colvar_phi.dat STRIDE=100
