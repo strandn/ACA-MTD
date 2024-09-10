@@ -78,10 +78,10 @@ end
 function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{Tuple{Float64, Float64}}, samples, kT, vshift::Float64)
     d = length(basis)
     P(x...) = if length(vb) == 0
-        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 0.1))
+        kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1))
     else
         # max(dens_eval(vb, basis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
-        max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, -2 * kT)
+        max(dens_eval(vb, convbasis, [elt for elt in x]) + kT * log(max(dens_eval(G, convbasis, [elt for elt in x]), 1)) - vshift, 0)
     end
     F = ResFunc(P, Tuple(domain), 0.05)
 
@@ -148,4 +148,15 @@ function update_vb(vb::MPS, G::MPS, basis, convbasis, n::Int64, domain::Vector{T
     flush(stdout)
 
     return MPS(psi)
+end
+
+function Fmax(vb, G, basis, basisg, samples, kT)
+	top = 0.0
+	for s in samples
+		result = Vbias_full(s, vb, basis) + kT * log(max(dens_eval(G, basisg, s), 1))
+		if result > top
+			top = result
+		end
+	end
+	return top
 end
