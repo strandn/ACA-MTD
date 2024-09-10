@@ -28,7 +28,7 @@ function Vbias_full(s, vb, basis)
 	if length(vb) == 0
 		return 0.0
 	end
-	return max(dens_eval(vb, basis, s), 0)
+	return dens_eval(vb, basis, s)
 end
 
 Vbias(s, vb, basis, vshift) = max(Vbias_full(s, vb, basis) - vshift, 0)
