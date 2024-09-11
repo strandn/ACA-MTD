@@ -203,8 +203,8 @@ function sketch_mtd()
 		Gmax = maximum([dens_eval(G, convbasis, [xlist[i], ylist[i]]) for i in 1:div(steps, stride)])
 		vmean = mean([step[4] for step in traj])
 		hf = exp(-vmean / (kb * T * (bf - 1)))
-		# G *= 100 ^ hf / Gmax
-		G *= 100 / Gmax
+		G *= 100 ^ hf / Gmax
+		# G *= 100 / Gmax
 
 		rangex = LinRange(domain_cv_small[1][1], domain_cv_small[1][2], nbins)
 		rangey = LinRange(domain_cv_small[2][1], domain_cv_small[2][2], nbins)
@@ -220,7 +220,7 @@ function sketch_mtd()
 		vpeak = Fmax(vb, G, convbasis, convbasis, samples, kb * T)
 		vshift = max(vpeak - vmax - 5 * kb * T, 0)
 		println()
-		# println("Vmean = $vmean Height = $(kb * T * log(100 ^ hf))")
+		println("Vmean = $vmean Height = $(kb * T * log(100 ^ hf))")
 		println("Vtop = $vpeak Vshift = $vshift")
 		flush(stdout)
 
