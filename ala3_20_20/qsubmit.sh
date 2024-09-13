@@ -20,4 +20,4 @@ echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
 rm -f analysis.* \#md_0_1.* bck.*
-gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat -pin off
+gmx_mpi mdrun -deffnm md_0_1 -plumed plumed2.dat
