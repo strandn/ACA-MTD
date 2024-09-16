@@ -1,9 +1,9 @@
 # vim:ft=plumed
-phi2: READ FILE=colvar10.dat VALUES=phi2 IGNORE_TIME
-psi2: READ FILE=colvar10.dat VALUES=psi2 IGNORE_TIME
-phi3: READ FILE=colvar10.dat VALUES=phi3 IGNORE_TIME
-psi3: READ FILE=colvar10.dat VALUES=psi3 IGNORE_TIME
-ttsketch: READ FILE=colvar10.dat VALUES=ttsketch.bias IGNORE_TIME
+phi2: READ FILE=colvar.dat VALUES=phi2 IGNORE_TIME
+psi2: READ FILE=colvar.dat VALUES=psi2 IGNORE_TIME
+phi3: READ FILE=colvar.dat VALUES=phi3 IGNORE_TIME
+psi3: READ FILE=colvar.dat VALUES=psi3 IGNORE_TIME
+ttsketch: READ FILE=colvar.dat VALUES=ttsketch.bias IGNORE_TIME
 
 as: REWEIGHT_BIAS ARG=ttsketch.bias TEMP=300
 
