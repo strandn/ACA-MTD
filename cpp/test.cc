@@ -25,6 +25,7 @@ main()
     auto f = h5_open("data.h5", 'w');
     h5_write(f,"itensor_G0", G); 
     close(f);
+    G = paraSketch(samples, basis, 5);
     f = h5_open("data.h5", 'w');
     h5_write(f,"itensor_G1", G); 
     close(f);
