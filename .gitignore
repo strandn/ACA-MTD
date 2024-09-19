@@ -19,3 +19,4 @@ cpp_v2/test-g
 *COLVAR*
 *HILLS*
 *.log*
+*.h5
