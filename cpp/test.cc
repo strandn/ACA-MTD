@@ -23,7 +23,10 @@ main()
     vector<BasisFunc> basis(3, BasisFunc(make_pair(-1.0, 1.0), 10));
     auto G = paraSketch(samples, basis, 5);
     auto f = h5_open("data.h5", 'w');
-    h5_write(f,"itensor_G", G); 
+    h5_write(f,"itensor_G0", G); 
+    close(f);
+    auto f = h5_open("data.h5", 'w');
+    h5_write(f,"itensor_G1", G); 
     close(f);
     basis[0].setConv(false);
     basis[1].setConv(false);
