@@ -1,0 +1,7 @@
+# vim:ft=plumed
+phi2: READ FILE=colvar.dat VALUES=phi2 IGNORE_TIME
+psi2: READ FILE=colvar.dat VALUES=psi2 IGNORE_TIME
+phi3: READ FILE=colvar.dat VALUES=phi3 IGNORE_TIME
+psi3: READ FILE=colvar.dat VALUES=psi3 IGNORE_TIME
+
+PRINT ARG=phi2,psi2,phi3,psi3 FILE=output_colvar.dat
