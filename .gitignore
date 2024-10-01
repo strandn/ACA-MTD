@@ -21,3 +21,4 @@ cpp_v2/test-g
 *.log*
 *.h5
 *.edr*
+*.xtc*
