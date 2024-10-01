@@ -1,5 +1,5 @@
 Gromacs Runs On Most of All Computer Systems
-  123
+  129
     0ACE    CH3    1   1.467   0.000   0.000
     0ACE   HH31    2    -nan    -nan    -nan
     0ACE   HH32    3    -nan    -nan    -nan
@@ -123,4 +123,10 @@ Gromacs Runs On Most of All Computer Systems
     0AIB   HB23  121    -nan    -nan    -nan
     0AIB      C  122   3.033   0.000   0.000
     0AIB      O  123   3.033   0.000   0.000
-   1.89500   0.00000   0.00000
+    0NAC      N  124   3.150   0.000   0.000
+    0NAC      H  125    -nan    -nan    -nan
+    0NAC    CH3  126   3.280   0.000   0.000
+    0NAC   HH31  127    -nan    -nan    -nan
+    0NAC   HH32  128    -nan    -nan    -nan
+    0NAC   HH33  129    -nan    -nan    -nan
+   1.98100   0.00000   0.00000
