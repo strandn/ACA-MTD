@@ -21,4 +21,4 @@ psi9: TORSION ATOMS=111,113,122,124
 
 energy: ENERGY
 
-PRINT ARG=phi1,phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,energy FILE=COLVAR STRIDE=100 FMT=%20.15f
+PRINT ARG=phi1,psi1,phi2,psi2,phi3,psi3,phi4,psi4,phi5,psi5,phi6,psi6,phi7,psi7,phi8,psi8,phi9,psi9,energy FILE=COLVAR STRIDE=100 FMT=%20.15f
