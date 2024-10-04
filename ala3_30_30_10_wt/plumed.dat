@@ -1,4 +1,5 @@
 # vim:ft=plumed
+# RESTART
 MOLINFO STRUCTURE=ala3.pdb
 phi2: TORSION ATOMS=@phi-2
 psi2: TORSION ATOMS=@psi-2
@@ -15,6 +16,7 @@ VMAX=20
 NBINS=1000 WIDTH=0.08
 BIASFACTOR=10
 ACA_RANK=30 ACA_CUTOFF=0.1
+FILE=colvar.dat PRINTSTRIDE=100
 ...
 
-PRINT ARG=phi2,psi2,phi3,psi3,ttsketch.bias FILE=colvar.dat STRIDE=100
+PRINT ARG=phi2,psi2,phi3,psi3,ttsketch.bias FILE=colvar.dat STRIDE=100 FMT=%20.15f

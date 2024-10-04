@@ -19,6 +19,9 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
+export PLUMED_NUM_THREADS=8
+
 rm -f analysis.* \#md_0_1.* bck.*
+gmx_mpi grompp -f md.mdp -c em.gro -p topol.top -o md_0_1.tpr
 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat
 plumed driver --plumed plumed2.dat --noatoms
