@@ -1,6 +1,6 @@
 #!/bin/bash
  
-#SBATCH --job-name=aib9_sumhills
+#SBATCH --job-name=aib9_vacuum_mtd
 #SBATCH --output=%x.out
 #SBATCH --error=%x.err
 
@@ -9,16 +9,18 @@
 #SBATCH --partition=dinner
 #SBATCH --account=pi-dinner
  
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=20G
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=5
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=50G
  
 #SBATCH --export=NONE
 
-export PLUMED_NUM_THREADS=8
+export OMP_NUM_THREADS=4
+export PLUMED_NUM_THREADS=4
 
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-./sumhills.sh
+mpirun -np 10 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat -multidir phi2 phi3 psi3 phi4 psi4 phi5 psi5 phi6 phi7 phi8 -replex 2000
+./sumhills2.sh
