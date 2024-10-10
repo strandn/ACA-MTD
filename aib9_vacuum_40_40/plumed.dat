@@ -1,5 +1,5 @@
 # vim:ft=plumed
-RESTART
+# RESTART
 MOLINFO STRUCTURE=aib9.pdb
 phi1: TORSION ATOMS=5,7,9,18
 psi1: TORSION ATOMS=7,9,18,20
@@ -20,11 +20,11 @@ psi8: TORSION ATOMS=98,100,109,111
 phi9: TORSION ATOMS=109,111,113,122
 psi9: TORSION ATOMS=111,113,122,124
 
-ttsketch: TTSKETCH ARG=phi2,phi3,psi3,phi4,psi4,phi5,psi5,phi6,phi7,phi8 ...
+ttsketch: TTSKETCH ARG=phi1,psi1,phi2,psi2,phi3,psi3,phi4,psi4,phi5,psi5,phi6,psi6,phi7,psi7,phi8,psi8,phi9,psi9 ...
 INITRANK=40
 CUTOFF=0.000001
 PACE=5000000 SAMPLESTRIDE=500
-INTERVAL_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi INTERVAL_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi
+INTERVAL_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi INTERVAL_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi
 NBASIS=40
 VMAX=20
 NBINS=1000 WIDTH=0.08
