@@ -10,7 +10,7 @@
 #SBATCH --account=pi-dinner
  
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=10
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=50G
  
@@ -19,7 +19,18 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-rm -f analysis.* \#md_0_1.* bck.*
-gmx_mpi grompp -f md.mdp -c em.gro -p topol.top -o md_0_1.tpr
-gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat
+rm -f analysis.*
+for i in `seq 0 9`;
+do
+    cp diala.pdb em.gro md.mdp plumed.dat topol.top $i
+    cd $i
+    gmx_mpi grompp -f md.mdp -c em.gro -p topol.top -o md_0_1.tpr
+    cd ..
+done
+mpirun -np 10 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat -multidir 0 1 2 3 4 5 6 7 8 9
+for i in `seq 0 9`;
+do
+    sed -i '/#!/d' $i/colvar.$i.dat
+done
+python3 merge_colvars.py
 plumed driver --plumed plumed2.dat --noatoms
