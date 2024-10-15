@@ -19,7 +19,7 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-rm -f analysis.*
+rm -f analysis.* */\#md_0_1.* */bck.*
 for i in `seq 0 9`;
 do
     cp diala.pdb em.gro md.mdp plumed.dat topol.top $i
@@ -30,7 +30,7 @@ done
 mpirun -np 10 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat -multidir 0 1 2 3 4 5 6 7 8 9
 for i in `seq 0 9`;
 do
-    sed -i '/#!/d' $i/colvar.$i.dat
+    sed '/#!/d' $i/colvar.$i.dat > $i/colvar.$i.dat.0
 done
 python3 merge_colvars.py
 plumed driver --plumed plumed2.dat --noatoms
