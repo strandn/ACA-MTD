@@ -19,4 +19,4 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-mpirun -np 8 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat -multidir 0 1 2 3 4 5 6 7 -replex 1000
+mpirun -np 8 gmx_mpi mdrun -deffnm md_0_1 -plumed plumed.dat -multidir 0 1 2 3 4 5 6 7 -replex 2000
