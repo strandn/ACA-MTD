@@ -1,6 +1,6 @@
 #!/bin/bash
  
-#SBATCH --job-name=aib9_histo
+#SBATCH --job-name=aib9_vacuum_histo
 #SBATCH --output=%x.out
 #SBATCH --error=%x.err
 
@@ -22,4 +22,4 @@ echo $SLURM_JOB_NODELIST
 export PLUMED_NUM_THREADS=8
 
 rm -f analysis.* bck.*
-plumed driver --plumed plumed3.dat --noatoms
+plumed driver --plumed plumed2.dat --noatoms

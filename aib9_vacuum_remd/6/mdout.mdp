@@ -1,8 +1,8 @@
 ;
 ;	File 'mdout.mdp' was generated
 ;	By user: nstrand (325617495)
-;	On host: midway3-login3.rcc.local
-;	At date: Mon Sep 30 18:41:07 2024
+;	On host: midway3-login4.rcc.local
+;	At date: Tue Oct 22 22:42:07 2024
 ;
 ;	Created by:
 ;	            :-) GROMACS - gmx grompp, 2024.2-plumed_2.10.0_dev (-:
@@ -25,7 +25,7 @@ integrator               = sd
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.002
-nsteps                   = 2000000000
+nsteps                   = 1000000000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
@@ -135,7 +135,7 @@ implicit-solvent         = no
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
 ensemble-temperature-setting = constant
-ensemble-temperature     = 900
+ensemble-temperature     = 462
 ; Temperature coupling  
 tcoupl                   = no
 nsttcouple               = -1
@@ -145,7 +145,7 @@ print-nose-hoover-chain-variables = no
 tc-grps                  = System
 ; Time constant (ps) and reference temperature (K)
 tau_t                    = 0.1
-ref_t                    = 900
+ref_t                    = 462
 ; pressure coupling     
 pcoupl                   = no
 pcoupltype               = Isotropic
@@ -175,7 +175,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen_vel                  = no
 gen-temp                 = 300
-gen-seed                 = -681610269
+gen-seed                 = -473969817
 
 ; OPTIONS FOR BONDS    
 constraints              = h-bonds

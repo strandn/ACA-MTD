@@ -1,0 +1,10 @@
+# vim:ft=plumed
+MOLINFO STRUCTURE=ala3.pdb
+phi2: TORSION ATOMS=@phi-2
+psi2: TORSION ATOMS=@psi-2
+phi3: TORSION ATOMS=@phi-3
+psi3: TORSION ATOMS=@psi-3
+
+energy: ENERGY
+
+PRINT ARG=phi2,psi2,phi3,psi3,energy FILE=COLVAR STRIDE=100 FMT=%20.15f
