@@ -12,8 +12,8 @@ Converged to tolerance of  9.96E-06 in      238 iterations.
  Computing potential of mean force...
      bin     F_i    dF_i
        1 89.9685  2.3868
-       2104.3609  1.7075
-       3104.3588  1.7060
+       2 104.3609  1.7075
+       3 104.3588  1.7060
        4 88.2470  1.6928
        5 75.5833  2.4859
        6 75.1554  2.1126
