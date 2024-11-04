@@ -19,7 +19,7 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-rm -f analysis.* */\#md_0_1.* */bck.*
+rm -f *ff* */\#md_0_1.* */bck.*
 for i in `seq 0 9`;
 do
     cp diala.pdb em.gro md.mdp plumed.dat topol.top $i
