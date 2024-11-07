@@ -1,7 +1,7 @@
 title                   = Alanine dipeptide in vacuum
 ; Run parameters
 integrator              = sd        ; leap-frog integrator
-nsteps                  = 20000000
+nsteps                  = 5000000
 dt                      = 0.002     ; 2 fs
 ; Output control
 nstxout                 = 0         ; suppress bulky .trr file by specifying 
