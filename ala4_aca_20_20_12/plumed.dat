@@ -1,0 +1,25 @@
+# vim:ft=plumed
+# RESTART
+MOLINFO STRUCTURE=ala4.pdb
+phi2: TORSION ATOMS=@phi-2
+psi2: TORSION ATOMS=@psi-2
+phi3: TORSION ATOMS=@phi-3
+psi3: TORSION ATOMS=@psi-3
+phi4: TORSION ATOMS=@phi-4
+psi4: TORSION ATOMS=@psi-4
+
+ttsketch: TTSKETCH ARG=phi2,psi2,phi3,psi3,phi4,psi4 ...
+INITRANK=20
+CUTOFF=0.000001
+PACE=5000000 SAMPLESTRIDE=500
+INTERVAL_MIN=-pi,-pi,-pi,-pi,-pi,-pi INTERVAL_MAX=pi,pi,pi,pi,pi,pi
+NBASIS=20
+VMAX=20
+NBINS=1000 WIDTH=0.12,0.12,0.12,0.12,0.12,0.12
+BIASFACTOR=1
+FILE=../colvar.dat PRINTSTRIDE=100
+WALKERS_MPI
+DO_ACA ACA_CUTOFF=0.1 ACA_RANK=50
+...
+
+PRINT ARG=phi2,psi2,phi3,psi3,phi4,psi4,ttsketch.bias FILE=colvar.dat STRIDE=100 FMT=%20.15f
