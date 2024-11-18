@@ -38,18 +38,18 @@ ffpsi3phi4: CONVERT_TO_FES GRID=hhpsi3phi4 TEMP=300
 ffpsi3psi4: CONVERT_TO_FES GRID=hhpsi3psi4 TEMP=300
 ffphi4psi4: CONVERT_TO_FES GRID=hhphi4psi4 TEMP=300
 
-DUMPGRID GRID=ffphi2psi2 FILE=ffphi2psi2.dat
-DUMPGRID GRID=ffphi2phi3 FILE=ffphi2phi3.dat
-DUMPGRID GRID=ffphi2psi3 FILE=ffphi2psi3.dat
-DUMPGRID GRID=ffphi2phi4 FILE=ffphi2phi4.dat
-DUMPGRID GRID=ffphi2psi4 FILE=ffphi2psi4.dat
-DUMPGRID GRID=ffpsi2phi3 FILE=ffpsi2phi3.dat
-DUMPGRID GRID=ffpsi2psi3 FILE=ffpsi2psi3.dat
-DUMPGRID GRID=ffpsi2phi4 FILE=ffpsi2phi4.dat
-DUMPGRID GRID=ffpsi2psi4 FILE=ffpsi2psi4.dat
-DUMPGRID GRID=ffphi3psi3 FILE=ffphi3psi3.dat
-DUMPGRID GRID=ffphi3phi4 FILE=ffphi3phi4.dat
-DUMPGRID GRID=ffphi3psi4 FILE=ffphi3psi4.dat
-DUMPGRID GRID=ffpsi3phi4 FILE=ffpsi3phi4.dat
-DUMPGRID GRID=ffpsi3psi4 FILE=ffpsi3psi4.dat
-DUMPGRID GRID=ffphi4psi4 FILE=ffphi4psi4.dat
+DUMPGRID GRID=ffphi2psi2 FILE=ffphi2psi2.dat STRIDE=1000000
+DUMPGRID GRID=ffphi2phi3 FILE=ffphi2phi3.dat STRIDE=1000000
+DUMPGRID GRID=ffphi2psi3 FILE=ffphi2psi3.dat STRIDE=1000000
+DUMPGRID GRID=ffphi2phi4 FILE=ffphi2phi4.dat STRIDE=1000000
+DUMPGRID GRID=ffphi2psi4 FILE=ffphi2psi4.dat STRIDE=1000000
+DUMPGRID GRID=ffpsi2phi3 FILE=ffpsi2phi3.dat STRIDE=1000000
+DUMPGRID GRID=ffpsi2psi3 FILE=ffpsi2psi3.dat STRIDE=1000000
+DUMPGRID GRID=ffpsi2phi4 FILE=ffpsi2phi4.dat STRIDE=1000000
+DUMPGRID GRID=ffpsi2psi4 FILE=ffpsi2psi4.dat STRIDE=1000000
+DUMPGRID GRID=ffphi3psi3 FILE=ffphi3psi3.dat STRIDE=1000000
+DUMPGRID GRID=ffphi3phi4 FILE=ffphi3phi4.dat STRIDE=1000000
+DUMPGRID GRID=ffphi3psi4 FILE=ffphi3psi4.dat STRIDE=1000000
+DUMPGRID GRID=ffpsi3phi4 FILE=ffpsi3phi4.dat STRIDE=1000000
+DUMPGRID GRID=ffpsi3psi4 FILE=ffpsi3psi4.dat STRIDE=1000000
+DUMPGRID GRID=ffphi4psi4 FILE=ffphi4psi4.dat STRIDE=1000000
