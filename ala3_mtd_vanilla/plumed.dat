@@ -1,4 +1,5 @@
 # vim:ft=plumed
+RESTART
 MOLINFO STRUCTURE=ala3.pdb
 phi2: TORSION ATOMS=@phi-2
 psi2: TORSION ATOMS=@psi-2
