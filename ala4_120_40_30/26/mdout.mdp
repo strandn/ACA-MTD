@@ -1,8 +1,8 @@
 ;
 ;	File 'mdout.mdp' was generated
 ;	By user: unknown (325617495)
-;	On host: midway3-0255.rcc.local
-;	At date: Fri Dec 20 16:08:47 2024
+;	On host: midway3-0256.rcc.local
+;	At date: Mon Dec 23 17:37:02 2024
 ;
 ;	Created by:
 ;	            :-) GROMACS - gmx grompp, 2024.2-plumed_2.10.0_dev (-:
@@ -175,7 +175,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen_vel                  = no
 gen-temp                 = 300
-gen-seed                 = 2079834111
+gen-seed                 = -5260868
 
 ; OPTIONS FOR BONDS    
 constraints              = h-bonds
