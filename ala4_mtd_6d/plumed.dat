@@ -1,0 +1,13 @@
+# vim:ft=plumed
+# RESTART
+MOLINFO STRUCTURE=ala4.pdb
+phi2: TORSION ATOMS=@phi-2
+psi2: TORSION ATOMS=@psi-2
+phi3: TORSION ATOMS=@phi-3
+psi3: TORSION ATOMS=@psi-3
+phi4: TORSION ATOMS=@phi-4
+psi4: TORSION ATOMS=@psi-4
+
+mtd: METAD ARG=phi2,psi2,phi3,psi3,phi4,psi4 HEIGHT=0.5 PACE=2000 BIASFACTOR=8 SIGMA=0.35,0.35,0.35,0.35,0.35,0.35 CALC_RCT
+
+PRINT ARG=phi2,psi2,phi3,psi3,phi4,psi4,mtd.rbias FILE=COLVAR STRIDE=100 FMT=%20.15f
