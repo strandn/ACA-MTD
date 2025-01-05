@@ -1,0 +1,10 @@
+# vim:ft=plumed
+phi2: READ FILE=colvar.dat VALUES=phi2 IGNORE_TIME
+psi2: READ FILE=colvar.dat VALUES=psi2 IGNORE_TIME
+phi3: READ FILE=colvar.dat VALUES=phi3 IGNORE_TIME
+psi3: READ FILE=colvar.dat VALUES=psi3 IGNORE_TIME
+phi4: READ FILE=colvar.dat VALUES=phi4 IGNORE_TIME
+psi4: READ FILE=colvar.dat VALUES=psi4 IGNORE_TIME
+ttsketch: READ FILE=colvar.dat VALUES=ttsketch.bias IGNORE_TIME
+
+PRINT ARG=ttsketch.bias.max FILE=colvar.dat FMT=%20.15f
