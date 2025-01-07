@@ -21,5 +21,5 @@ echo $SLURM_JOB_NODELIST
 
 export PLUMED_NUM_THREADS=8
 
-rm -f *ff*
-plumed driver --plumed plumed2.dat --noatoms
+# rm -f *ff*
+plumed driver --plumed plumed3.dat --noatoms
