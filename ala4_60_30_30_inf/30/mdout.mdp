@@ -1,15 +1,15 @@
 ;
 ;	File 'mdout.mdp' was generated
 ;	By user: unknown (325617495)
-;	On host: midway3-0255.rcc.local
-;	At date: Thu Jan  9 11:04:02 2025
+;	On host: midway3-0252.rcc.local
+;	At date: Fri Jan 10 10:51:24 2025
 ;
 ;	Created by:
 ;	            :-) GROMACS - gmx grompp, 2024.2-plumed_2.10.0_dev (-:
 ;	
 ;	Executable:   /home/nstrand/gromacs-2024.2/build/bin/gmx_mpi
 ;	Data prefix:  /home/nstrand/gromacs-2024.2 (source tree)
-;	Working dir:  /project/dinner/nstrand/ACA-MTD/ala4_60_30_30_40/30
+;	Working dir:  /project/dinner/nstrand/ACA-MTD/ala4_60_30_30_inf/30
 ;	Command line:
 ;	  gmx_mpi grompp -f md.mdp -c em.gro -p topol.top -o md_0_1.tpr
 
@@ -175,7 +175,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen_vel                  = no
 gen-temp                 = 300
-gen-seed                 = -144707873
+gen-seed                 = -964957905
 
 ; OPTIONS FOR BONDS    
 constraints              = h-bonds
