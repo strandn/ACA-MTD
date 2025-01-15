@@ -22,9 +22,8 @@ echo $SLURM_JOB_NODELIST
 export PLUMED_NUM_THREADS=8
 
 rm -f *ff*
-sed -i '$d' */colvar.*
-for i in `seq 0 39`; do sed '/#!/d' $i/colvar.$i.dat > $i/colvar.$i.dat.0; done
-python3 merge_colvars.py
+sed "14,1000013d" colvar.dat > colvar_half.dat
 plumed driver --plumed plumed2.dat --noatoms
-sed "14,1250053d" colvar.dat > colvar_half.dat
 plumed driver --plumed plumed3.dat --noatoms
+plumed driver --plumed plumed4.dat --noatoms
+plumed driver --plumed plumed5.dat --noatoms

@@ -9,8 +9,7 @@
 #SBATCH --partition=dinner
 #SBATCH --account=pi-dinner
  
-#SBATCH --nodes=2
-#SBATCH --ntasks-per-node=10
+#SBATCH --ntasks=20
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=50G
  
