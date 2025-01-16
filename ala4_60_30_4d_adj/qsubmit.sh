@@ -34,6 +34,9 @@ do
     sed '/#!/d' $i/colvar.$i.dat > $i/colvar.$i.dat.0
 done
 python3 merge_colvars.py
+sed "14,1000013d" colvar.dat > colvar_half.dat
 plumed driver --plumed plumed2.dat --noatoms
-plumed driver --plumed plumed4.dat --noatoms
 plumed driver --plumed plumed3.dat --noatoms
+plumed driver --plumed plumed4.dat --noatoms
+plumed driver --plumed plumed5.dat --noatoms
+plumed driver --plumed plumed6.dat --noatoms
