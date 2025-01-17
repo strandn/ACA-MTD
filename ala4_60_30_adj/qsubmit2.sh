@@ -27,3 +27,4 @@ plumed driver --plumed plumed2.dat --noatoms
 plumed driver --plumed plumed3.dat --noatoms
 plumed driver --plumed plumed4.dat --noatoms
 plumed driver --plumed plumed5.dat --noatoms
+plumed driver --plumed plumed6.dat --noatoms
