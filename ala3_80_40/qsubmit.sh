@@ -34,3 +34,4 @@ do
 done
 python3 merge_colvars.py
 plumed driver --plumed plumed2.dat --noatoms
+plumed driver --plumed plumed3.dat --noatoms
