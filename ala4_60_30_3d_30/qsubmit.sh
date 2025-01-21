@@ -35,7 +35,9 @@ do
 done
 python3 merge_colvars.py
 plumed driver --plumed plumed2.dat --noatoms
-sed "10,500009d" colvar.dat > colvar.dat.0
-sed "10,1000009d" colvar.dat > colvar.dat.1
+sed "14,500013d" colvar.dat > colvar.dat.0
+sed "14,1000013d" colvar.dat > colvar.dat.1
+sed "14,1500013d" colvar.dat > colvar.dat.2
 plumed driver --plumed plumed3.dat --noatoms
 plumed driver --plumed plumed4.dat --noatoms
+plumed driver --plumed plumed5.dat --noatoms

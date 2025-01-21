@@ -21,9 +21,9 @@ echo $SLURM_JOB_NODELIST
 
 export PLUMED_NUM_THREADS=8
 
+rm -f *ff*
+plumed driver --plumed plumed2.dat --noatoms
 sed "14,500013d" COLVAR > COLVAR.0
 sed "14,1000013d" COLVAR > COLVAR.1
-sed "14,1500013d" COLVAR > COLVAR.2
 plumed driver --plumed plumed3.dat --noatoms
 plumed driver --plumed plumed4.dat --noatoms
-plumed driver --plumed plumed5.dat --noatoms

@@ -2,7 +2,7 @@
 #! SET min_phi4 -pi
 #! SET max_phi4 pi
 #! SET nbins_phi4  100
-#! SET periodic_phi4 false
+#! SET periodic_phi4 true
  -3.141593 nan nan
  -3.078761 nan nan
  -3.015929 nan nan
@@ -103,4 +103,3 @@
  2.953097 nan nan
  3.015929 nan nan
  3.078761 nan nan
- 3.141593 nan nan
