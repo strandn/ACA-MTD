@@ -20,7 +20,7 @@
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
-rm -f *ff* */\#md_0_1.* */bck.*
+rm -f *ff* */\#md_0_1.* */bck.* bck.*
 for i in `seq 0 39`;
 do
     cp ala4.pdb em.gro md.mdp plumed.dat topol.top $i
