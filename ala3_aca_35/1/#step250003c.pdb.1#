@@ -1,0 +1,36 @@
+TITLE     coordinates after constraining
+REMARK    THIS IS A SIMULATION BOX
+CRYST1  209.904  209.904  209.904  90.00  90.00  90.00 P 1           1
+ATOM      1 HH31 ACE     1     117.737 123.406  69.157  1.00  0.00            
+ATOM      2  CH3 ACE     1    3698.377-8292.799-8989.077  1.00  0.00            
+ATOM      3 HH32 ACE     1     118.040 171.262 102.217  1.00  0.00            
+ATOM      4 HH33 ACE     1     295.950 118.319  51.724  1.00  0.00            
+ATOM      5  C   ACE     1         nan     nan     nan  1.00  0.00            
+ATOM      6  O   ACE     1    4979.303-11215.855-12185.307  1.00  0.00            
+ATOM      7  N   ALA     2         nan     nan     nan  1.00  0.00            
+ATOM      8  H   ALA     2         nan     nan     nan  1.00  0.00            
+ATOM      9  CA  ALA     2        -nan    -nan    -nan  1.00  0.00            
+ATOM     10  HA  ALA     2        -nan    -nan    -nan  1.00  0.00            
+ATOM     11  CB  ALA     2         nan     nan     nan  1.00  0.00            
+ATOM     12  HB1 ALA     2         nan     nan     nan  1.00  0.00            
+ATOM     13  HB2 ALA     2         nan     nan     nan  1.00  0.00            
+ATOM     14  HB3 ALA     2         nan     nan     nan  1.00  0.00            
+ATOM     15  C   ALA     2        -nan    -nan    -nan  1.00  0.00            
+ATOM     16  O   ALA     2        -nan    -nan    -nan  1.00  0.00            
+ATOM     17  N   ALA     3        -nan    -nan    -nan  1.00  0.00            
+ATOM     18  H   ALA     3        -nan    -nan    -nan  1.00  0.00            
+ATOM     19  CA  ALA     3         nan     nan     nan  1.00  0.00            
+ATOM     20  HA  ALA     3         nan     nan     nan  1.00  0.00            
+ATOM     21  CB  ALA     3    -4908.13412772.9831955.617  1.00  0.00            
+ATOM     22  HB1 ALA     3     -45.210 -54.029 184.937  1.00  0.00            
+ATOM     23  HB2 ALA     3      73.450 210.781 269.543  1.00  0.00            
+ATOM     24  HB3 ALA     3     313.506  -0.324  69.913  1.00  0.00            
+ATOM     25  C   ALA     3         nan     nan     nan  1.00  0.00            
+ATOM     26  O   ALA     3    43620.707-4501.3693485.755  1.00  0.00            
+ATOM     27  N   NME     4    502690086912.0001468746432512.0001745059971072.000  1.00  0.00            
+ATOM     28  H   NME     4    1226.37827361.16884548.625  1.00  0.00            
+ATOM     29  CH3 NME     4    -207.398-2480.699-2574.652  1.00  0.00            
+ATOM     30 HH31 NME     4     255.403 169.486 186.326  1.00  0.00            
+ATOM     31 HH32 NME     4     166.615 253.241 227.097  1.00  0.00            
+ATOM     32 HH33 NME     4     -13.199  93.513 278.713  1.00  0.00            
+TER
