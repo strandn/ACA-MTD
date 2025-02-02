@@ -20,6 +20,7 @@ export PLUMED_NUM_THREADS=8
 echo $SLURM_JOB_NAME
 echo $SLURM_JOB_NODELIST
 
+rm -f *ff*
 for i in `seq 0 19`;
 do
     sed '/#!/d' $i/colvar.$i.dat > $i/colvar.$i.dat.0
